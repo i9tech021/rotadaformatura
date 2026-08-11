@@ -16,8 +16,7 @@ import {
   LayoutDashboard,
   Calendar as CalendarIcon,
   BookOpen,
-  Settings,
-  MoreVertical
+  Settings
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";

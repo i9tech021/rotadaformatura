@@ -12,8 +12,7 @@ import {
   LayoutDashboard,
   BookOpen,
   FileText,
-  Settings,
-  MoreVertical
+  Settings
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
