@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as DisciplinesRouteImport } from './routes/disciplines'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -18,6 +19,11 @@ import { Route as DisciplinesIdRouteImport } from './routes/disciplines.$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DisciplinesRoute = DisciplinesRouteImport.update({
@@ -43,6 +49,7 @@ const DisciplinesIdRoute = DisciplinesIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/settings': typeof SettingsRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/settings': typeof SettingsRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/settings': typeof SettingsRoute
@@ -66,12 +75,24 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/disciplines' | '/materials' | '/settings' | '/disciplines/$id'
+    | '/'
+    | '/calendar'
+    | '/disciplines'
+    | '/materials'
+    | '/settings'
+    | '/disciplines/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/disciplines' | '/materials' | '/settings' | '/disciplines/$id'
+  to:
+    | '/'
+    | '/calendar'
+    | '/disciplines'
+    | '/materials'
+    | '/settings'
+    | '/disciplines/$id'
   id:
     | '__root__'
     | '/'
+    | '/calendar'
     | '/disciplines'
     | '/materials'
     | '/settings'
@@ -80,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CalendarRoute: typeof CalendarRoute
   DisciplinesRoute: typeof DisciplinesRouteWithChildren
   MaterialsRoute: typeof MaterialsRoute
   SettingsRoute: typeof SettingsRoute
@@ -92,6 +114,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/disciplines': {
@@ -139,6 +168,7 @@ const DisciplinesRouteWithChildren = DisciplinesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalendarRoute: CalendarRoute,
   DisciplinesRoute: DisciplinesRouteWithChildren,
   MaterialsRoute: MaterialsRoute,
   SettingsRoute: SettingsRoute,

@@ -12,7 +12,8 @@ import {
   Target,
   Trophy,
   User,
-  ArrowRight
+  ArrowRight,
+  FileText
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -388,13 +389,22 @@ function AcademicDashboard() {
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
         </Link>
         <Link 
-          to="/disciplines" 
+          to="/calendar" 
           activeProps={{ className: "text-[#D4941E]" }} 
           inactiveProps={{ className: "text-[#0A3D52]/40" }}
           className="flex flex-col items-center"
         >
-          <BookOpen className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Matérias</span>
+          <CalendarIcon className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Agenda</span>
+        </Link>
+        <Link 
+          to="/materials" 
+          activeProps={{ className: "text-[#D4941E]" }} 
+          inactiveProps={{ className: "text-[#0A3D52]/40" }}
+          className="flex flex-col items-center"
+        >
+          <FileText className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Materiais</span>
         </Link>
         <Link 
           to="/settings" 
@@ -403,7 +413,7 @@ function AcademicDashboard() {
           className="flex flex-col items-center"
         >
           <Settings className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Ajustes</span>
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Perfil</span>
         </Link>
       </div>
     </div>
