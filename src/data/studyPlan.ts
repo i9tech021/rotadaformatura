@@ -191,11 +191,8 @@ export const semanasAgosto: SemanaEstudo[] = [
     },
   },
 ];
-
-// ============================================================
-// PLANO DE ESTUDOS - SETEMBRO (Semanas 6-7: Semana da AP1)
-// ============================================================
-export const semanasSetembro: SemanaEstudo[] = [
+ 
+const semanasSetembro: SemanaEstudo[] = [
   {
     numero: 6,
     periodo: '31/08 a 06/09',
