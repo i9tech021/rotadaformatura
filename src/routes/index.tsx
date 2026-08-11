@@ -367,22 +367,22 @@ function AcademicDashboard() {
       )}
 
       {/* Bottom Mobile Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40 pb-safe">
         <button className="flex flex-col items-center text-[#D4941E]">
-          <LayoutDashboard className="w-6 h-6" />
-          <span className="text-[9px] font-black uppercase mt-1">Dashboard</span>
+          <LayoutDashboard className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
         </button>
         <button className="flex flex-col items-center text-[#0A3D52]/40">
-          <CalendarIcon className="w-6 h-6" />
-          <span className="text-[9px] font-black uppercase mt-1">Calendário</span>
+          <CalendarIcon className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Calendário</span>
         </button>
         <button className="flex flex-col items-center text-[#0A3D52]/40">
-          <CheckCircle2 className="w-6 h-6" />
-          <span className="text-[9px] font-black uppercase mt-1">Progresso</span>
+          <CheckCircle2 className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Progresso</span>
         </button>
         <button className="flex flex-col items-center text-[#0A3D52]/40">
-          <Settings className="w-6 h-6" />
-          <span className="text-[9px] font-black uppercase mt-1">Perfil</span>
+          <Settings className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Perfil</span>
         </button>
       </div>
     </div>
