@@ -301,8 +301,8 @@ function AcademicDashboard() {
                       Próxima: {item.nextExam.type} em {item.nextExam.daysRemaining} dias
                     </span>
                   </div>
-                  <button className="text-[#0A3D52] hover:text-[#D4941E] transition-colors">
-                    <ChevronRight className="w-5 h-5" />
+                  <button className="text-[#0A3D52] hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
+                    Entrar na Rota <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
               </div>
