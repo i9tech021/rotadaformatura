@@ -14,8 +14,13 @@ import {
   CheckCircle2,
   ChevronRight,
   BookOpen,
-  History
+  History,
+  Menu,
+  GraduationCap,
+  LayoutDashboard,
+  Settings
 } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
 import { DISCIPLINES, type Discipline } from "@/data/disciplines";
 import { CALENDAR_EVENTS } from "@/data/calendar";
@@ -70,9 +75,33 @@ function DisciplinePage() {
       <header className="bg-[#0A3D52] text-white pt-6 pb-20 px-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4941E]/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
         <div className="max-w-5xl mx-auto relative z-10">
-          <Link to="/disciplines" className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors mb-6 text-[10px] font-black uppercase tracking-[0.2em]">
-            <ArrowLeft className="w-4 h-4" /> Voltar
-          </Link>
+          <div className="flex items-center gap-4 mb-6">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="p-2 hover:bg-white/10 rounded-xl transition-colors md:hidden cursor-pointer">
+                  <Menu className="w-6 h-6 text-[#D4941E]" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
+                <div className="p-6 pt-12 flex flex-col gap-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <GraduationCap className="w-8 h-8 text-[#D4941E]" />
+                    <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
+                    <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
+                    <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
+                    <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
+                    <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Link to="/disciplines" className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.2em]">
+              <ArrowLeft className="w-4 h-4" /> Voltar
+            </Link>
+          </div>
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
@@ -358,5 +387,18 @@ function EmptyState({ icon: Icon, message }: { icon: any; message: string }) {
       <Icon className="w-12 h-12 mb-4" />
       <p className="font-bold text-xs uppercase tracking-widest">{message}</p>
     </div>
+  );
+}
+
+function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+  return (
+    <Link 
+      to={to} 
+      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
+      activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
+    </Link>
   );
 }
