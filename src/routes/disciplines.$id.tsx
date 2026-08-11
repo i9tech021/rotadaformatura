@@ -369,7 +369,7 @@ function DisciplinePage() {
               </h4>
               <div className="space-y-3">
                 <div className="bg-white p-3 rounded-xl border border-[#0A3D52]/5 text-center">
-                  <code className="text-[#0A3D52] font-black text-sm">{discipline.formula || "N=(AD1+AD2+AP1+AP2)/2"}</code>
+                  <code className="text-[#0A3D52] font-black text-sm">{discipline.formulaNota?.n1 || "N=(AD1+AD2+AP1+AP2)/2"}</code>
                 </div>
                 <p className="text-[10px] text-[#0A3D52]/60 font-medium">
                   Média mínima para aprovação sem AP3: <strong>6.0</strong><br/>
