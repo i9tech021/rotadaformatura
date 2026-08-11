@@ -264,7 +264,7 @@ function AcademicDashboard() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Disciplinas do Semestre</h3>
-            <button className="text-[10px] font-black uppercase text-[#D4941E] border-b-2 border-[#D4941E]">Ver Grade Completa</button>
+            <Link to="/disciplines" className="text-[10px] font-black uppercase text-[#D4941E] border-b-2 border-[#D4941E]">Ver Grade Completa</Link>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
