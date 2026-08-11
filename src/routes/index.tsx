@@ -213,9 +213,9 @@ function AcademicDashboard() {
                   <Clock className="w-4 h-4 text-[#0A3D52]/60" />
                   <span className="text-sm font-bold">Contagem regressiva: 04d 18h 22m</span>
                 </div>
-                <button className="bg-[#D4941E] hover:bg-[#B87D17] text-[#0A3D52] px-6 py-2 rounded-lg font-black text-sm uppercase transition-colors shadow-md">
+                <Link to="/disciplines/$id" params={{ id: "metodos-1" }} className="bg-[#D4941E] hover:bg-[#B87D17] text-[#0A3D52] px-6 py-2 rounded-lg font-black text-sm uppercase transition-colors shadow-md text-center">
                   Acessar Plano de Estudos
-                </button>
+                </Link>
               </div>
             </div>
           </div>
