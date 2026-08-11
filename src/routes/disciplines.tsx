@@ -14,7 +14,15 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
-import { DISCIPLINES } from "@/data/disciplines";
+import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from "@/data/disciplines";
+
+const DISCIPLINES = [
+  metodosDeterministicos,
+  historiaPensamentoAdm,
+  contabilidadeGeral,
+  { id: "fundamentos-financas", name: "Fundamentos de Finanças", icone: "💰", cor: "#D97706", ch: "45h", period: "5º período", progress: 0 },
+  { id: "tga-i", name: "Teoria Geral da Administração I", icone: "🏢", cor: "#4F46E5", ch: "45h", period: "5º período", progress: 0 },
+];
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/disciplines")({

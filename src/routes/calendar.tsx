@@ -17,8 +17,9 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
-import { CALENDAR_EVENTS } from "@/data/calendar";
-import { DISCIPLINES } from "@/data/disciplines";
+import { eventos as CALENDAR_EVENTS } from "@/data/events";
+import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from "@/data/disciplines";
+const DISCIPLINES = [metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral];
 import { 
   format, 
   startOfMonth, 
@@ -59,7 +60,7 @@ function AcademicCalendarPage() {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   const getEventsForDay = (day: Date) => {
-    return CALENDAR_EVENTS.filter(event => isSameDay(parseISO(event.date), day));
+    return CALENDAR_EVENTS.filter(event => isSameDay(parseISO(event.dataInicio), day));
   };
 
   return (
@@ -200,11 +201,11 @@ function AcademicCalendarPage() {
                   <div key={event.id} className="relative pl-6 border-l-2 border-white/10 group">
                     <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-[#D4941E] group-hover:scale-150 transition-transform" />
                     <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">
-                      {format(parseISO(event.date), "dd 'de' MMMM", { locale: ptBR })}
+                      {format(parseISO(event.dataInicio), "dd 'de' MMMM", { locale: ptBR })}
                     </p>
                     <h4 className="font-bold text-sm mb-2">{event.title}</h4>
                     <div className="flex items-center gap-3 text-[9px] text-white/60 font-bold uppercase">
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {event.time}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {event.horario || 'Ver guia'}</span>
                       <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Polo Presencial</span>
                     </div>
                   </div>

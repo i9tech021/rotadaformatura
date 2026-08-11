@@ -35,93 +35,24 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-// Mock Data structure based on CEDERJ details
-const INITIAL_DATA = {
-  profile: {
-    name: "Vinícius Mendonça Lobo",
-    course: "Administração",
-    period: "5º período",
-    university: "UFRRJ/CEDERJ",
-  },
-  disciplines: [
-    {
-      id: "metodos-1",
-      name: "Métodos Determinísticos I",
-      ch: "45h",
-      period: "2º período",
-      icon: "📐",
-      progress: 45,
-      nextExam: { type: "AP1", date: "2026-09-05T09:30:00", daysRemaining: 5 },
-      status: "urgent", // < 7 days
-      formula: "N=(2*AD+8*AP)/10",
-    },
-    {
-      id: "hpa-2",
-      name: "História do Pensamento Adm. II",
-      ch: "60h",
-      period: "2º período",
-      icon: "🏛️",
-      progress: 25,
-      nextExam: { type: "AP1", date: "2026-09-06T13:30:00", daysRemaining: 6 },
-      status: "urgent",
-      formula: "AD=20%, AP=80%",
-    },
-    {
-      id: "contab-1",
-      name: "Contabilidade Geral I",
-      ch: "45h",
-      period: "3º período",
-      icon: "📊",
-      progress: 15,
-      nextExam: { type: "AP1", date: "2026-09-13T09:30:00", daysRemaining: 13 },
-      status: "warning", // 7-14 days
-      formula: "ADs teóricas, APs práticas",
-    },
-    {
-      id: "financas",
-      name: "Fundamentos de Finanças",
-      ch: "45h",
-      period: "5º período",
-      icon: "💰",
-      progress: 5,
-      nextExam: { type: "AP1", date: "2026-09-06T09:30:00", daysRemaining: 6 },
-      status: "urgent",
-    },
-    {
-      id: "sociedade",
-      name: "Sociedade e Organizações",
-      ch: "45h",
-      period: "5º período",
-      icon: "🏢",
-      progress: 0,
-      nextExam: { type: "AP1", date: "2026-09-12T09:30:00", daysRemaining: 12 },
-      status: "warning",
-    },
-    {
-      id: "gestao-pessoas",
-      name: "Gestão de Pessoas I",
-      ch: "45h",
-      period: "5º período",
-      icon: "👥",
-      progress: 8,
-      nextExam: { type: "AP1", date: "2026-09-05T13:30:00", daysRemaining: 5 },
-      status: "urgent",
-    },
-    {
-      id: "economia-br",
-      name: "Economia Brasileira Contemp.",
-      ch: "45h",
-      period: "6º período",
-      icon: "📉",
-      progress: 0,
-      nextExam: { type: "AP1", date: "2026-09-12T13:30:00", daysRemaining: 12 },
-      status: "warning",
-    },
-  ],
-};
+import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from '../data/disciplines';
+import { getProximosEventos, getEventosUrgentes } from '../data/events';
+import { getTarefasPendentes } from '../data/studyPlan';
 
 function AcademicDashboard() {
-  const [data, setData] = useState(INITIAL_DATA);
+  const [data] = useState({
+    profile: {
+      name: "Estudante CEDERJ",
+      course: "Administração",
+      period: "2026-2",
+      university: "UFRRJ/CEDERJ",
+    },
+    disciplines: [
+      { ...metodosDeterministicos, ch: "45h", period: "2º período", status: "urgent", nextExam: { type: "AP1", daysRemaining: 5 } },
+      { ...historiaPensamentoAdm, ch: "60h", period: "2º período", status: "urgent", nextExam: { type: "AP1", daysRemaining: 6 } },
+      { ...contabilidadeGeral, ch: "45h", period: "3º período", status: "warning", nextExam: { type: "AP1", daysRemaining: 13 } },
+    ],
+  });
   const [greeting, setGreeting] = useState("");
   const [showChat, setShowChat] = useState(false);
 
