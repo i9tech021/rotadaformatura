@@ -109,9 +109,9 @@ function DisciplinePage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="text-4xl mb-3">{discipline.icone}</div>
-              <h1 className="text-3xl md:text-4xl font-black mb-2 leading-tight">{discipline.nome}</h1>
+              <h1 className="text-3xl md:text-4xl font-black mb-2 leading-tight">{(discipline as any).nome || (discipline as any).name}</h1>
               <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-white/70 uppercase tracking-widest">
-                <span>{discipline.ch || '45h'}</span>
+                <span>{(discipline as any).ch || '45h'}</span>
                 <span className="w-1 h-1 bg-white/30 rounded-full" />
                 <span>{/* discipline.period removido */}</span>
                 {discipline.formulaNota && (
@@ -218,7 +218,7 @@ function DisciplinePage() {
                   </div>
                   <AcademicChecklist 
                     disciplineId={discipline.id}
-                    lessons={discipline.aulas.map(a => ({ id: a.id, title: a.titulo, items: a.atividades.map(at => ({ id: at.descricao, label: at.descricao, type: at.tipo === 'podcast' ? 'podcast' : at.tipo === 'video' ? 'video' : 'reading', completed: false })) }))}
+                    lessons={discipline.aulas.map(a => ({ id: a.id, title: a.titulo, items: a.atividades.map(at => ({ id: at.descricao, label: at.descricao, type: (at.tipo as string) === 'podcast' ? 'podcast' : at.tipo === 'video' ? 'video' : 'reading', completed: false })) }))}
                     onProgressUpdate={(p) => console.log('Progress:', p)}
                   />
                 </div>

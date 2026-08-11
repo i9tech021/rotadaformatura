@@ -129,7 +129,7 @@ function CommunityChat() {
                 <div className="flex items-center gap-3">
                   <span className="text-xl group-hover:scale-110 transition-transform">{d.icone}</span>
                   <div>
-                    <h4 className="font-bold text-xs truncate max-w-[180px]">{d.name}</h4>
+                    <h4 className="font-bold text-xs truncate max-w-[180px]">{(d as any).nome || (d as any).name}</h4>
                     <p className={cn(
                       "text-[8px] font-black uppercase tracking-tighter mt-0.5",
                       selectedRoomId === d.id ? "text-white/60" : "text-[#0A3D52]/40"

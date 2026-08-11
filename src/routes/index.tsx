@@ -254,7 +254,7 @@ function AcademicDashboard() {
                     </div>
                   </div>
                   <h4 className="font-bold text-lg leading-tight mb-1 group-hover:text-[#D4941E] transition-colors">
-                    {item.name}
+                    {item.nome}
                   </h4>
                   <p className="text-[11px] font-bold text-[#0A3D52]/50 uppercase tracking-wide mb-4">
                     {item.ch} • {item.period}
