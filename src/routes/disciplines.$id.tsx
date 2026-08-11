@@ -350,9 +350,9 @@ function DisciplinePage() {
                     </div>
                     <div className="pb-4">
                       <p className="text-[10px] font-black uppercase text-[#0A3D52]/40 tracking-tighter">
-                        {format(parseISO(event.date), "dd/MM/yyyy")}
+                        {format(parseISO(event.dataInicio), "dd/MM/yyyy")}
                       </p>
-                      <h5 className="font-bold text-sm text-[#0A3D52] group-hover:text-[#D4941E] transition-colors">{event.type}</h5>
+                      <h5 className="font-bold text-sm text-[#0A3D52] group-hover:text-[#D4941E] transition-colors">{event.titulo}</h5>
                     </div>
                   </div>
                 ))}
