@@ -1,5 +1,6 @@
 // src/data/studyPlan.ts
 // Plano de estudos semanal integrado - CEDERJ Administração 2026-2
+import { parseISO } from "date-fns";
 // Rotina: Seg-Sex (trânsito/podcast), Sábado (vídeo/resumo), Domingo (simulado)
 
 export type DiaSemana = 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta' | 'sabado' | 'domingo';
@@ -263,11 +264,11 @@ export const semanasSetembro: SemanaEstudo[] = [
 export const todasSemanas = [...semanasAgosto, ...semanasSetembro];
 
 export const getTarefasPorDia = (data: string): TarefaDiaria[] => {
-  const d = new Date(data);
-  const diaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][d.getDay()] as DiaSemana;
+  const d = parseISO(data);
+  const diaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][d.getUTCDay()] as DiaSemana;
   for (const semana of todasSemanas) {
-    const inicio = new Date(semana.dataInicio);
-    const fim = new Date(semana.dataFim);
+    const inicio = parseISO(semana.dataInicio);
+    const fim = parseISO(semana.dataFim);
     if (d >= inicio && d <= fim) {
       return semana.tarefas[diaSemana] || [];
     }
@@ -277,10 +278,9 @@ export const getTarefasPorDia = (data: string): TarefaDiaria[] => {
 
 export const getTarefasPendentes = (): TarefaDiaria[] => {
   const hoje = new Date();
-  const tarefas: TarefaDiaria[] = [];
   for (const semana of todasSemanas) {
-    const inicio = new Date(semana.dataInicio);
-    const fim = new Date(semana.dataFim);
+    const inicio = parseISO(semana.dataInicio);
+    const fim = parseISO(semana.dataFim);
     if (hoje >= inicio && hoje <= fim) {
       const diaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][hoje.getDay()] as DiaSemana;
       return (semana.tarefas[diaSemana] || []).filter(t => !t.concluida);
