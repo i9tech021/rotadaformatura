@@ -220,43 +220,40 @@ function AcademicDashboard() {
           </div>
         </section>
 
-        {/* Checklist da Disciplina Ativa */}
+        {/* Missões Diárias */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Roteiro de Estudos: Métodos Det. I</h3>
-            <span className="text-[10px] font-black uppercase text-[#27AE60]">Semana 03 de 20</span>
+            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Sua Rota Hoje: {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+            <span className="text-[10px] font-black uppercase text-[#27AE60]">Meta Diária</span>
           </div>
-          <AcademicChecklist 
-            disciplineId="metodos-1"
-            lessons={[
-              {
-                id: "aula-1",
-                title: "Aula 01",
-                items: [
-                  { id: "a1-r1", label: "Leitura: Conjuntos Numéricos", type: "reading", completed: true },
-                  { id: "a1-p1", label: "Podcast: Introdução à Lógica", type: "podcast", completed: true },
-                  { id: "a1-e1", label: "EP1: Exercícios de Fixação", type: "exercise", completed: false },
-                ]
-              },
-              {
-                id: "aula-2",
-                title: "Aula 02",
-                items: [
-                  { id: "a2-r1", label: "Leitura: Naturais e Inteiros", type: "reading", completed: false },
-                  { id: "a2-e1", label: "EP2: Operações Básicas", type: "exercise", completed: false },
-                ]
-              },
-              {
-                id: "aula-3",
-                title: "Aula 03",
-                items: [
-                  { id: "a3-r1", label: "Leitura: Proposições e Conectivos", type: "reading", completed: false },
-                  { id: "a3-p1", label: "Podcast: Tabela Verdade", type: "podcast", completed: false },
-                  { id: "a3-e1", label: "EP3: Lógica Proposicional", type: "exercise", completed: false },
-                ]
-              }
-            ]}
-          />
+          <div className="space-y-3">
+            {getTarefasPendentes().length > 0 ? (
+              getTarefasPendentes().map(tarefa => (
+                <div key={tarefa.id} className="bg-white p-4 rounded-2xl border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", 
+                      tarefa.tipo === 'podcast' ? "bg-[#7C3AED]/10 text-[#7C3AED]" : 
+                      tarefa.tipo === 'video' ? "bg-[#2563EB]/10 text-[#2563EB]" : "bg-[#D4941E]/10 text-[#D4941E]")}>
+                      {tarefa.tipo === 'podcast' ? <Headphones className="w-5 h-5" /> : 
+                       tarefa.tipo === 'video' ? <Play className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm leading-tight mb-1">{tarefa.titulo}</h4>
+                      <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter">{tarefa.disciplinaNome} • {tarefa.duracaoMinutos} min</p>
+                    </div>
+                  </div>
+                  <button className="w-8 h-8 rounded-full border-2 border-[#0A3D52]/10 flex items-center justify-center hover:border-[#27AE60] hover:bg-[#27AE60]/10 transition-colors group">
+                    <CheckCircle2 className="w-4 h-4 text-[#0A3D52]/10 group-hover:text-[#27AE60]" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="bg-[#F5F7FA] p-8 rounded-3xl border border-dashed border-[#0A3D52]/10 text-center">
+                <Trophy className="w-8 h-8 text-[#D4941E] mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-bold text-[#0A3D52]/40 uppercase tracking-widest">Tudo limpo por hoje! Descanse ou adiante algo.</p>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Disciplinas Grid */}
