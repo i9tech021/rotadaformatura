@@ -15,7 +15,8 @@ import {
   GraduationCap,
   LayoutDashboard,
   Calendar as CalendarIcon,
-  BookOpen
+  BookOpen,
+  Settings
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
