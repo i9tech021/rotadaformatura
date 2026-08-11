@@ -13,8 +13,10 @@ import {
   Trophy,
   User,
   ArrowRight,
-  FileText
+  FileText,
+  Menu
 } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
@@ -150,18 +152,50 @@ function AcademicDashboard() {
     <div className="min-h-screen bg-[#FFFFFF] text-[#0A3D52] font-sans selection:bg-[#D4941E]/30 pb-20">
       {/* Top Navbar */}
       <nav className="sticky top-0 z-40 w-full bg-[#0A3D52] text-white px-4 py-3 shadow-md flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-          <span className="font-bold text-lg tracking-tight uppercase">Rota da Formatura</span>
-        </div>
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex flex-col text-right">
-            <span className="text-xs opacity-80 leading-none">{data.profile.course}</span>
-            <span className="text-sm font-semibold">{data.profile.name}</span>
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="p-2 hover:bg-white/10 rounded-xl transition-colors md:hidden cursor-pointer">
+                <Menu className="w-6 h-6 text-[#D4941E]" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
+              <div className="p-6 pt-12 flex flex-col gap-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <GraduationCap className="w-8 h-8 text-[#D4941E]" />
+                  <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
+                  <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
+                  <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
+                  <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
+                  <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+          <div className="flex items-center gap-2">
+            <GraduationCap className="w-8 h-8 text-[#D4941E]" />
+            <span className="font-bold text-lg tracking-tight uppercase hidden xs:inline">Rota da Formatura</span>
           </div>
-          <div className="w-10 h-10 rounded-full bg-[#D4941E] flex items-center justify-center font-bold text-[#0A3D52]">
+        </div>
+        
+        <div className="hidden md:flex items-center gap-6 mr-6">
+          <Link to="/" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Dashboard</Link>
+          <Link to="/calendar" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Agenda</Link>
+          <Link to="/disciplines" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Biblioteca</Link>
+          <Link to="/materials" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Arquivos</Link>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex flex-col text-right">
+            <span className="text-[10px] opacity-60 leading-none uppercase font-black">{data.profile.course}</span>
+            <span className="text-sm font-bold">{data.profile.name}</span>
+          </div>
+          <Link to="/settings" className="w-10 h-10 rounded-full bg-[#D4941E] flex items-center justify-center font-bold text-[#0A3D52] hover:scale-105 transition-transform">
             {data.profile.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-          </div>
+          </Link>
         </div>
       </nav>
 
@@ -437,5 +471,18 @@ function MoreVertical({ className }: { className?: string }) {
       <circle cx="12" cy="5" r="1" />
       <circle cx="12" cy="19" r="1" />
     </svg>
+  );
+}
+
+function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+  return (
+    <Link 
+      to={to} 
+      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10"
+      activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
+    </Link>
   );
 }
