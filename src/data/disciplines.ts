@@ -355,6 +355,8 @@ export const fundamentosFinancas: Disciplina = {
   cor: '#D97706', // amber-600
   coordenador: 'Aguardando dados',
   totalAulas: 0,
+  period: '5º período',
+  ch: '45h',
   progresso: 0,
   aulas: [],
   avaliacoes: [],
@@ -370,6 +372,8 @@ export const teoriaGeralAdm: Disciplina = {
   cor: '#4F46E5', // indigo-600
   coordenador: 'Aguardando dados',
   totalAulas: 0,
+  period: '5º período',
+  ch: '45h',
   progresso: 0,
   aulas: [],
   avaliacoes: [],
@@ -385,6 +389,8 @@ export const matematicaFinanceira: Disciplina = {
   cor: '#DC2626', // red-600
   coordenador: 'Aguardando dados',
   totalAulas: 0,
+  period: '5º período',
+  ch: '45h',
   progresso: 0,
   aulas: [],
   avaliacoes: [],
@@ -400,6 +406,8 @@ export const metodologiaTC: Disciplina = {
   cor: '#0891B2', // cyan-600
   coordenador: 'Aguardando dados',
   totalAulas: 0,
+  period: '5º período',
+  ch: '45h',
   progresso: 0,
   aulas: [],
   avaliacoes: [],
