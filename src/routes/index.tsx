@@ -269,8 +269,10 @@ function AcademicDashboard() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data.disciplines.map((item) => (
-              <div 
+              <Link 
                 key={item.id} 
+                to="/disciplines/$id"
+                params={{ id: item.id }}
                 className={cn(
                   "bg-[#F5F7FA] rounded-xl border border-[#0A3D52]/10 p-5 hover:shadow-md transition-shadow group flex flex-col justify-between",
                   item.status === "urgent" && "border-l-4 border-l-[#E74C3C]",
@@ -280,9 +282,9 @@ function AcademicDashboard() {
                 <div>
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-2xl">{item.icon}</span>
-                    <button className="p-1 hover:bg-[#0A3D52]/5 rounded-md text-[#0A3D52]/30">
+                    <div className="p-1 hover:bg-[#0A3D52]/5 rounded-md text-[#0A3D52]/30">
                       <MoreVertical className="w-5 h-5" />
-                    </button>
+                    </div>
                   </div>
                   <h4 className="font-bold text-lg leading-tight mb-1 group-hover:text-[#D4941E] transition-colors">
                     {item.name}
@@ -312,11 +314,11 @@ function AcademicDashboard() {
                       Próxima: {item.nextExam.type} em {item.nextExam.daysRemaining} dias
                     </span>
                   </div>
-                  <button className="text-[#0A3D52] hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
+                  <div className="text-[#0A3D52] hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
                     Entrar na Rota <ArrowRight className="w-3 h-3" />
-                  </button>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
