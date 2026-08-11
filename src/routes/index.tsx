@@ -78,17 +78,19 @@ function AcademicDashboard() {
     if (hour >= 6 && hour < 12) setGreeting("Bom dia");
     else if (hour >= 12 && hour < 18) setGreeting("Boa tarde");
     else setGreeting("Boa noite");
+  }, []);
 
-    if (missaoPrioritaria) {
-      const updateCountdown = () => {
-        const target = parseISO(missaoPrioritaria.dataInicio);
-        setCountdown(formatDistanceToNow(target, { locale: ptBR, addSuffix: true }));
-      };
-      
-      updateCountdown();
-      const timer = setInterval(updateCountdown, 60000);
-      return () => clearInterval(timer);
-    }
+  useEffect(() => {
+    if (!missaoPrioritaria) return;
+    
+    const updateCountdown = () => {
+      const target = parseISO(missaoPrioritaria.dataInicio);
+      setCountdown(formatDistanceToNow(target, { locale: ptBR, addSuffix: true }));
+    };
+    
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 60000);
+    return () => clearInterval(timer);
   }, [missaoPrioritaria]);
 
   const getStatusColor = (status: string) => {
