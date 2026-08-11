@@ -10,8 +10,15 @@ import {
   Save,
   Trash2,
   FileText,
-  ArrowLeft
+  ArrowLeft,
+  Menu,
+  GraduationCap,
+  LayoutDashboard,
+  Calendar as CalendarIcon,
+  BookOpen,
+  Settings
 } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "sonner";
@@ -63,11 +70,42 @@ function SettingsPage() {
       {/* Header */}
       <nav className="bg-[#0A3D52] text-white px-4 py-4 shadow-md sticky top-0 z-40">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="hover:bg-white/10 p-2 rounded-full transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <h1 className="font-bold text-lg uppercase tracking-tight">Configurações</h1>
+          <div className="flex items-center gap-4">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="p-2 hover:bg-white/10 rounded-xl transition-colors md:hidden cursor-pointer">
+                  <Menu className="w-6 h-6 text-[#D4941E]" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
+                <div className="p-6 pt-12 flex flex-col gap-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <GraduationCap className="w-8 h-8 text-[#D4941E]" />
+                    <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
+                    <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
+                    <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
+                    <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
+                    <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+            <div className="flex items-center gap-3">
+              <Link to="/" className="hover:bg-white/10 p-2 rounded-full transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h1 className="font-bold text-lg uppercase tracking-tight hidden xs:inline">Ajustes</h1>
+            </div>
+          </div>
+
+          <div className="hidden md:flex items-center gap-6">
+            <Link to="/" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Dashboard</Link>
+            <Link to="/calendar" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Agenda</Link>
+            <Link to="/disciplines" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Biblioteca</Link>
+            <Link to="/materials" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Arquivos</Link>
           </div>
         </div>
       </nav>
@@ -217,5 +255,18 @@ function Switch({ active, onToggle }: { active: boolean, onToggle: () => void })
         active ? "left-7" : "left-1"
       )} />
     </button>
+  );
+}
+
+function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+  return (
+    <Link 
+      to={to} 
+      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
+      activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
+    </Link>
   );
 }
