@@ -18,7 +18,8 @@ import {
   Menu,
   GraduationCap,
   LayoutDashboard,
-  Settings
+  Settings,
+  MoreVertical
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
@@ -400,5 +401,23 @@ function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label
       <Icon className="w-5 h-5" />
       <span className="font-black text-xs uppercase tracking-widest">{label}</span>
     </Link>
+  );
+}
+
+function MoreVertical({ className }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </svg>
   );
 }
