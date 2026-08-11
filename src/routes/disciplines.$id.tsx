@@ -27,7 +27,7 @@ import { ptBR } from "date-fns/locale";
 export const Route = createFileRoute("/disciplines/$id")({
   component: DisciplinePage,
   head: () => ({
-    title: "Detalhes da Disciplina | Rota da Formatura",
+    meta: [{ title: "Detalhes da Disciplina | Rota da Formatura" }],
   }),
 });
 
