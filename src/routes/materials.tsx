@@ -15,7 +15,8 @@ import {
   LayoutDashboard,
   Calendar as CalendarIcon,
   BookOpen,
-  Settings
+  Settings,
+  MessageSquare
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
@@ -74,6 +75,7 @@ function MaterialsManager() {
                     <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
                     <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
                     <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
+                    <MobileNavLink to="/community" icon={MessageSquare} label="Comunidade" />
                     <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
                   </div>
                 </div>
