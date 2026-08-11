@@ -18,8 +18,8 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
-import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from "@/data/disciplines";
-const DISCIPLINES = [metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral];
+import { disciplinas } from "@/data/disciplines";
+const DISCIPLINES = disciplinas;
 import { 
   format, 
   startOfMonth, 
@@ -44,7 +44,7 @@ export const Route = createFileRoute("/calendar")({
 });
 
 function AcademicCalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 1)); // Set to Sept 2026 to match mock data
+  const [currentDate, setCurrentDate] = useState(new Date()); // Sincronizado com tempo real
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -197,7 +197,7 @@ function AcademicCalendarPage() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 text-white/50">Próximos Eventos</h3>
               <div className="space-y-6">
-                {CALENDAR_EVENTS.slice(0, 5).map((event: any) => (
+                {CALENDAR_EVENTS.filter(e => parseISO(e.dataInicio) >= new Date()).slice(0, 5).map((event: any) => (
                   <div key={event.id} className="relative pl-6 border-l-2 border-white/10 group">
                     <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-[#D4941E] group-hover:scale-150 transition-transform" />
                     <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">

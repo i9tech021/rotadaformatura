@@ -23,9 +23,9 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
-import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral, type Disciplina } from "@/data/disciplines";
-const disciplines = [metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral];
-import { CALENDAR_EVENTS } from "@/data/calendar";
+import { disciplinas, type Disciplina } from "@/data/disciplines";
+const disciplines = disciplinas;
+import { eventos as CALENDAR_EVENTS } from "@/data/events";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO } from "date-fns";
@@ -109,11 +109,11 @@ function DisciplinePage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="text-4xl mb-3">{discipline.icone}</div>
-              <h1 className="text-3xl md:text-4xl font-black mb-2 leading-tight">{(discipline as any).nome || (discipline as any).name}</h1>
+              <h1 className="text-3xl md:text-4xl font-black mb-2 leading-tight">{discipline.nome}</h1>
               <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-white/70 uppercase tracking-widest">
-                <span>{(discipline as any).ch || '45h'}</span>
+                <span>{discipline.ch || '45h'}</span>
                 <span className="w-1 h-1 bg-white/30 rounded-full" />
-                <span>{/* discipline.period removido */}</span>
+                <span>{discipline.period || "Aguardando"}</span>
                 {discipline.formulaNota && (
                   <>
                     <span className="w-1 h-1 bg-white/30 rounded-full" />
@@ -350,9 +350,9 @@ function DisciplinePage() {
                     </div>
                     <div className="pb-4">
                       <p className="text-[10px] font-black uppercase text-[#0A3D52]/40 tracking-tighter">
-                        {format(parseISO(event.date), "dd/MM/yyyy")}
+                        {format(parseISO(event.dataInicio), "dd/MM/yyyy")}
                       </p>
-                      <h5 className="font-bold text-sm text-[#0A3D52] group-hover:text-[#D4941E] transition-colors">{event.type}</h5>
+                      <h5 className="font-bold text-sm text-[#0A3D52] group-hover:text-[#D4941E] transition-colors">{event.titulo}</h5>
                     </div>
                   </div>
                 ))}

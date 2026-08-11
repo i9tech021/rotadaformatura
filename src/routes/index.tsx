@@ -9,17 +9,21 @@ import {
   LayoutDashboard, 
   MessageCircle, 
   Settings, 
-  Target,
-  Trophy,
-  User,
-  ArrowRight,
-  FileText,
-  Menu
+  Target, 
+  Trophy, 
+  User, 
+  ArrowRight, 
+  FileText, 
+  Menu,
+  Headphones,
+  Play
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
+import { formatDistanceToNow, differenceInDays, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/")({
   component: AcademicDashboard,
@@ -40,6 +44,9 @@ import { getProximosEventos, getEventosUrgentes } from '../data/events';
 import { getTarefasPendentes } from '../data/studyPlan';
 
 function AcademicDashboard() {
+  const proximosEventos = useMemo(() => getProximosEventos(60), []);
+  const missaoPrioritaria = useMemo(() => proximosEventos[0], [proximosEventos]);
+
   const [data] = useState({
     profile: {
       name: "Estudante CEDERJ",
@@ -47,16 +54,26 @@ function AcademicDashboard() {
       period: "2026-2",
       university: "UFRRJ/CEDERJ",
     },
-    disciplines: disciplinas.map(d => ({
-      ...d,
-      ch: d.id.includes('hpa') ? "60h" : "45h",
-      period: d.aulas.length > 0 ? "2º período" : "Aguardando",
-      status: d.aulas.length > 0 ? (d.id.includes('contab') ? "warning" : "urgent") : "normal",
-      nextExam: d.avaliacoes.length > 0 ? { type: d.avaliacoes.find(a => a.tipo === 'AP1')?.tipo || "AP1", daysRemaining: 5 } : { type: "N/A", daysRemaining: 0 }
-    })),
+    disciplines: disciplinas.map(d => {
+      const exam = d.avaliacoes
+        .filter(a => parseISO(a.dataPresencial || a.dataFim || '') > new Date())
+        .sort((a, b) => parseISO(a.dataPresencial || a.dataFim || '').getTime() - parseISO(b.dataPresencial || b.dataFim || '').getTime())[0];
+      
+      const days = exam ? differenceInDays(parseISO(exam.dataPresencial || exam.dataFim || ''), new Date()) : -1;
+      
+      return {
+        ...d,
+        ch: d.id.includes('hpa') ? "60h" : "45h",
+        period: d.aulas.length > 0 ? "2º período" : "Aguardando",
+        status: days <= 7 && days >= 0 ? "urgent" : (days <= 14 && days >= 0 ? "warning" : "normal"),
+        nextExam: exam ? { type: exam.tipo, daysRemaining: days } : { type: "N/A", daysRemaining: 0 }
+      };
+    }),
   });
+
   const [greeting, setGreeting] = useState("");
   const [showChat, setShowChat] = useState(false);
+  const [countdown, setCountdown] = useState("");
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -64,6 +81,19 @@ function AcademicDashboard() {
     else if (hour >= 12 && hour < 18) setGreeting("Boa tarde");
     else setGreeting("Boa noite");
   }, []);
+
+  useEffect(() => {
+    if (!missaoPrioritaria) return;
+    
+    const updateCountdown = () => {
+      const target = parseISO(missaoPrioritaria.dataInicio);
+      setCountdown(formatDistanceToNow(target, { locale: ptBR, addSuffix: true }));
+    };
+    
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 60000);
+    return () => clearInterval(timer);
+  }, [missaoPrioritaria]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -155,7 +185,9 @@ function AcademicDashboard() {
           </div>
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <CalendarIcon className="w-6 h-6 text-[#D4941E] mb-2" />
-            <span className="text-2xl font-black text-[#D4941E]">5 dias</span>
+            <span className="text-2xl font-black text-[#D4941E]">
+              {missaoPrioritaria ? differenceInDays(parseISO(missaoPrioritaria.dataInicio), new Date()) : 0} dias
+            </span>
             <span className="text-xs uppercase font-bold text-[#D4941E]/60 tracking-wider">Próxima Avaliação</span>
           </div>
         </div>
@@ -171,16 +203,16 @@ function AcademicDashboard() {
             </div>
             <div className="relative z-10">
               <span className="inline-block bg-[#D4941E] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter mb-2">
-                Urgente • AP1
+                {missaoPrioritaria?.tipo || 'Próximo Evento'}
               </span>
-              <h4 className="text-xl md:text-2xl font-bold mb-2">Métodos Determinísticos I</h4>
+              <h4 className="text-xl md:text-2xl font-bold mb-2">{missaoPrioritaria?.disciplinaNome || 'Nenhum evento próximo'}</h4>
               <p className="text-[#0A3D52]/70 text-sm mb-4">
-                Sua avaliação presencial está chegando. O conteúdo foca nas <strong>Aulas 1 a 8</strong>.
+                {missaoPrioritaria?.conteudo || 'Fique atento ao seu cronograma acadêmico.'}
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2 bg-[#F5F7FA] px-3 py-1.5 rounded-lg border border-[#0A3D52]/10">
                   <Clock className="w-4 h-4 text-[#0A3D52]/60" />
-                  <span className="text-sm font-bold">Contagem regressiva: 04d 18h 22m</span>
+                  <span className="text-sm font-bold">Inicia: {countdown || '...'}</span>
                 </div>
                 <Link to="/community/chat" className="bg-[#D4941E] hover:bg-[#B87D17] text-[#0A3D52] px-6 py-2 rounded-lg font-black text-sm uppercase transition-colors shadow-md text-center">
                   Entrar no Chat da Turma
@@ -190,43 +222,40 @@ function AcademicDashboard() {
           </div>
         </section>
 
-        {/* Checklist da Disciplina Ativa */}
+        {/* Missões Diárias */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Roteiro de Estudos: Métodos Det. I</h3>
-            <span className="text-[10px] font-black uppercase text-[#27AE60]">Semana 03 de 20</span>
+            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Sua Rota Hoje: {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+            <span className="text-[10px] font-black uppercase text-[#27AE60]">Meta Diária</span>
           </div>
-          <AcademicChecklist 
-            disciplineId="metodos-1"
-            lessons={[
-              {
-                id: "aula-1",
-                title: "Aula 01",
-                items: [
-                  { id: "a1-r1", label: "Leitura: Conjuntos Numéricos", type: "reading", completed: true },
-                  { id: "a1-p1", label: "Podcast: Introdução à Lógica", type: "podcast", completed: true },
-                  { id: "a1-e1", label: "EP1: Exercícios de Fixação", type: "exercise", completed: false },
-                ]
-              },
-              {
-                id: "aula-2",
-                title: "Aula 02",
-                items: [
-                  { id: "a2-r1", label: "Leitura: Naturais e Inteiros", type: "reading", completed: false },
-                  { id: "a2-e1", label: "EP2: Operações Básicas", type: "exercise", completed: false },
-                ]
-              },
-              {
-                id: "aula-3",
-                title: "Aula 03",
-                items: [
-                  { id: "a3-r1", label: "Leitura: Proposições e Conectivos", type: "reading", completed: false },
-                  { id: "a3-p1", label: "Podcast: Tabela Verdade", type: "podcast", completed: false },
-                  { id: "a3-e1", label: "EP3: Lógica Proposicional", type: "exercise", completed: false },
-                ]
-              }
-            ]}
-          />
+          <div className="space-y-3">
+            {getTarefasPendentes().length > 0 ? (
+              getTarefasPendentes().map(tarefa => (
+                <div key={tarefa.id} className="bg-white p-4 rounded-2xl border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", 
+                      tarefa.tipo === 'podcast' ? "bg-[#7C3AED]/10 text-[#7C3AED]" : 
+                      tarefa.tipo === 'video' ? "bg-[#2563EB]/10 text-[#2563EB]" : "bg-[#D4941E]/10 text-[#D4941E]")}>
+                      {tarefa.tipo === 'podcast' ? <Headphones className="w-5 h-5" /> : 
+                       tarefa.tipo === 'video' ? <Play className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm leading-tight mb-1">{tarefa.titulo}</h4>
+                      <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter">{tarefa.disciplinaNome} • {tarefa.duracaoMinutos} min</p>
+                    </div>
+                  </div>
+                  <button className="w-8 h-8 rounded-full border-2 border-[#0A3D52]/10 flex items-center justify-center hover:border-[#27AE60] hover:bg-[#27AE60]/10 transition-colors group">
+                    <CheckCircle2 className="w-4 h-4 text-[#0A3D52]/10 group-hover:text-[#27AE60]" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="bg-[#F5F7FA] p-8 rounded-3xl border border-dashed border-[#0A3D52]/10 text-center">
+                <Trophy className="w-8 h-8 text-[#D4941E] mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-bold text-[#0A3D52]/40 uppercase tracking-widest">Tudo limpo por hoje! Descanse ou adiante algo.</p>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Disciplinas Grid */}
