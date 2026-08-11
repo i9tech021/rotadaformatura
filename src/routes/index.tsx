@@ -14,8 +14,7 @@ import {
   User,
   ArrowRight,
   FileText,
-  Menu,
-  MoreVertical
+  Menu
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect, useMemo } from "react";
@@ -43,6 +42,9 @@ import { getProximosEventos, getEventosUrgentes } from '../data/events';
 import { getTarefasPendentes } from '../data/studyPlan';
 
 function AcademicDashboard() {
+  const proximosEventos = useMemo(() => getProximosEventos(60), []);
+  const missaoPrioritaria = useMemo(() => proximosEventos[0], [proximosEventos]);
+
   const [data] = useState({
     profile: {
       name: "Estudante CEDERJ",
@@ -50,23 +52,44 @@ function AcademicDashboard() {
       period: "2026-2",
       university: "UFRRJ/CEDERJ",
     },
-    disciplines: disciplinas.map(d => ({
-      ...d,
-      ch: d.id.includes('hpa') ? "60h" : "45h",
-      period: d.aulas.length > 0 ? "2º período" : "Aguardando",
-      status: d.aulas.length > 0 ? (d.id.includes('contab') ? "warning" : "urgent") : "normal",
-      nextExam: d.avaliacoes.length > 0 ? { type: d.avaliacoes.find(a => a.tipo === 'AP1')?.tipo || "AP1", daysRemaining: 5 } : { type: "N/A", daysRemaining: 0 }
-    })),
+    disciplines: disciplinas.map(d => {
+      const exam = d.avaliacoes
+        .filter(a => parseISO(a.dataPresencial || a.dataFim || '') > new Date())
+        .sort((a, b) => parseISO(a.dataPresencial || a.dataFim || '').getTime() - parseISO(b.dataPresencial || b.dataFim || '').getTime())[0];
+      
+      const days = exam ? differenceInDays(parseISO(exam.dataPresencial || exam.dataFim || ''), new Date()) : -1;
+      
+      return {
+        ...d,
+        ch: d.id.includes('hpa') ? "60h" : "45h",
+        period: d.aulas.length > 0 ? "2º período" : "Aguardando",
+        status: days <= 7 && days >= 0 ? "urgent" : (days <= 14 && days >= 0 ? "warning" : "normal"),
+        nextExam: exam ? { type: exam.tipo, daysRemaining: days } : { type: "N/A", daysRemaining: 0 }
+      };
+    }),
   });
+
   const [greeting, setGreeting] = useState("");
   const [showChat, setShowChat] = useState(false);
+  const [countdown, setCountdown] = useState("");
 
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour >= 6 && hour < 12) setGreeting("Bom dia");
     else if (hour >= 12 && hour < 18) setGreeting("Boa tarde");
     else setGreeting("Boa noite");
-  }, []);
+
+    if (missaoPrioritaria) {
+      const updateCountdown = () => {
+        const target = parseISO(missaoPrioritaria.dataInicio);
+        setCountdown(formatDistanceToNow(target, { locale: ptBR, addSuffix: true }));
+      };
+      
+      updateCountdown();
+      const timer = setInterval(updateCountdown, 60000);
+      return () => clearInterval(timer);
+    }
+  }, [missaoPrioritaria]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
