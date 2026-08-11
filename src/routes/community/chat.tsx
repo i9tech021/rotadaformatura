@@ -28,7 +28,7 @@ export const Route = createFileRoute("/community/chat")({
 });
 
 function CommunityChat() {
-  const [selectedRoomId, setSelectedRoomId] = useState(MOCK_CHAT_ROOMS[0].id);
+  const [selectedRoomId, setSelectedRoomId] = useState(MOCK_CHAT_ROOMS[0]?.id || "");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
