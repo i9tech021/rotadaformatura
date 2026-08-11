@@ -41,8 +41,9 @@ function DisciplinesLibrary() {
 
   const periods = ["Todos", "2º período", "3º período", "5º período"];
 
-  const filteredDisciplines = DISCIPLINES.filter(d => {
-    const matchesSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredDisciplines = DISCIPLINES.filter((d: any) => {
+    const name = d.nome || d.name || "";
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPeriod = selectedPeriod === "Todos" || d.period === selectedPeriod;
     return matchesSearch && matchesPeriod;
   });
@@ -142,7 +143,7 @@ function DisciplinesLibrary() {
               </div>
               
               <div className="relative z-10">
-                <div className="text-3xl mb-4 transform group-hover:scale-110 transition-transform origin-left">{discipline.icone || discipline.icon}</div>
+                <div className="text-3xl mb-4 transform group-hover:scale-110 transition-transform origin-left">{(discipline as any).icone || (discipline as any).icon}</div>
                 <h3 className="font-bold text-lg mb-1 leading-tight text-[#0A3D52] group-hover:text-[#D4941E] transition-colors">
                   {(discipline as any).nome || (discipline as any).name}
                 </h3>

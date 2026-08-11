@@ -149,13 +149,13 @@ function DisciplinePage() {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40">Próxima Avaliação</p>
-                <h4 className="font-bold text-lg">{nextExam.tipo} • {format(parseISO(nextExam.dataInicio), "dd 'de' MMMM", { locale: ptBR })}</h4>
+                <h4 className="font-bold text-lg">{(nextExam as any).tipo} • {format(parseISO((nextExam as any).dataInicio), "dd 'de' MMMM", { locale: ptBR })}</h4>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-[10px] font-black uppercase text-[#0A3D52]/40">Horário</p>
-                <p className="font-bold">{nextExam.horario || 'Ver guia'}</p>
+                <p className="font-bold">{(nextExam as any).horario || 'Ver guia'}</p>
               </div>
               <button className="bg-[#0A3D52] text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-[#0A3D52]/90 transition-all shadow-md">
                 Estudar Agora
