@@ -38,6 +38,8 @@ export interface Disciplina {
   cor: string;
   coordenador: string;
   totalAulas: number;
+  period?: string; // ex: "2º período"
+  ch?: string; // ex: "45h"
   aulas: Aula[];
   avaliacoes: Avaliacao[];
   formulaNota: {
@@ -65,6 +67,8 @@ export const metodosDeterministicos: Disciplina = {
   cor: '#2563EB', // blue-600
   coordenador: 'Denise de Oliveira Pinto e Leonardo Tadeu Silvares Martins',
   totalAulas: 15,
+  period: '2º período',
+  ch: '45h',
   progresso: 0,
   aulas: [
     {
@@ -234,6 +238,8 @@ export const historiaPensamentoAdm: Disciplina = {
   cor: '#7C3AED', // violet-600
   coordenador: 'Prof. Júlio Macedo',
   totalAulas: 20,
+  period: '2º período',
+  ch: '60h',
   progresso: 0,
   aulas: [
     { id: 'hpa-a11', numero: 11, titulo: 'O Behaviorismo e as Teorias Comportamentalistas', semanaEstudo: 1, atividades: [{ tipo: 'leitura_caderno', descricao: 'Ler Caderno Didático - Aula 11', obrigatoria: true }], concluida: false },
@@ -293,6 +299,8 @@ export const contabilidadeGeral: Disciplina = {
   cor: '#059669', // emerald-600
   coordenador: 'Prof. Everaldo Gaião e Silva',
   totalAulas: 14,
+  period: '3º período',
+  ch: '45h',
   progresso: 0,
   aulas: [
     { id: 'cg1-l1', numero: 1, titulo: 'Apresentação do Curso, Pólo, Tutores e Material Didático', semanaEstudo: 1, atividades: [{ tipo: 'leitura_caderno', descricao: 'Ler Lição 1', obrigatoria: true }], concluida: false },
