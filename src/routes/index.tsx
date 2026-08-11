@@ -170,6 +170,7 @@ function AcademicDashboard() {
                   <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
                   <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
                   <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
+                  <MobileNavLink to="/community" icon={MessageCircle} label="Comunidade" />
                   <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
                 </div>
               </div>
@@ -183,6 +184,7 @@ function AcademicDashboard() {
         
         <div className="hidden md:flex items-center gap-6 mr-6">
           <Link to="/" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Dashboard</Link>
+          <Link to="/community" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Comunidade</Link>
           <Link to="/calendar" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Agenda</Link>
           <Link to="/disciplines" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Biblioteca</Link>
           <Link to="/materials" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Arquivos</Link>
@@ -247,8 +249,8 @@ function AcademicDashboard() {
                   <Clock className="w-4 h-4 text-[#0A3D52]/60" />
                   <span className="text-sm font-bold">Contagem regressiva: 04d 18h 22m</span>
                 </div>
-                <Link to="/disciplines/$id" params={{ id: "metodos-1" }} className="bg-[#D4941E] hover:bg-[#B87D17] text-[#0A3D52] px-6 py-2 rounded-lg font-black text-sm uppercase transition-colors shadow-md text-center">
-                  Acessar Plano de Estudos
+                <Link to="/community/chat" className="bg-[#D4941E] hover:bg-[#B87D17] text-[#0A3D52] px-6 py-2 rounded-lg font-black text-sm uppercase transition-colors shadow-md text-center">
+                  Entrar no Chat da Turma
                 </Link>
               </div>
             </div>
@@ -423,6 +425,15 @@ function AcademicDashboard() {
         >
           <LayoutDashboard className="w-5 h-5" />
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
+        </Link>
+        <Link 
+          to="/community" 
+          activeProps={{ className: "text-[#D4941E]" }} 
+          inactiveProps={{ className: "text-[#0A3D52]/40" }}
+          className="flex flex-col items-center"
+        >
+          <MessageCircle className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Comunidade</span>
         </Link>
         <Link 
           to="/calendar" 
