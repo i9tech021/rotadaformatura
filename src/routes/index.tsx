@@ -210,6 +210,45 @@ function AcademicDashboard() {
           </div>
         </section>
 
+        {/* Checklist da Disciplina Ativa */}
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Roteiro de Estudos: Métodos Det. I</h3>
+            <span className="text-[10px] font-black uppercase text-[#27AE60]">Semana 03 de 20</span>
+          </div>
+          <AcademicChecklist 
+            disciplineId="metodos-1"
+            lessons={[
+              {
+                id: "aula-1",
+                title: "Aula 01",
+                items: [
+                  { id: "a1-r1", label: "Leitura: Conjuntos Numéricos", type: "reading", completed: true },
+                  { id: "a1-p1", label: "Podcast: Introdução à Lógica", type: "podcast", completed: true },
+                  { id: "a1-e1", label: "EP1: Exercícios de Fixação", type: "exercise", completed: false },
+                ]
+              },
+              {
+                id: "aula-2",
+                title: "Aula 02",
+                items: [
+                  { id: "a2-r1", label: "Leitura: Naturais e Inteiros", type: "reading", completed: false },
+                  { id: "a2-e1", label: "EP2: Operações Básicas", type: "exercise", completed: false },
+                ]
+              },
+              {
+                id: "aula-3",
+                title: "Aula 03",
+                items: [
+                  { id: "a3-r1", label: "Leitura: Proposições e Conectivos", type: "reading", completed: false },
+                  { id: "a3-p1", label: "Podcast: Tabela Verdade", type: "podcast", completed: false },
+                  { id: "a3-e1", label: "EP3: Lógica Proposicional", type: "exercise", completed: false },
+                ]
+              }
+            ]}
+          />
+        </section>
+
         {/* Disciplinas Grid */}
         <section>
           <div className="flex items-center justify-between mb-6">
