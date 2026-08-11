@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
-import { DISCIPLINES, type Discipline } from "@/data/disciplines";
+import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral, type Disciplina } from "@/data/disciplines";
+const disciplines = [metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral];
 import { CALENDAR_EVENTS } from "@/data/calendar";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
 import { cn } from "@/lib/utils";
@@ -43,13 +44,13 @@ function DisciplinePage() {
   const { id } = useParams({ from: "/disciplines/$id" });
   const [activeTab, setActiveTab] = useState<TabType>('cronograma');
 
-  const discipline = useMemo(() => DISCIPLINES.find(d => d.id === id), [id]);
-  const events = useMemo(() => CALENDAR_EVENTS.filter(e => e.disciplineId === id), [id]);
+  const discipline = useMemo(() => disciplines.find(d => d.id === id), [id]);
+  const events = useMemo(() => CALENDAR_EVENTS.filter((e: any) => e.disciplinaId === id), [id]);
   
   const nextExam = useMemo(() => {
     return events
-      .filter(e => isAfter(parseISO(e.date), new Date()))
-      .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime())[0];
+      .filter((e: any) => isAfter(parseISO(e.dataInicio), new Date()))
+      .sort((a: any, b: any) => parseISO(a.dataInicio).getTime() - parseISO(b.dataInicio).getTime())[0];
   }, [events]);
 
   if (!discipline) {
@@ -107,16 +108,16 @@ function DisciplinePage() {
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <div className="text-4xl mb-3">{discipline.icon}</div>
-              <h1 className="text-3xl md:text-4xl font-black mb-2 leading-tight">{discipline.name}</h1>
+              <div className="text-4xl mb-3">{discipline.icone}</div>
+              <h1 className="text-3xl md:text-4xl font-black mb-2 leading-tight">{(discipline as any).nome || (discipline as any).name}</h1>
               <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-white/70 uppercase tracking-widest">
-                <span>{discipline.ch}</span>
+                <span>{(discipline as any).ch || '45h'}</span>
                 <span className="w-1 h-1 bg-white/30 rounded-full" />
-                <span>{discipline.period}</span>
-                {discipline.formula && (
+                <span>{/* discipline.period removido */}</span>
+                {discipline.formulaNota && (
                   <>
                     <span className="w-1 h-1 bg-white/30 rounded-full" />
-                    <span className="text-[#D4941E]">{discipline.formula}</span>
+                    <span className="text-[#D4941E]">{discipline.formulaNota.n1}</span>
                   </>
                 )}
               </div>
@@ -125,12 +126,12 @@ function DisciplinePage() {
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 min-w-[240px]">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[10px] font-black uppercase tracking-wider text-white/60">Seu Progresso</span>
-                <span className="text-lg font-black">{discipline.progress}%</span>
+                <span className="text-lg font-black">{discipline.progresso}%</span>
               </div>
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-[#27AE60] transition-all duration-1000"
-                  style={{ width: `${discipline.progress}%` }}
+                  style={{ width: `${discipline.progresso}%` }}
                 />
               </div>
             </div>
@@ -148,13 +149,13 @@ function DisciplinePage() {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40">Próxima Avaliação</p>
-                <h4 className="font-bold text-lg">{nextExam.type} • {format(parseISO(nextExam.date), "dd 'de' MMMM", { locale: ptBR })}</h4>
+                <h4 className="font-bold text-lg">{(nextExam as any).tipo} • {format(parseISO((nextExam as any).dataInicio), "dd 'de' MMMM", { locale: ptBR })}</h4>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-[10px] font-black uppercase text-[#0A3D52]/40">Horário</p>
-                <p className="font-bold">{nextExam.time}</p>
+                <p className="font-bold">{(nextExam as any).horario || 'Ver guia'}</p>
               </div>
               <button className="bg-[#0A3D52] text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-[#0A3D52]/90 transition-all shadow-md">
                 Estudar Agora
@@ -193,7 +194,7 @@ function DisciplinePage() {
                     <Info className="w-5 h-5 text-[#D4941E]" /> Guia da Disciplina
                   </h3>
                   <p className="text-[#0A3D52]/70 leading-relaxed font-medium">
-                    {discipline.guide || "Informações sobre a ementa e objetivos da disciplina estarão disponíveis em breve."}
+                    {discipline.guia?.objetivoGeral || "Informações sobre a ementa e objetivos da disciplina estarão disponíveis em breve."}
                   </p>
                   <div className="mt-8 p-6 bg-[#F5F7FA] rounded-2xl border border-[#0A3D52]/5">
                     <h4 className="font-bold text-sm uppercase mb-3">Objetivos de Aprendizagem</h4>
@@ -217,7 +218,7 @@ function DisciplinePage() {
                   </div>
                   <AcademicChecklist 
                     disciplineId={discipline.id}
-                    lessons={discipline.lessons}
+                    lessons={discipline.aulas.map(a => ({ id: a.id, title: a.titulo, items: a.atividades.map(at => ({ id: at.descricao, label: at.descricao, type: (at.tipo as string) === 'podcast' ? 'podcast' : at.tipo === 'video' ? 'video' : 'reading', completed: false })) }))}
                     onProgressUpdate={(p) => console.log('Progress:', p)}
                   />
                 </div>
@@ -226,8 +227,8 @@ function DisciplinePage() {
               {activeTab === 'podcasts' && (
                 <div className="space-y-4">
                   <h3 className="text-xl font-black uppercase tracking-tight mb-6">Podcasts & Áudios</h3>
-                  {discipline.podcasts.length > 0 ? (
-                    discipline.podcasts.map(podcast => (
+                  {false ? (
+                    [].map((podcast: any) => (
                       <div key={podcast.id} className="flex items-center justify-between p-4 bg-[#F5F7FA] rounded-2xl border border-[#0A3D52]/5 group hover:border-[#D4941E]/30 transition-all">
                         <div className="flex items-center gap-4">
                           <button className="w-10 h-10 rounded-full bg-[#0A3D52] text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
@@ -249,8 +250,8 @@ function DisciplinePage() {
 
               {activeTab === 'resumos' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {discipline.summaries.length > 0 ? (
-                    discipline.summaries.map(summary => (
+                  {false ? (
+                    [].map((summary: any) => (
                       <div key={summary.id} className="p-4 rounded-2xl border border-[#0A3D52]/10 hover:shadow-md transition-all flex items-start gap-4">
                         <div className="w-10 h-10 rounded-xl bg-[#E74C3C]/10 flex items-center justify-center shrink-0">
                           <FileText className="w-5 h-5 text-[#E74C3C]" />
@@ -276,14 +277,14 @@ function DisciplinePage() {
                 <div className="space-y-4">
                   <h3 className="text-xl font-black uppercase tracking-tight mb-6">Banco de Provas</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {discipline.oldExams.length > 0 ? (
-                      discipline.oldExams.map(exam => (
+                    {discipline.avaliacoes.filter(a => a.tipo.startsWith('AP')).length > 0 ? (
+                      discipline.avaliacoes.filter(a => a.tipo.startsWith('AP')).map(exam => (
                         <div key={exam.id} className="p-4 bg-white border border-[#0A3D52]/10 rounded-2xl flex items-center justify-between group hover:border-[#D4941E]/30 transition-all shadow-sm">
                           <div className="flex items-center gap-3">
                             <History className="w-5 h-5 text-[#0A3D52]/30" />
                             <div>
-                              <h4 className="font-bold text-sm">{exam.type}</h4>
-                              <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">{exam.year}</p>
+                              <h4 className="font-bold text-sm">{exam.tipo}</h4>
+                              <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">{format(parseISO(exam.dataPresencial || ''), 'yyyy')}</p>
                             </div>
                           </div>
                           <button className="text-[#D4941E] hover:underline text-[10px] font-black uppercase tracking-widest">Baixar PDF</button>
@@ -368,7 +369,7 @@ function DisciplinePage() {
               </h4>
               <div className="space-y-3">
                 <div className="bg-white p-3 rounded-xl border border-[#0A3D52]/5 text-center">
-                  <code className="text-[#0A3D52] font-black text-sm">{discipline.formula || "N=(AD1+AD2+AP1+AP2)/2"}</code>
+                  <code className="text-[#0A3D52] font-black text-sm">{discipline.formulaNota?.n1 || "N=(AD1+AD2+AP1+AP2)/2"}</code>
                 </div>
                 <p className="text-[10px] text-[#0A3D52]/60 font-medium">
                   Média mínima para aprovação sem AP3: <strong>6.0</strong><br/>

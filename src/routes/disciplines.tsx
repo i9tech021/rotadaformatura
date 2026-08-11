@@ -14,7 +14,15 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
-import { DISCIPLINES } from "@/data/disciplines";
+import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from "@/data/disciplines";
+
+const DISCIPLINES = [
+  metodosDeterministicos,
+  historiaPensamentoAdm,
+  contabilidadeGeral,
+  { id: "fundamentos-financas", name: "Fundamentos de Finanças", icone: "💰", cor: "#D97706", ch: "45h", period: "5º período", progress: 0 },
+  { id: "tga-i", name: "Teoria Geral da Administração I", icone: "🏢", cor: "#4F46E5", ch: "45h", period: "5º período", progress: 0 },
+];
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/disciplines")({
@@ -31,10 +39,11 @@ function DisciplinesLibrary() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState("Todos");
 
-  const periods = ["Todos", ...Array.from(new Set(DISCIPLINES.map(d => d.period)))];
+  const periods = ["Todos", "2º período", "3º período", "5º período"];
 
-  const filteredDisciplines = DISCIPLINES.filter(d => {
-    const matchesSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredDisciplines = DISCIPLINES.filter((d: any) => {
+    const name = d.nome || d.name || "";
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPeriod = selectedPeriod === "Todos" || d.period === selectedPeriod;
     return matchesSearch && matchesPeriod;
   });
@@ -134,23 +143,23 @@ function DisciplinesLibrary() {
               </div>
               
               <div className="relative z-10">
-                <div className="text-3xl mb-4 transform group-hover:scale-110 transition-transform origin-left">{discipline.icon}</div>
+                <div className="text-3xl mb-4 transform group-hover:scale-110 transition-transform origin-left">{(discipline as any).icone || (discipline as any).icon}</div>
                 <h3 className="font-bold text-lg mb-1 leading-tight text-[#0A3D52] group-hover:text-[#D4941E] transition-colors">
-                  {discipline.name}
+                  {(discipline as any).nome || (discipline as any).name}
                 </h3>
                 <p className="text-[10px] font-black text-[#0A3D52]/40 uppercase tracking-[0.1em] mb-4">
-                  {discipline.ch} • {discipline.period}
+                  {(discipline as any).ch || "45h"} • {(discipline as any).period || "2º período"}
                 </p>
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-[9px] font-black uppercase text-[#0A3D52]/60">
                     <span>Conclusão</span>
-                    <span>{discipline.progress}%</span>
+                    <span>{(discipline as any).progresso ?? (discipline as any).progress}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-[#F5F7FA] rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-[#27AE60] transition-all duration-700"
-                      style={{ width: `${discipline.progress}%` }}
+                      style={{ width: `${(discipline as any).progresso ?? (discipline as any).progress}%` }}
                     />
                   </div>
                 </div>

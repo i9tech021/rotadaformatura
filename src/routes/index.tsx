@@ -35,93 +35,24 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-// Mock Data structure based on CEDERJ details
-const INITIAL_DATA = {
-  profile: {
-    name: "Vinícius Mendonça Lobo",
-    course: "Administração",
-    period: "5º período",
-    university: "UFRRJ/CEDERJ",
-  },
-  disciplines: [
-    {
-      id: "metodos-1",
-      name: "Métodos Determinísticos I",
-      ch: "45h",
-      period: "2º período",
-      icon: "📐",
-      progress: 45,
-      nextExam: { type: "AP1", date: "2026-09-05T09:30:00", daysRemaining: 5 },
-      status: "urgent", // < 7 days
-      formula: "N=(2*AD+8*AP)/10",
-    },
-    {
-      id: "hpa-2",
-      name: "História do Pensamento Adm. II",
-      ch: "60h",
-      period: "2º período",
-      icon: "🏛️",
-      progress: 25,
-      nextExam: { type: "AP1", date: "2026-09-06T13:30:00", daysRemaining: 6 },
-      status: "urgent",
-      formula: "AD=20%, AP=80%",
-    },
-    {
-      id: "contab-1",
-      name: "Contabilidade Geral I",
-      ch: "45h",
-      period: "3º período",
-      icon: "📊",
-      progress: 15,
-      nextExam: { type: "AP1", date: "2026-09-13T09:30:00", daysRemaining: 13 },
-      status: "warning", // 7-14 days
-      formula: "ADs teóricas, APs práticas",
-    },
-    {
-      id: "financas",
-      name: "Fundamentos de Finanças",
-      ch: "45h",
-      period: "5º período",
-      icon: "💰",
-      progress: 5,
-      nextExam: { type: "AP1", date: "2026-09-06T09:30:00", daysRemaining: 6 },
-      status: "urgent",
-    },
-    {
-      id: "sociedade",
-      name: "Sociedade e Organizações",
-      ch: "45h",
-      period: "5º período",
-      icon: "🏢",
-      progress: 0,
-      nextExam: { type: "AP1", date: "2026-09-12T09:30:00", daysRemaining: 12 },
-      status: "warning",
-    },
-    {
-      id: "gestao-pessoas",
-      name: "Gestão de Pessoas I",
-      ch: "45h",
-      period: "5º período",
-      icon: "👥",
-      progress: 8,
-      nextExam: { type: "AP1", date: "2026-09-05T13:30:00", daysRemaining: 5 },
-      status: "urgent",
-    },
-    {
-      id: "economia-br",
-      name: "Economia Brasileira Contemp.",
-      ch: "45h",
-      period: "6º período",
-      icon: "📉",
-      progress: 0,
-      nextExam: { type: "AP1", date: "2026-09-12T13:30:00", daysRemaining: 12 },
-      status: "warning",
-    },
-  ],
-};
+import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from '../data/disciplines';
+import { getProximosEventos, getEventosUrgentes } from '../data/events';
+import { getTarefasPendentes } from '../data/studyPlan';
 
 function AcademicDashboard() {
-  const [data, setData] = useState(INITIAL_DATA);
+  const [data] = useState({
+    profile: {
+      name: "Estudante CEDERJ",
+      course: "Administração",
+      period: "2026-2",
+      university: "UFRRJ/CEDERJ",
+    },
+    disciplines: [
+      { ...metodosDeterministicos, ch: "45h", period: "2º período", status: "urgent", nextExam: { type: "AP1", daysRemaining: 5 } },
+      { ...historiaPensamentoAdm, ch: "60h", period: "2º período", status: "urgent", nextExam: { type: "AP1", daysRemaining: 6 } },
+      { ...contabilidadeGeral, ch: "45h", period: "3º período", status: "warning", nextExam: { type: "AP1", daysRemaining: 13 } },
+    ],
+  });
   const [greeting, setGreeting] = useState("");
   const [showChat, setShowChat] = useState(false);
 
@@ -317,13 +248,13 @@ function AcademicDashboard() {
               >
                 <div>
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-2xl">{item.icon}</span>
+                    <span className="text-2xl">{item.icone}</span>
                     <div className="p-1 hover:bg-[#0A3D52]/5 rounded-md text-[#0A3D52]/30">
                       <MoreVertical className="w-5 h-5" />
                     </div>
                   </div>
                   <h4 className="font-bold text-lg leading-tight mb-1 group-hover:text-[#D4941E] transition-colors">
-                    {item.name}
+                    {item.nome}
                   </h4>
                   <p className="text-[11px] font-bold text-[#0A3D52]/50 uppercase tracking-wide mb-4">
                     {item.ch} • {item.period}
@@ -332,12 +263,12 @@ function AcademicDashboard() {
                   <div className="mb-4">
                     <div className="flex justify-between text-[11px] font-black mb-1.5 uppercase">
                       <span>Progresso</span>
-                      <span>{item.progress}%</span>
+                      <span>{item.progresso}%</span>
                     </div>
                     <div className="w-full h-2 bg-white rounded-full overflow-hidden border border-[#0A3D52]/5">
                       <div 
                         className={cn("h-full transition-all duration-700", getStatusColor(item.status))} 
-                        style={{ width: `${item.progress}%` }} 
+                        style={{ width: `${item.progresso}%` }} 
                       />
                     </div>
                   </div>

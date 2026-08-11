@@ -15,7 +15,8 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect, useRef } from "react";
 import { MOCK_CHAT_ROOMS, type ChatMessage } from "@/data/chat";
-import { DISCIPLINES } from "@/data/disciplines";
+import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from "@/data/disciplines";
+const disciplines = [metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral];
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -34,7 +35,7 @@ function CommunityChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const selectedRoom = MOCK_CHAT_ROOMS.find(r => r.id === selectedRoomId);
-  const disciplines = DISCIPLINES;
+  const availableDisciplines = disciplines;
 
   useEffect(() => {
     if (selectedRoom) {
@@ -114,7 +115,7 @@ function CommunityChat() {
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40">Suas Disciplinas</h3>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {disciplines.map(d => (
+            {availableDisciplines.map(d => (
               <button
                 key={d.id}
                 onClick={() => setSelectedRoomId(d.id)}
@@ -126,14 +127,14 @@ function CommunityChat() {
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-xl group-hover:scale-110 transition-transform">{d.icon}</span>
+                  <span className="text-xl group-hover:scale-110 transition-transform">{d.icone}</span>
                   <div>
-                    <h4 className="font-bold text-xs truncate max-w-[180px]">{d.name}</h4>
+                    <h4 className="font-bold text-xs truncate max-w-[180px]">{(d as any).nome || (d as any).name}</h4>
                     <p className={cn(
                       "text-[8px] font-black uppercase tracking-tighter mt-0.5",
                       selectedRoomId === d.id ? "text-white/60" : "text-[#0A3D52]/40"
                     )}>
-                      {d.period}
+                      {/* d.period não existe em Disciplina, removendo */}
                     </p>
                   </div>
                 </div>
@@ -151,8 +152,8 @@ function CommunityChat() {
               onChange={(e) => setSelectedRoomId(e.target.value)}
               className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-2 text-sm font-bold text-[#0A3D52]"
             >
-              {disciplines.map(d => (
-                <option key={d.id} value={d.id}>{d.icon} {d.name}</option>
+              {availableDisciplines.map(d => (
+                <option key={d.id} value={d.id}>{d.icone} {d.nome}</option>
               ))}
             </select>
           </div>

@@ -17,8 +17,9 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
-import { CALENDAR_EVENTS } from "@/data/calendar";
-import { DISCIPLINES } from "@/data/disciplines";
+import { eventos as CALENDAR_EVENTS } from "@/data/events";
+import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from "@/data/disciplines";
+const DISCIPLINES = [metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral];
 import { 
   format, 
   startOfMonth, 
@@ -59,7 +60,7 @@ function AcademicCalendarPage() {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   const getEventsForDay = (day: Date) => {
-    return CALENDAR_EVENTS.filter(event => isSameDay(parseISO(event.date), day));
+    return CALENDAR_EVENTS.filter(event => isSameDay(parseISO(event.dataInicio), day));
   };
 
   return (
@@ -169,17 +170,17 @@ function AcademicCalendarPage() {
                         </span>
                       </div>
                       <div className="space-y-1">
-                        {dayEvents.map(event => (
+                        {dayEvents.map((event: any) => (
                           <div 
                             key={event.id}
                             className={cn(
                               "text-[8px] font-black p-1.5 rounded-lg border uppercase tracking-tighter truncate leading-none",
-                              event.type.startsWith('AP') ? "bg-[#E74C3C]/10 border-[#E74C3C]/20 text-[#E74C3C]" : 
-                              event.type.startsWith('AD') ? "bg-[#D4941E]/10 border-[#D4941E]/20 text-[#D4941E]" : 
+                              event.tipo.startsWith('AP') ? "bg-[#E74C3C]/10 border-[#E74C3C]/20 text-[#E74C3C]" : 
+                              event.tipo.startsWith('AD') ? "bg-[#D4941E]/10 border-[#D4941E]/20 text-[#D4941E]" : 
                               "bg-[#0A3D52]/10 border-[#0A3D52]/20 text-[#0A3D52]"
                             )}
                           >
-                            {event.type}: {DISCIPLINES.find(d => d.id === event.disciplineId)?.name.split(' ')[0]}
+                            {event.tipo}: {DISCIPLINES.find(d => d.id === event.disciplinaId)?.nome.split(' ')[0] || event.disciplinaCodigo}
                           </div>
                         ))}
                       </div>
@@ -196,15 +197,15 @@ function AcademicCalendarPage() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 text-white/50">Próximos Eventos</h3>
               <div className="space-y-6">
-                {CALENDAR_EVENTS.map(event => (
+                {CALENDAR_EVENTS.slice(0, 5).map((event: any) => (
                   <div key={event.id} className="relative pl-6 border-l-2 border-white/10 group">
                     <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-[#D4941E] group-hover:scale-150 transition-transform" />
                     <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">
-                      {format(parseISO(event.date), "dd 'de' MMMM", { locale: ptBR })}
+                      {format(parseISO(event.dataInicio), "dd 'de' MMMM", { locale: ptBR })}
                     </p>
-                    <h4 className="font-bold text-sm mb-2">{event.title}</h4>
+                    <h4 className="font-bold text-sm mb-2">{event.titulo}</h4>
                     <div className="flex items-center gap-3 text-[9px] text-white/60 font-bold uppercase">
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {event.time}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {event.horario || 'Ver guia'}</span>
                       <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Polo Presencial</span>
                     </div>
                   </div>
