@@ -9,12 +9,14 @@ import {
   LayoutDashboard, 
   MessageCircle, 
   Settings, 
-  Target,
-  Trophy,
-  User,
-  ArrowRight,
-  FileText,
-  Menu
+  Target, 
+  Trophy, 
+  User, 
+  ArrowRight, 
+  FileText, 
+  Menu,
+  Headphones,
+  Play
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect, useMemo } from "react";
