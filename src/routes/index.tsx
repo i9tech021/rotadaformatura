@@ -20,6 +20,16 @@ import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
 
 export const Route = createFileRoute("/")({
   component: AcademicDashboard,
+  head: () => ({
+    title: "Rota da Formatura | Dashboard Acadêmico",
+    meta: [
+      { name: "description", content: "Organize seus estudos do CEDERJ com a Rota da Formatura. Cronogramas, checklists e progresso em tempo real." },
+      { property: "og:title", content: "Rota da Formatura | Seu Planner Universitário" },
+      { property: "og:description", content: "Dashboard acadêmico personalizado para alunos do CEDERJ com foco em organização e aprovação." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" }
+    ],
+  }),
 });
 
 // Mock Data structure based on CEDERJ details
