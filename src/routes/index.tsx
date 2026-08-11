@@ -14,12 +14,15 @@ import {
   User,
   ArrowRight,
   FileText,
-  Menu
+  Menu,
+  MoreVertical
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
+import { formatDistanceToNow, differenceInDays, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/")({
   component: AcademicDashboard,
@@ -155,7 +158,9 @@ function AcademicDashboard() {
           </div>
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <CalendarIcon className="w-6 h-6 text-[#D4941E] mb-2" />
-            <span className="text-2xl font-black text-[#D4941E]">5 dias</span>
+            <span className="text-2xl font-black text-[#D4941E]">
+              {missaoPrioritaria ? differenceInDays(parseISO(missaoPrioritaria.dataInicio), new Date()) : 0} dias
+            </span>
             <span className="text-xs uppercase font-bold text-[#D4941E]/60 tracking-wider">Próxima Avaliação</span>
           </div>
         </div>
@@ -171,16 +176,16 @@ function AcademicDashboard() {
             </div>
             <div className="relative z-10">
               <span className="inline-block bg-[#D4941E] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter mb-2">
-                Urgente • AP1
+                {missaoPrioritaria?.tipo || 'Próximo Evento'}
               </span>
-              <h4 className="text-xl md:text-2xl font-bold mb-2">Métodos Determinísticos I</h4>
+              <h4 className="text-xl md:text-2xl font-bold mb-2">{missaoPrioritaria?.disciplinaNome || 'Nenhum evento próximo'}</h4>
               <p className="text-[#0A3D52]/70 text-sm mb-4">
-                Sua avaliação presencial está chegando. O conteúdo foca nas <strong>Aulas 1 a 8</strong>.
+                {missaoPrioritaria?.conteudo || 'Fique atento ao seu cronograma acadêmico.'}
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2 bg-[#F5F7FA] px-3 py-1.5 rounded-lg border border-[#0A3D52]/10">
                   <Clock className="w-4 h-4 text-[#0A3D52]/60" />
-                  <span className="text-sm font-bold">Contagem regressiva: 04d 18h 22m</span>
+                  <span className="text-sm font-bold">Inicia: {countdown || '...'}</span>
                 </div>
                 <Link to="/community/chat" className="bg-[#D4941E] hover:bg-[#B87D17] text-[#0A3D52] px-6 py-2 rounded-lg font-black text-sm uppercase transition-colors shadow-md text-center">
                   Entrar no Chat da Turma
