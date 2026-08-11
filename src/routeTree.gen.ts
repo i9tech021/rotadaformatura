@@ -14,6 +14,8 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as DisciplinesRouteImport } from './routes/disciplines'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as CommunityIndexRouteImport } from './routes/community/index'
+import { Route as CommunityChatRouteImport } from './routes/community/chat'
 import { Route as DisciplinesIdRouteImport } from './routes/disciplines.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +43,16 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityIndexRoute = CommunityIndexRouteImport.update({
+  id: '/community/',
+  path: '/community/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityChatRoute = CommunityChatRouteImport.update({
+  id: '/community/chat',
+  path: '/community/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DisciplinesIdRoute = DisciplinesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -53,7 +65,9 @@ export interface FileRoutesByFullPath {
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/settings': typeof SettingsRoute
+  '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
+  '/community/': typeof CommunityIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -61,7 +75,9 @@ export interface FileRoutesByTo {
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/settings': typeof SettingsRoute
+  '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
+  '/community': typeof CommunityIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -70,7 +86,9 @@ export interface FileRoutesById {
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/settings': typeof SettingsRoute
+  '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
+  '/community/': typeof CommunityIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -80,7 +98,9 @@ export interface FileRouteTypes {
     | '/disciplines'
     | '/materials'
     | '/settings'
+    | '/community/chat'
     | '/disciplines/$id'
+    | '/community/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -88,7 +108,9 @@ export interface FileRouteTypes {
     | '/disciplines'
     | '/materials'
     | '/settings'
+    | '/community/chat'
     | '/disciplines/$id'
+    | '/community'
   id:
     | '__root__'
     | '/'
@@ -96,7 +118,9 @@ export interface FileRouteTypes {
     | '/disciplines'
     | '/materials'
     | '/settings'
+    | '/community/chat'
     | '/disciplines/$id'
+    | '/community/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -105,6 +129,8 @@ export interface RootRouteChildren {
   DisciplinesRoute: typeof DisciplinesRouteWithChildren
   MaterialsRoute: typeof MaterialsRoute
   SettingsRoute: typeof SettingsRoute
+  CommunityChatRoute: typeof CommunityChatRoute
+  CommunityIndexRoute: typeof CommunityIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -144,6 +170,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community/': {
+      id: '/community/'
+      path: '/community'
+      fullPath: '/community/'
+      preLoaderRoute: typeof CommunityIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/chat': {
+      id: '/community/chat'
+      path: '/community/chat'
+      fullPath: '/community/chat'
+      preLoaderRoute: typeof CommunityChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/disciplines/$id': {
       id: '/disciplines/$id'
       path: '/$id'
@@ -172,7 +212,19 @@ const rootRouteChildren: RootRouteChildren = {
   DisciplinesRoute: DisciplinesRouteWithChildren,
   MaterialsRoute: MaterialsRoute,
   SettingsRoute: SettingsRoute,
+  CommunityChatRoute: CommunityChatRoute,
+  CommunityIndexRoute: CommunityIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
