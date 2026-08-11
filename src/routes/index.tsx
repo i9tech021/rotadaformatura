@@ -12,7 +12,8 @@ import {
   Target,
   Trophy,
   User,
-  ArrowRight
+  ArrowRight,
+  FileText
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -212,9 +213,9 @@ function AcademicDashboard() {
                   <Clock className="w-4 h-4 text-[#0A3D52]/60" />
                   <span className="text-sm font-bold">Contagem regressiva: 04d 18h 22m</span>
                 </div>
-                <button className="bg-[#D4941E] hover:bg-[#B87D17] text-[#0A3D52] px-6 py-2 rounded-lg font-black text-sm uppercase transition-colors shadow-md">
+                <Link to="/disciplines/$id" params={{ id: "metodos-1" }} className="bg-[#D4941E] hover:bg-[#B87D17] text-[#0A3D52] px-6 py-2 rounded-lg font-black text-sm uppercase transition-colors shadow-md text-center">
                   Acessar Plano de Estudos
-                </button>
+                </Link>
               </div>
             </div>
           </div>
@@ -263,13 +264,15 @@ function AcademicDashboard() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Disciplinas do Semestre</h3>
-            <button className="text-[10px] font-black uppercase text-[#D4941E] border-b-2 border-[#D4941E]">Ver Grade Completa</button>
+            <Link to="/disciplines" className="text-[10px] font-black uppercase text-[#D4941E] border-b-2 border-[#D4941E]">Ver Grade Completa</Link>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data.disciplines.map((item) => (
-              <div 
+              <Link 
                 key={item.id} 
+                to="/disciplines/$id"
+                params={{ id: item.id }}
                 className={cn(
                   "bg-[#F5F7FA] rounded-xl border border-[#0A3D52]/10 p-5 hover:shadow-md transition-shadow group flex flex-col justify-between",
                   item.status === "urgent" && "border-l-4 border-l-[#E74C3C]",
@@ -279,9 +282,9 @@ function AcademicDashboard() {
                 <div>
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-2xl">{item.icon}</span>
-                    <button className="p-1 hover:bg-[#0A3D52]/5 rounded-md text-[#0A3D52]/30">
+                    <div className="p-1 hover:bg-[#0A3D52]/5 rounded-md text-[#0A3D52]/30">
                       <MoreVertical className="w-5 h-5" />
-                    </button>
+                    </div>
                   </div>
                   <h4 className="font-bold text-lg leading-tight mb-1 group-hover:text-[#D4941E] transition-colors">
                     {item.name}
@@ -311,11 +314,11 @@ function AcademicDashboard() {
                       Próxima: {item.nextExam.type} em {item.nextExam.daysRemaining} dias
                     </span>
                   </div>
-                  <button className="text-[#0A3D52] hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
+                  <div className="text-[#0A3D52] hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
                     Entrar na Rota <ArrowRight className="w-3 h-3" />
-                  </button>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
@@ -378,22 +381,42 @@ function AcademicDashboard() {
 
       {/* Bottom Mobile Nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40 pb-safe">
-        <button className="flex flex-col items-center text-[#D4941E]">
+        <Link 
+          to="/" 
+          activeProps={{ className: "text-[#D4941E]" }} 
+          inactiveProps={{ className: "text-[#0A3D52]/40" }}
+          className="flex flex-col items-center"
+        >
           <LayoutDashboard className="w-5 h-5" />
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
-        </button>
-        <button className="flex flex-col items-center text-[#0A3D52]/40">
+        </Link>
+        <Link 
+          to="/calendar" 
+          activeProps={{ className: "text-[#D4941E]" }} 
+          inactiveProps={{ className: "text-[#0A3D52]/40" }}
+          className="flex flex-col items-center"
+        >
           <CalendarIcon className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Calendário</span>
-        </button>
-        <button className="flex flex-col items-center text-[#0A3D52]/40">
-          <CheckCircle2 className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Progresso</span>
-        </button>
-        <button className="flex flex-col items-center text-[#0A3D52]/40">
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Agenda</span>
+        </Link>
+        <Link 
+          to="/materials" 
+          activeProps={{ className: "text-[#D4941E]" }} 
+          inactiveProps={{ className: "text-[#0A3D52]/40" }}
+          className="flex flex-col items-center"
+        >
+          <FileText className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Materiais</span>
+        </Link>
+        <Link 
+          to="/settings" 
+          activeProps={{ className: "text-[#D4941E]" }} 
+          inactiveProps={{ className: "text-[#0A3D52]/40" }}
+          className="flex flex-col items-center"
+        >
           <Settings className="w-5 h-5" />
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Perfil</span>
-        </button>
+        </Link>
       </div>
     </div>
   );
