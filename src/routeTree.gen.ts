@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DisciplinesRouteImport } from './routes/disciplines'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as DisciplinesIdRouteImport } from './routes/disciplines.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const DisciplinesRoute = DisciplinesRouteImport.update({
   path: '/disciplines',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DisciplinesIdRoute = DisciplinesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -32,30 +38,34 @@ const DisciplinesIdRoute = DisciplinesIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
+  '/settings': typeof SettingsRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
+  '/settings': typeof SettingsRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
+  '/settings': typeof SettingsRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/disciplines' | '/disciplines/$id'
+  fullPaths: '/' | '/disciplines' | '/settings' | '/disciplines/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/disciplines' | '/disciplines/$id'
-  id: '__root__' | '/' | '/disciplines' | '/disciplines/$id'
+  to: '/' | '/disciplines' | '/settings' | '/disciplines/$id'
+  id: '__root__' | '/' | '/disciplines' | '/settings' | '/disciplines/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DisciplinesRoute: typeof DisciplinesRouteWithChildren
+  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -72,6 +82,13 @@ declare module '@tanstack/react-router' {
       path: '/disciplines'
       fullPath: '/disciplines'
       preLoaderRoute: typeof DisciplinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/disciplines/$id': {
@@ -99,6 +116,7 @@ const DisciplinesRouteWithChildren = DisciplinesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DisciplinesRoute: DisciplinesRouteWithChildren,
+  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

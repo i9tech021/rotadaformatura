@@ -378,22 +378,33 @@ function AcademicDashboard() {
 
       {/* Bottom Mobile Nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40 pb-safe">
-        <button className="flex flex-col items-center text-[#D4941E]">
+        <Link 
+          to="/" 
+          activeProps={{ className: "text-[#D4941E]" }} 
+          inactiveProps={{ className: "text-[#0A3D52]/40" }}
+          className="flex flex-col items-center"
+        >
           <LayoutDashboard className="w-5 h-5" />
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
-        </button>
-        <button className="flex flex-col items-center text-[#0A3D52]/40">
-          <CalendarIcon className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Calendário</span>
-        </button>
-        <button className="flex flex-col items-center text-[#0A3D52]/40">
-          <CheckCircle2 className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Progresso</span>
-        </button>
-        <button className="flex flex-col items-center text-[#0A3D52]/40">
+        </Link>
+        <Link 
+          to="/disciplines" 
+          activeProps={{ className: "text-[#D4941E]" }} 
+          inactiveProps={{ className: "text-[#0A3D52]/40" }}
+          className="flex flex-col items-center"
+        >
+          <BookOpen className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Matérias</span>
+        </Link>
+        <Link 
+          to="/settings" 
+          activeProps={{ className: "text-[#D4941E]" }} 
+          inactiveProps={{ className: "text-[#0A3D52]/40" }}
+          className="flex flex-col items-center"
+        >
           <Settings className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Perfil</span>
-        </button>
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Ajustes</span>
+        </Link>
       </div>
     </div>
   );
