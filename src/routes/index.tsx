@@ -35,7 +35,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from '../data/disciplines';
+import { disciplinas } from '../data/disciplines';
 import { getProximosEventos, getEventosUrgentes } from '../data/events';
 import { getTarefasPendentes } from '../data/studyPlan';
 
@@ -47,11 +47,13 @@ function AcademicDashboard() {
       period: "2026-2",
       university: "UFRRJ/CEDERJ",
     },
-    disciplines: [
-      { ...metodosDeterministicos, ch: "45h", period: "2º período", status: "urgent", nextExam: { type: "AP1", daysRemaining: 5 } },
-      { ...historiaPensamentoAdm, ch: "60h", period: "2º período", status: "urgent", nextExam: { type: "AP1", daysRemaining: 6 } },
-      { ...contabilidadeGeral, ch: "45h", period: "3º período", status: "warning", nextExam: { type: "AP1", daysRemaining: 13 } },
-    ],
+    disciplines: disciplinas.map(d => ({
+      ...d,
+      ch: d.id.includes('hpa') ? "60h" : "45h",
+      period: d.aulas.length > 0 ? "2º período" : "Aguardando",
+      status: d.aulas.length > 0 ? (d.id.includes('contab') ? "warning" : "urgent") : "normal",
+      nextExam: d.avaliacoes.length > 0 ? { type: d.avaliacoes.find(a => a.tipo === 'AP1')?.tipo || "AP1", daysRemaining: 5 } : { type: "N/A", daysRemaining: 0 }
+    })),
   });
   const [greeting, setGreeting] = useState("");
   const [showChat, setShowChat] = useState(false);
