@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { 
   BookOpen, 
   Calendar as CalendarIcon, 
@@ -11,10 +11,12 @@ import {
   Settings, 
   Target,
   Trophy,
-  User
+  User,
+  ArrowRight
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
 
 export const Route = createFileRoute("/")({
   component: AcademicDashboard,
