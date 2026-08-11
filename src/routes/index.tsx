@@ -248,7 +248,7 @@ function AcademicDashboard() {
               >
                 <div>
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-2xl">{item.icon}</span>
+                    <span className="text-2xl">{item.icone}</span>
                     <div className="p-1 hover:bg-[#0A3D52]/5 rounded-md text-[#0A3D52]/30">
                       <MoreVertical className="w-5 h-5" />
                     </div>
@@ -263,12 +263,12 @@ function AcademicDashboard() {
                   <div className="mb-4">
                     <div className="flex justify-between text-[11px] font-black mb-1.5 uppercase">
                       <span>Progresso</span>
-                      <span>{item.progress}%</span>
+                      <span>{item.progresso}%</span>
                     </div>
                     <div className="w-full h-2 bg-white rounded-full overflow-hidden border border-[#0A3D52]/5">
                       <div 
                         className={cn("h-full transition-all duration-700", getStatusColor(item.status))} 
-                        style={{ width: `${item.progress}%` }} 
+                        style={{ width: `${item.progresso}%` }} 
                       />
                     </div>
                   </div>

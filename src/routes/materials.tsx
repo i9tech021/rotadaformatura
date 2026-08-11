@@ -21,7 +21,8 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
 import { MATERIALS, type Material } from "@/data/materials";
-import { DISCIPLINES } from "@/data/disciplines";
+import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from "@/data/disciplines";
+const disciplines = [metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral];
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -39,8 +40,8 @@ function MaterialsManager() {
 
   const filteredMaterials = useMemo(() => {
     return MATERIALS.filter(m => {
-      const discipline = DISCIPLINES.find(d => d.id === m.disciplineId);
-      const disciplineName = discipline?.name || "";
+      const discipline = disciplines.find(d => d.id === m.disciplineId);
+      const disciplineName = discipline?.nome || "";
       const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            disciplineName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDiscipline = filterDiscipline === "Todas" || m.disciplineId === filterDiscipline;
@@ -123,8 +124,8 @@ function MaterialsManager() {
               onChange={(e) => setFilterDiscipline(e.target.value)}
             >
               <option value="Todas">Todas as Disciplinas</option>
-              {DISCIPLINES.map(d => (
-                <option key={d.id} value={d.id}>{d.name}</option>
+              {disciplines.map(d => (
+                <option key={d.id} value={d.id}>{d.nome}</option>
               ))}
             </select>
           </div>
@@ -150,7 +151,7 @@ function MaterialsManager() {
           </div>
           
           {filteredMaterials.map(material => {
-            const discipline = DISCIPLINES.find(d => d.id === material.disciplineId);
+            const discipline = disciplines.find(d => d.id === material.disciplineId);
             return (
               <div key={material.id} className="bg-white rounded-2xl p-4 border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all">
                 <div className="flex items-center gap-4">
@@ -165,7 +166,7 @@ function MaterialsManager() {
                   <div>
                     <h4 className="font-bold text-sm leading-tight group-hover:text-[#D4941E] transition-colors">{material.title}</h4>
                     <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter mt-0.5">
-                      {discipline?.name || "Geral"}
+                      {discipline?.nome || "Geral"}
                     </p>
                   </div>
                 </div>
