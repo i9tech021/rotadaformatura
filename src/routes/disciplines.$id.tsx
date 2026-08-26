@@ -1,32 +1,32 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { 
-  ArrowLeft, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  FileText, 
-  Headphones, 
-  Info, 
-  Layout, 
-  Play, 
-  Star, 
-  Trophy,
-  Download,
+import {
+  ArrowLeft,
+  Calendar as CalendarIcon,
   CheckCircle2,
   ChevronRight,
-  BookOpen,
+  Clock,
+  Download,
+  FileText,
+  Headphones,
   History,
-  Menu,
-  GraduationCap,
+  Info,
+  Layout,
   LayoutDashboard,
+  Menu,
+  MessageSquare,
+  Play,
   Settings,
-  MessageSquare
+  Star,
+  Trophy,
+  ChevronDown,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { disciplinas, type Disciplina } from "@/data/disciplines";
 const disciplines = disciplinas;
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
-import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
+import { StudyAssistant } from "@/components/StudyAssistant";
+import { loadCheckpoints, saveCheckpoint } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -44,20 +44,64 @@ function DisciplinePage() {
   const { id } = useParams({ from: "/disciplines/$id" });
   const [activeTab, setActiveTab] = useState<TabType>('cronograma');
 
-  const discipline = useMemo(() => disciplines.find(d => d.id === id), [id]);
-  const events = useMemo(() => CALENDAR_EVENTS.filter((e: any) => e.disciplinaId === id), [id]);
-  
+  const discipline = useMemo(() => disciplines.find((d) => d.id === id), [id]);
+  const events = useMemo(
+    () => CALENDAR_EVENTS.filter((e: any) => e.disciplinaId === id),
+    [id],
+  );
+
   const nextExam = useMemo(() => {
     return events
       .filter((e: any) => isAfter(parseISO(e.dataInicio), new Date()))
-      .sort((a: any, b: any) => parseISO(a.dataInicio).getTime() - parseISO(b.dataInicio).getTime())[0];
+      .sort(
+        (a: any, b: any) =>
+          parseISO(a.dataInicio).getTime() - parseISO(b.dataInicio).getTime(),
+      )[0];
   }, [events]);
+
+  // ============================================================
+  // CHECKPOINTS (progresso de aula — persiste no Supabase/localStorage)
+  // ============================================================
+  const [concluidas, setConcluidas] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!discipline) return;
+    let ativo = true;
+    loadCheckpoints(discipline.id).then((m) => {
+      if (ativo) setConcluidas(m);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [discipline?.id]);
+
+  const toggleCheckpoint = (aulaId: string) => {
+    if (!discipline) return;
+    const proximo = !concluidas[aulaId];
+    setConcluidas((m) => ({ ...m, [aulaId]: proximo }));
+    saveCheckpoint(discipline.id, aulaId, proximo);
+  };
+
+  const totalAulas = discipline?.aulas.length ?? 0;
+  const feitas = Object.values(concluidas).filter(Boolean).length;
+  const progressoCheckpoints = totalAulas ? Math.round((feitas / totalAulas) * 100) : 0;
+
+  const proximosEventosChat = events
+    .slice(0, 6)
+    .map(
+      (e: any) =>
+        `${e.tipo}: ${format(parseISO(e.dataInicio), "dd/MM", { locale: ptBR })}${e.horario ? ` às ${e.horario}` : ""}`,
+    );
 
   if (!discipline) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <h1 className="text-2xl font-bold mb-4">Disciplina não encontrada</h1>
-        <Link to="/disciplines" className="text-[#D4941E] font-bold uppercase underline">Voltar para Biblioteca</Link>
+        <Link
+          to="/disciplines"
+          className="text-[#D4941E] font-bold uppercase underline"
+        >
+          Voltar para Biblioteca
+        </Link>
       </div>
     );
   }
@@ -87,13 +131,13 @@ function DisciplinePage() {
               <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
                 <div className="p-6 pt-12 flex flex-col gap-6">
                   <div className="flex items-center gap-2 mb-4">
-                    <GraduationCap className="w-8 h-8 text-[#D4941E]" />
+                    <LayoutDashboard className="w-8 h-8 text-[#D4941E]" />
                     <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
                   </div>
                   <div className="flex flex-col gap-2">
                     <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
                     <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
-                    <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
+                    <MobileNavLink to="/disciplines" icon={Layout} label="Disciplinas" />
                     <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
                     <MobileNavLink to="/community" icon={MessageSquare} label="Comunidade" />
                     <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
@@ -101,17 +145,22 @@ function DisciplinePage() {
                 </div>
               </SheetContent>
             </Sheet>
-            <Link to="/disciplines" className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.2em]">
+            <Link
+              to="/disciplines"
+              className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.2em]"
+            >
               <ArrowLeft className="w-4 h-4" /> Voltar
             </Link>
           </div>
-          
+
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="text-4xl mb-3">{discipline.icone}</div>
-              <h1 className="text-3xl md:text-4xl font-black mb-2 leading-tight">{discipline.nome}</h1>
+              <h1 className="text-3xl md:text-4xl font-black mb-2 leading-tight">
+                {discipline.nome}
+              </h1>
               <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-white/70 uppercase tracking-widest">
-                <span>{discipline.ch || '45h'}</span>
+                <span>{discipline.ch || "45h"}</span>
                 <span className="w-1 h-1 bg-white/30 rounded-full" />
                 <span>{discipline.period || "Aguardando"}</span>
                 {discipline.formulaNota && (
@@ -122,16 +171,20 @@ function DisciplinePage() {
                 )}
               </div>
             </div>
-            
+
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 min-w-[240px]">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-white/60">Seu Progresso</span>
-                <span className="text-lg font-black">{discipline.progresso}%</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-white/60">
+                  Checkpoints
+                </span>
+                <span className="text-lg font-black">
+                  {feitas}/{totalAulas}
+                </span>
               </div>
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-[#27AE60] transition-all duration-1000"
-                  style={{ width: `${discipline.progresso}%` }}
+                  style={{ width: `${progressoCheckpoints}%` }}
                 />
               </div>
             </div>
@@ -148,18 +201,22 @@ function DisciplinePage() {
                 <CalendarIcon className="w-6 h-6 text-[#D4941E]" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40">Próxima Avaliação</p>
-                <h4 className="font-bold text-lg">{(nextExam as any).tipo} • {format(parseISO((nextExam as any).dataInicio), "dd 'de' MMMM", { locale: ptBR })}</h4>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40">
+                  Próxima Avaliação
+                </p>
+                <h4 className="font-bold text-lg">
+                  {(nextExam as any).tipo} •{" "}
+                  {format(parseISO((nextExam as any).dataInicio), "dd 'de' MMMM", {
+                    locale: ptBR,
+                  })}
+                </h4>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-[10px] font-black uppercase text-[#0A3D52]/40">Horário</p>
-                <p className="font-bold">{(nextExam as any).horario || 'Ver guia'}</p>
+                <p className="font-bold">{(nextExam as any).horario || "Ver guia"}</p>
               </div>
-              <button className="bg-[#0A3D52] text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-[#0A3D52]/90 transition-all shadow-md">
-                Estudar Agora
-              </button>
             </div>
           </div>
         )}
@@ -169,15 +226,15 @@ function DisciplinePage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Tabs Navigation */}
             <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-2 shadow-sm flex overflow-x-auto no-scrollbar gap-1">
-              {tabs.map(tab => (
+              {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
                     "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shrink-0",
-                    activeTab === tab.id 
-                      ? "bg-[#0A3D52] text-white shadow-md" 
-                      : "text-[#0A3D52]/50 hover:bg-[#F5F7FA]"
+                    activeTab === tab.id
+                      ? "bg-[#0A3D52] text-white shadow-md"
+                      : "text-[#0A3D52]/50 hover:bg-[#F5F7FA]",
                   )}
                 >
                   <tab.icon className="w-3.5 h-3.5" />
@@ -194,12 +251,15 @@ function DisciplinePage() {
                     <Info className="w-5 h-5 text-[#D4941E]" /> Guia da Disciplina
                   </h3>
                   <p className="text-[#0A3D52]/70 leading-relaxed font-medium">
-                    {discipline.guia?.objetivoGeral || "Informações sobre a ementa e objetivos da disciplina estarão disponíveis em breve."}
+                    {discipline.guia?.objetivoGeral ||
+                      "Informações sobre a ementa e objetivos da disciplina estarão disponíveis em breve."}
                   </p>
                   <div className="mt-8 p-6 bg-[#F5F7FA] rounded-2xl border border-[#0A3D52]/5">
-                    <h4 className="font-bold text-sm uppercase mb-3">Objetivos de Aprendizagem</h4>
+                    <h4 className="font-bold text-sm uppercase mb-3">
+                      Objetivos de Aprendizagem
+                    </h4>
                     <ul className="space-y-3">
-                      {[1, 2, 3].map(i => (
+                      {[1, 2, 3].map((i) => (
                         <li key={i} className="flex gap-3 text-sm text-[#0A3D52]/70">
                           <CheckCircle2 className="w-4 h-4 text-[#27AE60] shrink-0" />
                           Compreender os conceitos fundamentais do módulo {i}.
@@ -213,83 +273,124 @@ function DisciplinePage() {
               {activeTab === 'cronograma' && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xl font-black uppercase tracking-tight">Roteiro Semanal</h3>
-                    <span className="text-[10px] font-black text-[#27AE60] bg-[#27AE60]/10 px-2 py-1 rounded-full uppercase">Ativo</span>
+                    <h3 className="text-xl font-black uppercase tracking-tight">
+                      Roteiro Semanal
+                    </h3>
+                    <span className="text-[10px] font-black text-[#27AE60] bg-[#27AE60]/10 px-2 py-1 rounded-full uppercase">
+                      {progressoCheckpoints}% concluído
+                    </span>
                   </div>
-                  <AcademicChecklist 
-                    disciplineId={discipline.id}
-                    lessons={discipline.aulas.map(a => ({ id: a.id, title: a.titulo, items: a.atividades.map(at => ({ id: at.descricao, label: at.descricao, type: (at.tipo as string) === 'podcast' ? 'podcast' : at.tipo === 'video' ? 'video' : 'reading', completed: false })) }))}
-                    onProgressUpdate={(p) => console.log('Progress:', p)}
-                  />
+
+                  <div className="space-y-3">
+                    {discipline.aulas.map((a) => {
+                      const feita = !!concluidas[a.id];
+                      return (
+                        <div
+                          key={a.id}
+                          className={cn(
+                            "rounded-2xl border p-4 transition-colors",
+                            feita
+                              ? "border-[#27AE60]/30 bg-[#27AE60]/5"
+                              : "border-[#0A3D52]/10 bg-white",
+                          )}
+                        >
+                          <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={feita}
+                              onChange={() => toggleCheckpoint(a.id)}
+                              className="mt-1 w-5 h-5 shrink-0 accent-[#27AE60] cursor-pointer"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span
+                                  className={cn(
+                                    "font-bold text-sm",
+                                    feita && "line-through text-[#0A3D52]/40",
+                                  )}
+                                >
+                                  Aula {a.numero} — {a.titulo}
+                                </span>
+                                <span className="text-[10px] font-bold uppercase text-[#0A3D52]/40">
+                                  Semana {a.semanaEstudo}
+                                </span>
+                              </div>
+                              {a.paginas && (
+                                <p className="text-[11px] font-bold text-[#0A3D52]/50 mt-0.5">
+                                  {a.paginas}
+                                </p>
+                              )}
+                              <ul className="mt-2 space-y-1.5">
+                                {a.atividades.map((at, idx) => (
+                                  <li
+                                    key={idx}
+                                    className="flex items-start gap-2 text-xs text-[#0A3D52]/60"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-[#D4941E] shrink-0 mt-0.5" />
+                                    <span>
+                                      {at.descricao}
+                                      {!at.obrigatoria && (
+                                        <span className="text-[#0A3D52]/30"> (opcional)</span>
+                                      )}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
               {activeTab === 'podcasts' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-black uppercase tracking-tight mb-6">Podcasts & Áudios</h3>
-                  {false ? (
-                    [].map((podcast: any) => (
-                      <div key={podcast.id} className="flex items-center justify-between p-4 bg-[#F5F7FA] rounded-2xl border border-[#0A3D52]/5 group hover:border-[#D4941E]/30 transition-all">
-                        <div className="flex items-center gap-4">
-                          <button className="w-10 h-10 rounded-full bg-[#0A3D52] text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                            <Play className="w-4 h-4 fill-current ml-0.5" />
-                          </button>
-                          <div>
-                            <h4 className="font-bold text-sm">{podcast.title}</h4>
-                            <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter">{podcast.duration}</p>
-                          </div>
-                        </div>
-                        <Download className="w-4 h-4 text-[#0A3D52]/20 hover:text-[#0A3D52] cursor-pointer" />
-                      </div>
-                    ))
-                  ) : (
-                    <EmptyState icon={Headphones} message="Nenhum podcast disponível" />
-                  )}
+                  <h3 className="text-xl font-black uppercase tracking-tight mb-6">
+                    Podcasts & Áudios
+                  </h3>
+                  <EmptyState icon={Headphones} message="Nenhum podcast disponível" />
                 </div>
               )}
 
               {activeTab === 'resumos' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {false ? (
-                    [].map((summary: any) => (
-                      <div key={summary.id} className="p-4 rounded-2xl border border-[#0A3D52]/10 hover:shadow-md transition-all flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-[#E74C3C]/10 flex items-center justify-center shrink-0">
-                          <FileText className="w-5 h-5 text-[#E74C3C]" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-bold text-sm leading-tight mb-1">{summary.title}</h4>
-                          <span className="text-[9px] font-black uppercase text-[#0A3D52]/40 tracking-widest">{summary.type}</span>
-                          <button className="w-full mt-3 bg-[#F5F7FA] text-[#0A3D52] py-2 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-[#0A3D52]/5 transition-colors">
-                            Visualizar
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-span-full">
-                      <EmptyState icon={FileText} message="Sem resumos cadastrados" />
-                    </div>
-                  )}
+                  <div className="col-span-full">
+                    <EmptyState icon={FileText} message="Sem resumos cadastrados" />
+                  </div>
                 </div>
               )}
 
               {activeTab === 'provas' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-black uppercase tracking-tight mb-6">Banco de Provas</h3>
+                  <h3 className="text-xl font-black uppercase tracking-tight mb-6">
+                    Banco de Provas
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {discipline.avaliacoes.filter(a => a.tipo.startsWith('AP')).length > 0 ? (
-                      discipline.avaliacoes.filter(a => a.tipo.startsWith('AP')).map(exam => (
-                        <div key={exam.id} className="p-4 bg-white border border-[#0A3D52]/10 rounded-2xl flex items-center justify-between group hover:border-[#D4941E]/30 transition-all shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <History className="w-5 h-5 text-[#0A3D52]/30" />
-                            <div>
-                              <h4 className="font-bold text-sm">{exam.tipo}</h4>
-                              <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">{format(parseISO(exam.dataPresencial || ''), 'yyyy')}</p>
+                    {discipline.avaliacoes.filter((a) => a.tipo.startsWith("AP"))
+                      .length > 0 ? (
+                      discipline.avaliacoes
+                        .filter((a) => a.tipo.startsWith("AP"))
+                        .map((exam) => (
+                          <div
+                            key={exam.id}
+                            className="p-4 bg-white border border-[#0A3D52]/10 rounded-2xl flex items-center justify-between group hover:border-[#D4941E]/30 transition-all shadow-sm"
+                          >
+                            <div className="flex items-center gap-3">
+                              <History className="w-5 h-5 text-[#0A3D52]/30" />
+                              <div>
+                                <h4 className="font-bold text-sm">{exam.tipo}</h4>
+                                <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">
+                                  {format(parseISO(exam.dataPresencial || ""), "yyyy")}
+                                </p>
+                              </div>
                             </div>
+                            <button className="text-[#D4941E] hover:underline text-[10px] font-black uppercase tracking-widest">
+                              Baixar PDF
+                            </button>
                           </div>
-                          <button className="text-[#D4941E] hover:underline text-[10px] font-black uppercase tracking-widest">Baixar PDF</button>
-                        </div>
-                      ))
+                        ))
                     ) : (
                       <div className="col-span-full">
                         <EmptyState icon={History} message="Nenhuma prova antiga listada" />
@@ -306,7 +407,9 @@ function DisciplinePage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-black uppercase mb-2">Simulados Interativos</h3>
-                    <p className="text-sm text-[#0A3D52]/60 max-w-xs mx-auto">Teste seus conhecimentos com questões baseadas nas provas reais do CEDERJ.</p>
+                    <p className="text-sm text-[#0A3D52]/60 max-w-xs mx-auto">
+                      Teste seus conhecimentos com questões baseadas nas provas reais do CEDERJ.
+                    </p>
                   </div>
                   <button className="bg-[#D4941E] text-[#0A3D52] px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-[#D4941E]/20 hover:scale-105 transition-all">
                     Iniciar Simulado AP1
@@ -314,24 +417,37 @@ function DisciplinePage() {
                 </div>
               )}
             </div>
+
+            {/* Bloco 3: Assistente de Estudos (IA) */}
+            <div>
+              <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <MessageSquare className="w-3 h-3 text-[#D4941E]" /> Tutor IA
+              </h3>
+              <StudyAssistant
+                disciplinaNome={discipline.nome}
+                disciplinaCor={discipline.cor}
+                proximosEventos={proximosEventosChat}
+              />
+            </div>
           </div>
 
           {/* Sidebar Area */}
           <div className="space-y-6">
-            {/* Chance de Aprovação Card */}
-            <div className="bg-[#0A3D52] text-white rounded-3xl p-6 shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 text-white/50">Probabilidade de Aprovação</h4>
-              <div className="flex flex-col items-center">
-                <div className="relative w-32 h-32 flex items-center justify-center mb-6">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/10" />
-                    <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={364.4} strokeDashoffset={364.4 * (1 - 0.65)} className="text-[#D4941E] transition-all duration-1000" />
-                  </svg>
-                  <span className="absolute text-3xl font-black">65%</span>
+            {/* Critérios de Aprovação */}
+            <div className="bg-[#F5F7FA] rounded-3xl p-6 border border-[#0A3D52]/5">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <Trophy className="w-3 h-3 text-[#D4941E]" /> Critérios de Aprovação
+              </h4>
+              <div className="space-y-3">
+                <div className="bg-white p-3 rounded-xl border border-[#0A3D52]/5 text-center">
+                  <code className="text-[#0A3D52] font-black text-sm">
+                    {discipline.formulaNota?.n1 || "N=(AD1+AD2+AP1+AP2)/2"}
+                  </code>
                 </div>
-                <p className="text-xs text-center text-white/70 leading-relaxed font-medium">
-                  Complete os Exercícios Programados (EPs) da semana para aumentar sua chance!
+                <p className="text-[10px] text-[#0A3D52]/60 font-medium">
+                  Média mínima para aprovação sem AP3: <strong>6.0</strong>
+                  <br />
+                  Média mínima após AP3: <strong>5.0</strong>
                 </p>
               </div>
             </div>
@@ -342,7 +458,7 @@ function DisciplinePage() {
                 <CalendarIcon className="w-3 h-3 text-[#D4941E]" /> Datas Importantes
               </h4>
               <div className="space-y-4">
-                {events.map(event => (
+                {events.map((event: any) => (
                   <div key={event.id} className="flex gap-4 group">
                     <div className="flex flex-col items-center">
                       <div className="w-2 h-2 rounded-full bg-[#0A3D52] group-hover:bg-[#D4941E] transition-colors" />
@@ -352,29 +468,12 @@ function DisciplinePage() {
                       <p className="text-[10px] font-black uppercase text-[#0A3D52]/40 tracking-tighter">
                         {format(parseISO(event.dataInicio), "dd/MM/yyyy")}
                       </p>
-                      <h5 className="font-bold text-sm text-[#0A3D52] group-hover:text-[#D4941E] transition-colors">{event.titulo}</h5>
+                      <h5 className="font-bold text-sm text-[#0A3D52] group-hover:text-[#D4941E] transition-colors">
+                        {event.titulo}
+                      </h5>
                     </div>
                   </div>
                 ))}
-              </div>
-              <button className="w-full mt-2 text-[9px] font-black uppercase text-[#D4941E] border border-[#D4941E]/20 py-2 rounded-xl hover:bg-[#D4941E]/5 transition-colors">
-                Exportar para Google Calendar
-              </button>
-            </div>
-
-            {/* Fórmulas & Critérios */}
-            <div className="bg-[#F5F7FA] rounded-3xl p-6 border border-[#0A3D52]/5">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                <Trophy className="w-3 h-3 text-[#D4941E]" /> Critérios de Aprovação
-              </h4>
-              <div className="space-y-3">
-                <div className="bg-white p-3 rounded-xl border border-[#0A3D52]/5 text-center">
-                  <code className="text-[#0A3D52] font-black text-sm">{discipline.formulaNota?.n1 || "N=(AD1+AD2+AP1+AP2)/2"}</code>
-                </div>
-                <p className="text-[10px] text-[#0A3D52]/60 font-medium">
-                  Média mínima para aprovação sem AP3: <strong>6.0</strong><br/>
-                  Média mínima após AP3: <strong>5.0</strong>
-                </p>
               </div>
             </div>
           </div>
@@ -395,31 +494,13 @@ function EmptyState({ icon: Icon, message }: { icon: any; message: string }) {
 
 function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
   return (
-    <Link 
-      to={to} 
+    <Link
+      to={to}
       className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
       activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
     >
       <Icon className="w-5 h-5" />
       <span className="font-black text-xs uppercase tracking-widest">{label}</span>
     </Link>
-  );
-}
-
-function MoreVertical({ className }: { className?: string }) {
-  return (
-    <svg 
-      className={className} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="12" cy="5" r="1" />
-      <circle cx="12" cy="19" r="1" />
-    </svg>
   );
 }

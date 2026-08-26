@@ -22,6 +22,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
+import { StudyAssistant } from "@/components/StudyAssistant";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -41,6 +42,8 @@ export const Route = createFileRoute("/")({
 
 import { disciplinas } from '../data/disciplines';
 import { getEventosAcao, prazoDe, diasPara, type EventoAcademico } from '../data/events';
+import { getEventosAcao as fetchEventosAcao } from '@/lib/eventsService';
+import { seedDatabase, isSupabaseConfigured } from '@/lib/seed';
 
 function useAgora(intervalMs = 30000) {
   const [agora, setAgora] = useState(() => new Date());
@@ -63,9 +66,24 @@ function useAgora(intervalMs = 30000) {
 function AcademicDashboard() {
   const agora = useAgora();
 
-  const eventosAcao = useMemo(() => getEventosAcao(), []);
+  const [eventosAcao, setEventosAcao] = useState<EventoAcademico[]>(() =>
+    getEventosAcao(),
+  );
+  const [seedMsg, setSeedMsg] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  useEffect(() => {
+    fetchEventosAcao().then(setEventosAcao);
+  }, []);
+
   const proximaAP = eventosAcao.find((e) => e.tipo.startsWith("AP"));
   const diasProxima = proximaAP ? diasPara(proximaAP, agora) : 0;
+
+  const proximosEventosChat = eventosAcao
+    .slice(0, 6)
+    .map(
+      (e) =>
+        `${e.tipo} ${e.disciplinaCodigo}: ${format(prazoDe(e), "dd/MM", { locale: ptBR })}${e.horario ? ` às ${e.horario}` : ""}`,
+    );
 
   // Seções de urgência (dashboard "O que fazer AGORA?")
   const secoes = useMemo(() => {
@@ -191,9 +209,35 @@ function AcademicDashboard() {
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-[#0A3D52]">{greeting}, {data.profile.name.split(" ")[0]}!</h2>
-          <p className="text-[#0A3D52]/60 mt-1">Seu progresso acadêmico atualizado em tempo real.</p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-[#0A3D52]">{greeting}, {data.profile.name.split(" ")[0]}!</h2>
+            <p className="text-[#0A3D52]/60 mt-1">Seu progresso acadêmico atualizado em tempo real.</p>
+          </div>
+
+          {isSupabaseConfigured && (
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={async () => {
+                  setSeeding(true);
+                  setSeedMsg(null);
+                  const r = await seedDatabase();
+                  setSeedMsg(r.message);
+                  setSeeding(false);
+                  if (r.ok) fetchEventosAcao().then(setEventosAcao);
+                }}
+                disabled={seeding}
+                className="text-[10px] font-black uppercase tracking-widest bg-[#0A3D52] text-white px-4 py-2 rounded-xl hover:bg-[#0A3D52]/90 disabled:opacity-50 transition-colors"
+              >
+                {seeding ? "Semando..." : "Seed Database"}
+              </button>
+              {seedMsg && (
+                <span className="text-[10px] font-bold text-[#0A3D52]/50 max-w-[220px] text-right">
+                  {seedMsg}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Resumo Cards */}
@@ -321,11 +365,11 @@ function AcademicDashboard() {
         </span>
       </button>
 
-      {/* Chat Interface (Simple Sidebar Toggle) */}
+      {/* Chat Interface (Assistente de Estudos com IA) */}
       {showChat && (
         <div className="fixed inset-0 z-[60] flex justify-end">
           <div className="absolute inset-0 bg-black/20" onClick={() => setShowChat(false)} />
-          <div className="relative w-full max-w-sm bg-white h-full shadow-2xl flex flex-col">
+          <div className="relative w-full max-w-sm h-full shadow-2xl flex flex-col bg-white">
             <div className="bg-[#0A3D52] p-4 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-[#D4941E] flex items-center justify-center">
@@ -333,44 +377,14 @@ function AcademicDashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-bold">Assistente Acadêmico</p>
-                  <p className="text-[10px] opacity-70">Online • Rota da Formatura</p>
+                  <p className="text-[10px] opacity-70">Tutor IA • Rota da Formatura</p>
                 </div>
               </div>
-              <button onClick={() => setShowChat(false)} className="text-2xl">&times;</button>
-            </div>
-            
-            <div className="flex-1 p-4 overflow-y-auto bg-[#F5F7FA] space-y-4">
-              <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-[#0A3D52]/10 text-sm shadow-sm max-w-[85%]">
-                Olá Vinícius! Sou seu tutor virtual. Vi que você tem <strong>Métodos Determinísticos</strong> na lista hoje. Quer revisar os Exercícios Programados (EPs)?
-              </div>
-              <div className="bg-[#0A3D52] p-3 rounded-2xl rounded-tr-none text-white text-sm shadow-sm self-end ml-auto max-w-[85%]">
-                Quando é minha próxima prova?
-              </div>
-              <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-[#0A3D52]/10 text-sm shadow-sm max-w-[85%]">
-                {missaoPrioritaria ? (
-                  <>
-                    Sua próxima avaliação é a{" "}
-                    <strong>
-                      {missaoPrioritaria.tipo} de {missaoPrioritaria.disciplinaNome}
-                    </strong>
-                    , {diasMissao === 0 ? "hoje" : `em ${diasMissao} dias`} (
-                    {format(parseISO(missaoPrioritaria.dataInicio), "dd/MM")}). 🚀
-                  </>
-                ) : (
-                  <>Você não tem avaliações agendadas no momento. 🎉</>
-                )}
-              </div>
+              <button onClick={() => setShowChat(false)} className="text-2xl leading-none">&times;</button>
             </div>
 
-            <div className="p-4 border-t border-[#0A3D52]/10 flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Pergunte sobre sua rota..."
-                className="flex-1 bg-[#F5F7FA] border-none rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#D4941E]"
-              />
-              <button className="bg-[#0A3D52] text-white px-4 py-2 rounded-lg font-bold text-sm">
-                Enviar
-              </button>
+            <div className="flex-1 min-h-0 p-3">
+              <StudyAssistant proximosEventos={proximosEventosChat} />
             </div>
           </div>
         </div>
