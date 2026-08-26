@@ -385,7 +385,18 @@ function AcademicDashboard() {
                 Quando é minha próxima prova?
               </div>
               <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-[#0A3D52]/10 text-sm shadow-sm max-w-[85%]">
-                Sua próxima prova é a <strong>AP1 de Métodos Determinísticos I</strong>, em 5 dias (05/09). Você já completou 45% do progresso! 🚀
+                {missaoPrioritaria ? (
+                  <>
+                    Sua próxima avaliação é a{" "}
+                    <strong>
+                      {missaoPrioritaria.tipo} de {missaoPrioritaria.disciplinaNome}
+                    </strong>
+                    , {diasMissao === 0 ? "hoje" : `em ${diasMissao} dias`} (
+                    {format(parseISO(missaoPrioritaria.dataInicio), "dd/MM")}). 🚀
+                  </>
+                ) : (
+                  <>Você não tem avaliações agendadas no momento. 🎉</>
+                )}
               </div>
             </div>
 
