@@ -22,7 +22,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
-import { formatDistanceToNow, differenceInDays, parseISO } from "date-fns";
+import { formatDistanceToNow, differenceInCalendarDays, parseISO, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/")({
@@ -40,60 +40,84 @@ export const Route = createFileRoute("/")({
 });
 
 import { disciplinas } from '../data/disciplines';
-import { getProximosEventos, getEventosUrgentes } from '../data/events';
+import { eventos, getProximosEventos, getEventosUrgentes } from '../data/events';
 import { getTarefasPendentes } from '../data/studyPlan';
 
-function AcademicDashboard() {
-  const proximosEventos = useMemo(() => getProximosEventos(60), []);
-  const missaoPrioritaria = useMemo(() => proximosEventos[0], [proximosEventos]);
+function useAgora(intervalMs = 30000) {
+  const [agora, setAgora] = useState(() => new Date());
+  useEffect(() => {
+    const tick = () => setAgora(new Date());
+    tick();
+    const timer = setInterval(tick, intervalMs);
+    const onFocus = () => tick();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [intervalMs]);
+  return agora;
+}
 
-  const [data] = useState({
-    profile: {
-      name: "Estudante CEDERJ",
-      course: "Administração",
-      period: "2026-2",
-      university: "UFRRJ/CEDERJ",
-    },
-    disciplines: disciplinas.map(d => {
-      const exam = d.avaliacoes
-        .filter(a => parseISO(a.dataPresencial || a.dataFim || '') > new Date())
-        .sort((a, b) => parseISO(a.dataPresencial || a.dataFim || '').getTime() - parseISO(b.dataPresencial || b.dataFim || '').getTime())[0];
-      
-      const days = exam ? differenceInDays(parseISO(exam.dataPresencial || exam.dataFim || ''), new Date()) : -1;
-      
-      return {
-        ...d,
-        ch: d.id.includes('hpa') ? "60h" : "45h",
-        period: d.aulas.length > 0 ? "2º período" : "Aguardando",
-        status: days <= 7 && days >= 0 ? "urgent" : (days <= 14 && days >= 0 ? "warning" : "normal"),
-        nextExam: exam ? { type: exam.tipo, daysRemaining: days } : { type: "N/A", daysRemaining: 0 }
-      };
-    }),
-  });
+function AcademicDashboard() {
+  const agora = useAgora();
+
+  const proximosEventos = useMemo(
+    () =>
+      eventos
+        .filter((e) => differenceInCalendarDays(parseISO(e.dataInicio), agora) >= 0)
+        .sort((a, b) => parseISO(a.dataInicio).getTime() - parseISO(b.dataInicio).getTime()),
+    [agora],
+  );
+  const missaoPrioritaria = proximosEventos[0];
+  const diasMissao = missaoPrioritaria
+    ? differenceInCalendarDays(parseISO(missaoPrioritaria.dataInicio), agora)
+    : 0;
+
+  const profile = {
+    name: "Estudante CEDERJ",
+    course: "Administração",
+    period: "2026-2",
+    university: "UFRRJ/CEDERJ",
+  };
+
+  const disciplinesList = useMemo(
+    () =>
+      disciplinas.map((d) => {
+        const proximo = proximosEventos.find((e) => e.disciplinaId === d.id);
+        const days = proximo
+          ? differenceInCalendarDays(parseISO(proximo.dataInicio), agora)
+          : -1;
+
+        return {
+          ...d,
+          ch: d.id.includes("hpa") ? "60h" : "45h",
+          period: d.aulas.length > 0 ? "2º período" : "Aguardando",
+          status:
+            days <= 7 && days >= 0 ? "urgent" : days <= 14 && days >= 0 ? "warning" : "normal",
+          nextExam: proximo ? { type: proximo.tipo, daysRemaining: days } : null,
+        };
+      }),
+    [proximosEventos, agora],
+  );
+
+  const data = { profile, disciplines: disciplinesList };
 
   const [greeting, setGreeting] = useState("");
   const [showChat, setShowChat] = useState(false);
-  const [countdown, setCountdown] = useState("");
 
   useEffect(() => {
-    const hour = new Date().getHours();
+    const hour = agora.getHours();
     if (hour >= 6 && hour < 12) setGreeting("Bom dia");
     else if (hour >= 12 && hour < 18) setGreeting("Boa tarde");
     else setGreeting("Boa noite");
-  }, []);
+  }, [agora]);
 
-  useEffect(() => {
-    if (!missaoPrioritaria) return;
-    
-    const updateCountdown = () => {
-      const target = parseISO(missaoPrioritaria.dataInicio);
-      setCountdown(formatDistanceToNow(target, { locale: ptBR, addSuffix: true }));
-    };
-    
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 60000);
-    return () => clearInterval(timer);
-  }, [missaoPrioritaria]);
+  const countdown = missaoPrioritaria
+    ? formatDistanceToNow(parseISO(missaoPrioritaria.dataInicio), { locale: ptBR, addSuffix: true })
+    : "";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -186,7 +210,7 @@ function AcademicDashboard() {
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <CalendarIcon className="w-6 h-6 text-[#D4941E] mb-2" />
             <span className="text-2xl font-black text-[#D4941E]">
-              {missaoPrioritaria ? differenceInDays(parseISO(missaoPrioritaria.dataInicio), new Date()) : 0} dias
+              {diasMissao === 0 ? "Hoje" : `${diasMissao} dias`}
             </span>
             <span className="text-xs uppercase font-bold text-[#D4941E]/60 tracking-wider">Próxima Avaliação</span>
           </div>
@@ -225,7 +249,7 @@ function AcademicDashboard() {
         {/* Missões Diárias */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Sua Rota Hoje: {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Sua Rota Hoje: {format(agora, "EEEE, d 'de' MMMM", { locale: ptBR })}</h3>
             <span className="text-[10px] font-black uppercase text-[#27AE60]">Meta Diária</span>
           </div>
           <div className="space-y-3">
@@ -309,7 +333,9 @@ function AcademicDashboard() {
                   <div className="flex items-center gap-1.5">
                     <CalendarIcon className="w-3 h-3 text-[#0A3D52]/40" />
                     <span className="text-[10px] font-bold text-[#0A3D52]/60 uppercase tracking-tighter">
-                      Próxima: {item.nextExam.type} em {item.nextExam.daysRemaining} dias
+                      {item.nextExam
+                        ? `Próxima: ${item.nextExam.type} ${item.nextExam.daysRemaining === 0 ? "hoje" : `em ${item.nextExam.daysRemaining} dias`}`
+                        : "Aguardando cronograma"}
                     </span>
                   </div>
                   <div className="text-[#0A3D52] hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
@@ -359,7 +385,18 @@ function AcademicDashboard() {
                 Quando é minha próxima prova?
               </div>
               <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-[#0A3D52]/10 text-sm shadow-sm max-w-[85%]">
-                Sua próxima prova é a <strong>AP1 de Métodos Determinísticos I</strong>, em 5 dias (05/09). Você já completou 45% do progresso! 🚀
+                {missaoPrioritaria ? (
+                  <>
+                    Sua próxima avaliação é a{" "}
+                    <strong>
+                      {missaoPrioritaria.tipo} de {missaoPrioritaria.disciplinaNome}
+                    </strong>
+                    , {diasMissao === 0 ? "hoje" : `em ${diasMissao} dias`} (
+                    {format(parseISO(missaoPrioritaria.dataInicio), "dd/MM")}). 🚀
+                  </>
+                ) : (
+                  <>Você não tem avaliações agendadas no momento. 🎉</>
+                )}
               </div>
             </div>
 
