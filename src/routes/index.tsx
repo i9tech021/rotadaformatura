@@ -1,22 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { 
-  BookOpen, 
-  Calendar as CalendarIcon, 
-  CheckCircle2, 
-  ChevronRight, 
-  Clock, 
-  GraduationCap, 
-  LayoutDashboard, 
-  MessageCircle, 
-  Settings, 
-  Target, 
-  Trophy, 
-  User, 
-  ArrowRight, 
-  FileText, 
+import {
+  BookOpen,
+  Calendar as CalendarIcon,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  GraduationCap,
+  LayoutDashboard,
+  MessageCircle,
+  Settings,
+  Target,
+  Trophy,
+  User,
+  ArrowRight,
+  FileText,
   Menu,
   Headphones,
-  Play
+  Play,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
@@ -25,27 +25,37 @@ import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
 import { StudyAssistant } from "@/components/StudyAssistant";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getTarefasPorDia, type TarefaDiaria } from "@/data/studyPlan";
+import { ListChecks } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: AcademicDashboard,
   head: () => ({
     title: "Rota da Formatura | Dashboard Acadêmico",
     meta: [
-      { name: "description", content: "Organize seus estudos do CEDERJ com a Rota da Formatura. Cronogramas, checklists e progresso em tempo real." },
+      {
+        name: "description",
+        content:
+          "Organize seus estudos do CEDERJ com a Rota da Formatura. Cronogramas, checklists e progresso em tempo real.",
+      },
       { property: "og:title", content: "Rota da Formatura | Seu Planner Universitário" },
-      { property: "og:description", content: "Dashboard acadêmico personalizado para alunos do CEDERJ com foco em organização e aprovação." },
+      {
+        property: "og:description",
+        content:
+          "Dashboard acadêmico personalizado para alunos do CEDERJ com foco em organização e aprovação.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" }
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
 });
 
-import { disciplinas as DISCIPLINAS_STATICAS } from '../data/disciplines';
-import { getEventosAcao, prazoDe, diasPara, type EventoAcademico } from '../data/events';
-import { getEventosAcao as fetchEventosAcao, subscribeEventos } from '@/lib/eventsService';
-import { getDisciplinas, subscribeDisciplinas } from '@/lib/disciplinasService';
-import { countConcluidas, subscribeCheckpointsAll } from '@/lib/checkpoints';
-import { seedDatabase, isSupabaseConfigured } from '@/lib/seed';
+import { disciplinas as DISCIPLINAS_STATICAS } from "../data/disciplines";
+import { getEventosAcao, prazoDe, diasPara, type EventoAcademico } from "../data/events";
+import { getEventosAcao as fetchEventosAcao, subscribeEventos } from "@/lib/eventsService";
+import { getDisciplinas, subscribeDisciplinas } from "@/lib/disciplinasService";
+import { countConcluidas, subscribeCheckpointsAll } from "@/lib/checkpoints";
+import { seedDatabase, isSupabaseConfigured } from "@/lib/seed";
 
 function useAgora(intervalMs = 30000) {
   const [agora, setAgora] = useState(() => new Date());
@@ -68,9 +78,7 @@ function useAgora(intervalMs = 30000) {
 function AcademicDashboard() {
   const agora = useAgora();
 
-  const [eventosAcao, setEventosAcao] = useState<EventoAcademico[]>(() =>
-    getEventosAcao(),
-  );
+  const [eventosAcao, setEventosAcao] = useState<EventoAcademico[]>(() => getEventosAcao());
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   useEffect(() => {
@@ -93,21 +101,16 @@ function AcademicDashboard() {
   // Progresso REAL por disciplina = aulas concluídas / total (não hardcoded).
   // Recalcula ao vivo quando qualquer checkpoint muda (realtime).
   const [progressoMap, setProgressoMap] = useState<Record<string, number>>({});
-  const recalcProgresso = useCallback(
-    async (lista: typeof DISCIPLINAS_STATICAS) => {
-      const map: Record<string, number> = {};
-      await Promise.all(
-        lista.map(async (d) => {
-          const feitas = await countConcluidas(d.id);
-          map[d.id] = d.aulas.length
-            ? Math.round((feitas / d.aulas.length) * 100)
-            : 0;
-        }),
-      );
-      setProgressoMap(map);
-    },
-    [],
-  );
+  const recalcProgresso = useCallback(async (lista: typeof DISCIPLINAS_STATICAS) => {
+    const map: Record<string, number> = {};
+    await Promise.all(
+      lista.map(async (d) => {
+        const feitas = await countConcluidas(d.id);
+        map[d.id] = d.aulas.length ? Math.round((feitas / d.aulas.length) * 100) : 0;
+      }),
+    );
+    setProgressoMap(map);
+  }, []);
   useEffect(() => {
     recalcProgresso(disciplinas);
   }, [disciplinas, recalcProgresso]);
@@ -191,21 +194,52 @@ function AcademicDashboard() {
     else setGreeting("Boa noite");
   }, [agora]);
 
+  // Missões do Dia — tarefas do studyPlan + persistência em localStorage
+  const tarefasHoje = useMemo(() => getTarefasPorDia(format(agora, "yyyy-MM-dd")), [agora]);
+  const [missaoConcluida, setMissaoConcluida] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const chave = `rdf:missao:${format(new Date(), "yyyy-MM-dd")}`;
+      return JSON.parse(localStorage.getItem(chave) || "{}");
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleMissao = (tarefaId: string) => {
+    setMissaoConcluida((prev) => {
+      const proximo = { ...prev, [tarefaId]: !prev[tarefaId] };
+      const chave = `rdf:missao:${format(new Date(), "yyyy-MM-dd")}`;
+      localStorage.setItem(chave, JSON.stringify(proximo));
+      return proximo;
+    });
+  };
+
+  const missaoFeitas = tarefasHoje.filter((t) => missaoConcluida[t.id]).length;
+  const missaoTotal = tarefasHoje.length;
+  const missaoPct = missaoTotal ? Math.round((missaoFeitas / missaoTotal) * 100) : 0;
+
   // countdown removido: substituído pelas seções de urgência abaixo
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "urgent": return "bg-[#E74C3C]";
-      case "warning": return "bg-[#D4941E]";
-      default: return "bg-[#27AE60]";
+      case "urgent":
+        return "bg-[#E74C3C]";
+      case "warning":
+        return "bg-[#D4941E]";
+      default:
+        return "bg-[#27AE60]";
     }
   };
 
   const getStatusBorder = (status: string) => {
     switch (status) {
-      case "urgent": return "border-[#E74C3C]";
-      case "warning": return "border-[#D4941E]";
-      default: return "border-[#27AE60]";
+      case "urgent":
+        return "border-[#E74C3C]";
+      case "warning":
+        return "border-[#D4941E]";
+      default:
+        return "border-[#27AE60]";
     }
   };
 
@@ -239,25 +273,61 @@ function AcademicDashboard() {
           </Sheet>
           <div className="flex items-center gap-2">
             <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-            <span className="font-bold text-lg tracking-tight uppercase hidden xs:inline">Rota da Formatura</span>
+            <span className="font-bold text-lg tracking-tight uppercase hidden xs:inline">
+              Rota da Formatura
+            </span>
           </div>
         </div>
-        
+
         <div className="hidden md:flex items-center gap-6 mr-6">
-          <Link to="/" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Dashboard</Link>
-          <Link to="/community" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Comunidade</Link>
-          <Link to="/calendar" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Agenda</Link>
-          <Link to="/disciplines" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Biblioteca</Link>
-          <Link to="/materials" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Arquivos</Link>
+          <Link
+            to="/"
+            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+          >
+            Dashboard
+          </Link>
+          <Link
+            to="/community"
+            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+          >
+            Comunidade
+          </Link>
+          <Link
+            to="/calendar"
+            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+          >
+            Agenda
+          </Link>
+          <Link
+            to="/disciplines"
+            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+          >
+            Biblioteca
+          </Link>
+          <Link
+            to="/materials"
+            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+          >
+            Arquivos
+          </Link>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex flex-col text-right">
-            <span className="text-[10px] opacity-60 leading-none uppercase font-black">{data.profile.course}</span>
+            <span className="text-[10px] opacity-60 leading-none uppercase font-black">
+              {data.profile.course}
+            </span>
             <span className="text-sm font-bold">{data.profile.name}</span>
           </div>
-          <Link to="/settings" className="w-10 h-10 rounded-full bg-[#D4941E] flex items-center justify-center font-bold text-[#0A3D52] hover:scale-105 transition-transform">
-            {data.profile.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+          <Link
+            to="/settings"
+            className="w-10 h-10 rounded-full bg-[#D4941E] flex items-center justify-center font-bold text-[#0A3D52] hover:scale-105 transition-transform"
+          >
+            {data.profile.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .slice(0, 2)}
           </Link>
         </div>
       </nav>
@@ -266,8 +336,12 @@ function AcademicDashboard() {
         {/* Welcome Section */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-[#0A3D52]">{greeting}, {data.profile.name.split(" ")[0]}!</h2>
-            <p className="text-[#0A3D52]/60 mt-1">Seu progresso acadêmico atualizado em tempo real.</p>
+            <h2 className="text-3xl font-bold text-[#0A3D52]">
+              {greeting}, {data.profile.name.split(" ")[0]}!
+            </h2>
+            <p className="text-[#0A3D52]/60 mt-1">
+              Seu progresso acadêmico atualizado em tempo real.
+            </p>
           </div>
 
           {isSupabaseConfigured && (
@@ -300,21 +374,112 @@ function AcademicDashboard() {
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <BookOpen className="w-6 h-6 text-[#0A3D52] mb-2" />
             <span className="text-2xl font-black">{data.disciplines.length}</span>
-            <span className="text-xs uppercase font-bold text-[#0A3D52]/50 tracking-wider">Disciplinas</span>
+            <span className="text-xs uppercase font-bold text-[#0A3D52]/50 tracking-wider">
+              Disciplinas
+            </span>
           </div>
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <Clock className="w-6 h-6 text-[#0A3D52] mb-2" />
             <span className="text-2xl font-black">330h</span>
-            <span className="text-xs uppercase font-bold text-[#0A3D52]/50 tracking-wider">Carga Total</span>
+            <span className="text-xs uppercase font-bold text-[#0A3D52]/50 tracking-wider">
+              Carga Total
+            </span>
           </div>
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <CalendarIcon className="w-6 h-6 text-[#D4941E] mb-2" />
             <span className="text-2xl font-black text-[#D4941E]">
               {diasProxima === 0 ? "Hoje" : `${diasProxima} dias`}
             </span>
-            <span className="text-xs uppercase font-bold text-[#D4941E]/60 tracking-wider">Próxima Avaliação</span>
+            <span className="text-xs uppercase font-bold text-[#D4941E]/60 tracking-wider">
+              Próxima Avaliação
+            </span>
           </div>
         </div>
+
+        {/* Missões do Dia */}
+        {tarefasHoje.length > 0 && (
+          <section className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] flex items-center gap-2">
+                <ListChecks className="w-4 h-4" /> Missões do Dia
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase text-[#0A3D52]/40">
+                  {missaoFeitas}/{missaoTotal}
+                </span>
+                <div className="w-16 h-1.5 bg-[#0A3D52]/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#D4941E] rounded-full transition-all duration-500"
+                    style={{ width: `${missaoPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {tarefasHoje.map((t) => {
+                const concluida = !!missaoConcluida[t.id];
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => toggleMissao(t.id)}
+                    className={cn(
+                      "w-full text-left bg-white p-4 rounded-2xl border shadow-sm flex items-center gap-4 transition-all hover:shadow-md cursor-pointer",
+                      concluida
+                        ? "border-[#27AE60]/30 bg-[#27AE60]/5"
+                        : "border-[#0A3D52]/10 hover:border-[#D4941E]/30",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white transition-all",
+                        concluida && "bg-[#27AE60]",
+                      )}
+                      style={!concluida ? { background: t.disciplinaCor } : undefined}
+                    >
+                      {concluida ? (
+                        <CheckCircle2 className="w-5 h-5" />
+                      ) : t.tipo === "podcast" ? (
+                        <Headphones className="w-4 h-4" />
+                      ) : t.tipo === "video" ? (
+                        <Play className="w-4 h-4" />
+                      ) : t.tipo === "simulado" ? (
+                        <Target className="w-4 h-4" />
+                      ) : t.tipo === "ad" || t.tipo === "ap" ? (
+                        <FileText className="w-4 h-4" />
+                      ) : (
+                        <BookOpen className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span
+                          className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
+                          style={{ color: t.disciplinaCor, background: `${t.disciplinaCor}10` }}
+                        >
+                          {t.disciplinaCodigo}
+                        </span>
+                        <span className="text-[9px] font-bold text-[#0A3D52]/30 uppercase">
+                          {t.duracaoMinutos}min
+                        </span>
+                      </div>
+                      <h4
+                        className={cn(
+                          "font-bold text-sm leading-tight truncate",
+                          concluida && "line-through text-[#0A3D52]/40",
+                        )}
+                      >
+                        {t.titulo}
+                      </h4>
+                      <p className="text-[10px] text-[#0A3D52]/40 font-medium truncate mt-0.5">
+                        {t.descricao}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* URGÊNCIA: HOJE / URGENTE */}
         <UrgenciaSection
@@ -346,20 +511,27 @@ function AcademicDashboard() {
         {/* Disciplinas Grid */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Disciplinas do Semestre</h3>
-            <Link to="/disciplines" className="text-[10px] font-black uppercase text-[#D4941E] border-b-2 border-[#D4941E]">Ver Grade Completa</Link>
+            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">
+              Disciplinas do Semestre
+            </h3>
+            <Link
+              to="/disciplines"
+              className="text-[10px] font-black uppercase text-[#D4941E] border-b-2 border-[#D4941E]"
+            >
+              Ver Grade Completa
+            </Link>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data.disciplines.map((item) => (
-              <Link 
-                key={item.id} 
+              <Link
+                key={item.id}
                 to="/disciplines/$id"
                 params={{ id: item.id }}
                 className={cn(
                   "bg-[#F5F7FA] rounded-xl border border-[#0A3D52]/10 p-5 hover:shadow-md transition-shadow group flex flex-col justify-between",
                   item.status === "urgent" && "border-l-4 border-l-[#E74C3C]",
-                  item.status === "warning" && "border-l-4 border-l-[#D4941E]"
+                  item.status === "warning" && "border-l-4 border-l-[#D4941E]",
                 )}
               >
                 <div>
@@ -375,16 +547,19 @@ function AcademicDashboard() {
                   <p className="text-[11px] font-bold text-[#0A3D52]/50 uppercase tracking-wide mb-4">
                     {item.ch} • {item.period}
                   </p>
-                  
+
                   <div className="mb-4">
                     <div className="flex justify-between text-[11px] font-black mb-1.5 uppercase">
                       <span>Progresso</span>
                       <span>{item.progresso}%</span>
                     </div>
                     <div className="w-full h-2 bg-white rounded-full overflow-hidden border border-[#0A3D52]/5">
-                      <div 
-                        className={cn("h-full transition-all duration-700", getStatusColor(item.status))} 
-                        style={{ width: `${item.progresso}%` }} 
+                      <div
+                        className={cn(
+                          "h-full transition-all duration-700",
+                          getStatusColor(item.status),
+                        )}
+                        style={{ width: `${item.progresso}%` }}
                       />
                     </div>
                   </div>
@@ -410,7 +585,7 @@ function AcademicDashboard() {
       </main>
 
       {/* Floating Action Button (IA Chat) */}
-      <button 
+      <button
         onClick={() => setShowChat(!showChat)}
         className="fixed bottom-6 right-6 w-14 h-14 bg-[#D4941E] text-[#0A3D52] rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 border-4 border-white"
       >
@@ -435,7 +610,9 @@ function AcademicDashboard() {
                   <p className="text-[10px] opacity-70">Tutor IA • Rota da Formatura</p>
                 </div>
               </div>
-              <button onClick={() => setShowChat(false)} className="text-2xl leading-none">&times;</button>
+              <button onClick={() => setShowChat(false)} className="text-2xl leading-none">
+                &times;
+              </button>
             </div>
 
             <div className="flex-1 min-h-0 p-3">
@@ -447,45 +624,45 @@ function AcademicDashboard() {
 
       {/* Bottom Mobile Nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40 pb-safe">
-        <Link 
-          to="/" 
-          activeProps={{ className: "text-[#D4941E]" }} 
+        <Link
+          to="/"
+          activeProps={{ className: "text-[#D4941E]" }}
           inactiveProps={{ className: "text-[#0A3D52]/40" }}
           className="flex flex-col items-center"
         >
           <LayoutDashboard className="w-5 h-5" />
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
         </Link>
-        <Link 
-          to="/community" 
-          activeProps={{ className: "text-[#D4941E]" }} 
+        <Link
+          to="/community"
+          activeProps={{ className: "text-[#D4941E]" }}
           inactiveProps={{ className: "text-[#0A3D52]/40" }}
           className="flex flex-col items-center"
         >
           <MessageCircle className="w-5 h-5" />
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Comunidade</span>
         </Link>
-        <Link 
-          to="/calendar" 
-          activeProps={{ className: "text-[#D4941E]" }} 
+        <Link
+          to="/calendar"
+          activeProps={{ className: "text-[#D4941E]" }}
           inactiveProps={{ className: "text-[#0A3D52]/40" }}
           className="flex flex-col items-center"
         >
           <CalendarIcon className="w-5 h-5" />
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Agenda</span>
         </Link>
-        <Link 
-          to="/materials" 
-          activeProps={{ className: "text-[#D4941E]" }} 
+        <Link
+          to="/materials"
+          activeProps={{ className: "text-[#D4941E]" }}
           inactiveProps={{ className: "text-[#0A3D52]/40" }}
           className="flex flex-col items-center"
         >
           <FileText className="w-5 h-5" />
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Materiais</span>
         </Link>
-        <Link 
-          to="/settings" 
-          activeProps={{ className: "text-[#D4941E]" }} 
+        <Link
+          to="/settings"
+          activeProps={{ className: "text-[#D4941E]" }}
           inactiveProps={{ className: "text-[#0A3D52]/40" }}
           className="flex flex-col items-center"
         >
@@ -499,13 +676,13 @@ function AcademicDashboard() {
 
 function MoreVertical({ className }: { className?: string }) {
   return (
-    <svg 
-      className={className} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
       strokeLinejoin="round"
     >
       <circle cx="12" cy="12" r="1" />
@@ -517,8 +694,8 @@ function MoreVertical({ className }: { className?: string }) {
 
 function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
   return (
-    <Link 
-      to={to} 
+    <Link
+      to={to}
       className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10"
       activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
     >
@@ -539,36 +716,54 @@ function UrgenciaCard({ e, agora }: { e: EventoAcademico; agora: Date }) {
   const isQuest = e.tipo === "QUESTIONARIO";
   const cor = isAP ? "#E74C3C" : isQuest ? "#D4941E" : "#2563EB";
   const prazo = prazoDe(e);
-  const prazoLabel = format(prazo, "dd/MM", { locale: ptBR }) + (e.horario ? ` às ${e.horario}` : "");
+  const prazoLabel =
+    format(prazo, "dd/MM", { locale: ptBR }) + (e.horario ? ` às ${e.horario}` : "");
   const statusLabel = encerrado
     ? "🔴 Encerrado"
     : venceHoje
-    ? "⚠️ Vence hoje"
-    : dias <= 7
-    ? `em ${dias} ${dias === 1 ? "dia" : "dias"}`
-    : formatDistanceToNow(prazo, { locale: ptBR, addSuffix: true });
+      ? "⚠️ Vence hoje"
+      : dias <= 7
+        ? `em ${dias} ${dias === 1 ? "dia" : "dias"}`
+        : formatDistanceToNow(prazo, { locale: ptBR, addSuffix: true });
 
   return (
     <div className="bg-white p-4 rounded-2xl border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all gap-3">
       <div className="flex items-center gap-4 min-w-0">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-white text-xs" style={{ backgroundColor: cor }}>
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-white text-xs"
+          style={{ backgroundColor: cor }}
+        >
           {isAP ? "AP" : isQuest ? "?" : "AD"}
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-tighter" style={{ color: cor }}>{e.tipo}</span>
-            <span className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">{e.disciplinaCodigo}</span>
+            <span
+              className="text-[10px] font-black uppercase tracking-tighter"
+              style={{ color: cor }}
+            >
+              {e.tipo}
+            </span>
+            <span className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">
+              {e.disciplinaCodigo}
+            </span>
           </div>
           <h4 className="font-bold text-sm leading-tight mb-1 truncate">{e.titulo}</h4>
           <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter truncate">
-            {e.disciplinaNome}{e.horario ? ` • ${e.horario}` : ""}
+            {e.disciplinaNome}
+            {e.horario ? ` • ${e.horario}` : ""}
           </p>
         </div>
       </div>
-      <span className={cn(
-        "text-[10px] font-black uppercase px-2 py-1 rounded-full shrink-0 text-right",
-        encerrado ? "bg-[#E74C3C]/10 text-[#E74C3C]" : venceHoje ? "bg-[#D4941E]/15 text-[#D4941E]" : "bg-[#0A3D52]/5 text-[#0A3D52]/60"
-      )}>
+      <span
+        className={cn(
+          "text-[10px] font-black uppercase px-2 py-1 rounded-full shrink-0 text-right",
+          encerrado
+            ? "bg-[#E74C3C]/10 text-[#E74C3C]"
+            : venceHoje
+              ? "bg-[#D4941E]/15 text-[#D4941E]"
+              : "bg-[#0A3D52]/5 text-[#0A3D52]/60",
+        )}
+      >
         {statusLabel}
       </span>
     </div>

@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { 
-  User, 
-  Bell, 
-  FileUp, 
-  Download, 
-  Shield, 
+import {
+  User,
+  Bell,
+  FileUp,
+  Download,
+  Shield,
   LogOut,
   ChevronRight,
   Save,
@@ -20,7 +20,7 @@ import {
   MessageSquare,
   Database,
   CheckCheck,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
@@ -42,13 +42,13 @@ function SettingsPage() {
     name: "Vinícius Mendonça Lobo",
     course: "Administração",
     period: "5º período",
-    email: "vinicius@exemplo.com"
+    email: "vinicius@exemplo.com",
   });
 
   const [notifications, setNotifications] = useState({
     exams: true,
     materials: false,
-    aiTutor: true
+    aiTutor: true,
   });
 
   // Editor de progresso no banco (Supabase) — grava `progresso` por disciplina
@@ -106,7 +106,7 @@ function SettingsPage() {
     const data = {
       profile,
       timestamp: new Date().toISOString(),
-      app: "Rota da Formatura"
+      app: "Rota da Formatura",
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -133,7 +133,9 @@ function SettingsPage() {
                 <div className="p-6 pt-12 flex flex-col gap-6">
                   <div className="flex items-center gap-2 mb-4">
                     <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-                    <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
+                    <span className="font-bold text-lg tracking-tight uppercase">
+                      Menu Acadêmico
+                    </span>
                   </div>
                   <div className="flex flex-col gap-2">
                     <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
@@ -150,15 +152,37 @@ function SettingsPage() {
               <Link to="/" className="hover:bg-white/10 p-2 rounded-full transition-colors">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
-              <h1 className="font-bold text-lg uppercase tracking-tight hidden xs:inline">Ajustes</h1>
+              <h1 className="font-bold text-lg uppercase tracking-tight hidden xs:inline">
+                Ajustes
+              </h1>
             </div>
           </div>
 
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Dashboard</Link>
-            <Link to="/calendar" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Agenda</Link>
-            <Link to="/disciplines" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Biblioteca</Link>
-            <Link to="/materials" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Arquivos</Link>
+            <Link
+              to="/"
+              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/calendar"
+              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+            >
+              Agenda
+            </Link>
+            <Link
+              to="/disciplines"
+              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+            >
+              Biblioteca
+            </Link>
+            <Link
+              to="/materials"
+              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+            >
+              Arquivos
+            </Link>
           </div>
         </div>
       </nav>
@@ -173,47 +197,57 @@ function SettingsPage() {
           <form onSubmit={handleSaveProfile} className="p-8 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#0A3D52]/60 ml-1">Nome Completo</label>
-                <input 
-                  type="text" 
+                <label className="text-[10px] font-black uppercase text-[#0A3D52]/60 ml-1">
+                  Nome Completo
+                </label>
+                <input
+                  type="text"
                   value={profile.name}
-                  onChange={(e) => setProfile({...profile, name: e.target.value})}
+                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                   className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E]"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#0A3D52]/60 ml-1">E-mail Institucional</label>
-                <input 
-                  type="email" 
+                <label className="text-[10px] font-black uppercase text-[#0A3D52]/60 ml-1">
+                  E-mail Institucional
+                </label>
+                <input
+                  type="email"
                   value={profile.email}
-                  onChange={(e) => setProfile({...profile, email: e.target.value})}
+                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                   className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E]"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#0A3D52]/60 ml-1">Curso</label>
-                <input 
-                  type="text" 
+                <label className="text-[10px] font-black uppercase text-[#0A3D52]/60 ml-1">
+                  Curso
+                </label>
+                <input
+                  type="text"
                   value={profile.course}
-                  onChange={(e) => setProfile({...profile, course: e.target.value})}
+                  onChange={(e) => setProfile({ ...profile, course: e.target.value })}
                   className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E]"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#0A3D52]/60 ml-1">Período Atual</label>
-                <select 
+                <label className="text-[10px] font-black uppercase text-[#0A3D52]/60 ml-1">
+                  Período Atual
+                </label>
+                <select
                   value={profile.period}
-                  onChange={(e) => setProfile({...profile, period: e.target.value})}
+                  onChange={(e) => setProfile({ ...profile, period: e.target.value })}
                   className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E]"
                 >
                   {[...Array(10)].map((_, i) => (
-                    <option key={i} value={`${i + 1}º período`}>{i + 1}º período</option>
+                    <option key={i} value={`${i + 1}º período`}>
+                      {i + 1}º período
+                    </option>
                   ))}
                 </select>
               </div>
             </div>
             <div className="flex justify-end">
-              <button 
+              <button
                 type="submit"
                 className="bg-[#D4941E] text-[#0A3D52] px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-[#D4941E]/20 flex items-center gap-2 hover:scale-105 transition-all"
               >
@@ -234,16 +268,30 @@ function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-bold text-sm">Alertas de Avaliações</h4>
-                  <p className="text-[10px] text-[#0A3D52]/50 font-bold uppercase">Lembretes de APs e ADs</p>
+                  <p className="text-[10px] text-[#0A3D52]/50 font-bold uppercase">
+                    Lembretes de APs e ADs
+                  </p>
                 </div>
-                <Switch active={notifications.exams} onToggle={() => setNotifications({...notifications, exams: !notifications.exams})} />
+                <Switch
+                  active={notifications.exams}
+                  onToggle={() =>
+                    setNotifications({ ...notifications, exams: !notifications.exams })
+                  }
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-bold text-sm">Novos Materiais</h4>
-                  <p className="text-[10px] text-[#0A3D52]/50 font-bold uppercase">Avisos de novos PDFs/Aulas</p>
+                  <p className="text-[10px] text-[#0A3D52]/50 font-bold uppercase">
+                    Avisos de novos PDFs/Aulas
+                  </p>
                 </div>
-                <Switch active={notifications.materials} onToggle={() => setNotifications({...notifications, materials: !notifications.materials})} />
+                <Switch
+                  active={notifications.materials}
+                  onToggle={() =>
+                    setNotifications({ ...notifications, materials: !notifications.materials })
+                  }
+                />
               </div>
             </div>
           </section>
@@ -257,7 +305,9 @@ function SettingsPage() {
               <div className="w-16 h-16 rounded-full bg-[#F5F7FA] flex items-center justify-center">
                 <FileText className="w-8 h-8 text-[#0A3D52]/20" />
               </div>
-              <p className="text-xs text-[#0A3D52]/60 font-medium">Você tem <strong>12 MB</strong> de materiais salvos localmente.</p>
+              <p className="text-xs text-[#0A3D52]/60 font-medium">
+                Você tem <strong>12 MB</strong> de materiais salvos localmente.
+              </p>
               <button className="text-[#E74C3C] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:underline">
                 <Trash2 className="w-3.5 h-3.5" /> Limpar Cache local
               </button>
@@ -269,7 +319,9 @@ function SettingsPage() {
         <section className="bg-white rounded-3xl border border-[#0A3D52]/10 shadow-sm overflow-hidden">
           <div className="bg-[#0A3D52]/5 px-8 py-4 border-b border-[#0A3D52]/10 flex items-center gap-3">
             <Database className="w-5 h-5 text-[#D4941E]" />
-            <h2 className="font-black text-xs uppercase tracking-[0.2em]">Progresso no Banco (Supabase)</h2>
+            <h2 className="font-black text-xs uppercase tracking-[0.2em]">
+              Progresso no Banco (Supabase)
+            </h2>
           </div>
           <div className="p-8">
             <p className="text-xs text-[#0A3D52]/60 font-medium mb-6">
@@ -277,7 +329,10 @@ function SettingsPage() {
             </p>
             <div className="space-y-4">
               {DISCIPLINAS_STATICAS.map((d) => (
-                <div key={d.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-[#F5F7FA] rounded-2xl">
+                <div
+                  key={d.id}
+                  className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-[#F5F7FA] rounded-2xl"
+                >
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-sm text-[#0A3D52] truncate">{d.nome}</h4>
                     <p className="text-[10px] text-[#0A3D52]/50 font-bold uppercase">{d.codigo}</p>
@@ -290,7 +345,12 @@ function SettingsPage() {
                         max={100}
                         step={5}
                         value={progressoEdit[d.id] ?? d.progresso ?? 0}
-                        onChange={(e) => setProgressoEdit({ ...progressoEdit, [d.id]: parseInt(e.target.value, 10) })}
+                        onChange={(e) =>
+                          setProgressoEdit({
+                            ...progressoEdit,
+                            [d.id]: parseInt(e.target.value, 10),
+                          })
+                        }
                         className="w-32 accent-[#D4941E]"
                       />
                       <span className="font-black text-sm text-[#0A3D52] w-10 text-right">
@@ -298,7 +358,9 @@ function SettingsPage() {
                       </span>
                     </div>
                     <button
-                      onClick={() => handleSaveProgresso(d.id, progressoEdit[d.id] ?? d.progresso ?? 0)}
+                      onClick={() =>
+                        handleSaveProgresso(d.id, progressoEdit[d.id] ?? d.progresso ?? 0)
+                      }
                       disabled={saving === d.id || progressoEdit[d.id] === (d.progresso ?? 0)}
                       className="bg-[#D4941E] text-[#0A3D52] px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer"
                     >
@@ -324,10 +386,12 @@ function SettingsPage() {
             </div>
             <div>
               <h3 className="text-lg font-black uppercase tracking-tight">Privacidade & Dados</h3>
-              <p className="text-sm text-[#0A3D52]/60">Gerencie suas informações e exporte seu histórico acadêmico.</p>
+              <p className="text-sm text-[#0A3D52]/60">
+                Gerencie suas informações e exporte seu histórico acadêmico.
+              </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={handleExportData}
             className="bg-white text-[#0A3D52] px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-sm hover:shadow-md transition-all flex items-center gap-2 border border-[#0A3D52]/10"
           >
@@ -345,27 +409,29 @@ function SettingsPage() {
   );
 }
 
-function Switch({ active, onToggle }: { active: boolean, onToggle: () => void }) {
+function Switch({ active, onToggle }: { active: boolean; onToggle: () => void }) {
   return (
-    <button 
+    <button
       onClick={onToggle}
       className={cn(
         "w-12 h-6 rounded-full relative transition-colors duration-300 shadow-inner",
-        active ? "bg-[#27AE60]" : "bg-[#0A3D52]/10"
+        active ? "bg-[#27AE60]" : "bg-[#0A3D52]/10",
       )}
     >
-      <div className={cn(
-        "absolute top-1 w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-300",
-        active ? "left-7" : "left-1"
-      )} />
+      <div
+        className={cn(
+          "absolute top-1 w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-300",
+          active ? "left-7" : "left-1",
+        )}
+      />
     </button>
   );
 }
 
 function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
   return (
-    <Link 
-      to={to} 
+    <Link
+      to={to}
       className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
       activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
     >
@@ -377,13 +443,13 @@ function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label
 
 function MoreVertical({ className }: { className?: string }) {
   return (
-    <svg 
-      className={className} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
       strokeLinejoin="round"
     >
       <circle cx="12" cy="12" r="1" />
