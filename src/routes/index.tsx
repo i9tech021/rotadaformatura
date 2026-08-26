@@ -333,7 +333,9 @@ function AcademicDashboard() {
                   <div className="flex items-center gap-1.5">
                     <CalendarIcon className="w-3 h-3 text-[#0A3D52]/40" />
                     <span className="text-[10px] font-bold text-[#0A3D52]/60 uppercase tracking-tighter">
-                      Próxima: {item.nextExam.type} em {item.nextExam.daysRemaining} dias
+                      {item.nextExam
+                        ? `Próxima: ${item.nextExam.type} ${item.nextExam.daysRemaining === 0 ? "hoje" : `em ${item.nextExam.daysRemaining} dias`}`
+                        : "Aguardando cronograma"}
                     </span>
                   </div>
                   <div className="text-[#0A3D52] hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
