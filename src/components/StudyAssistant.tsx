@@ -55,10 +55,8 @@ export function StudyAssistant({
         content,
       }));
       const res = await askAcademicAI({
-        data: {
-          question,
-          context: { resumo: contexto, history },
-        },
+        question,
+        context: { resumo: contexto, history },
       });
       setMessages((m) => [...m, { role: "assistant", content: res.answer }]);
     } catch {
@@ -67,7 +65,7 @@ export function StudyAssistant({
         {
           role: "assistant",
           content:
-            "Erro ao conectar à IA. Verifique se o servidor local está rodando.",
+            "Erro de conexão com a IA. Tente novamente em instantes.",
         },
       ]);
     } finally {

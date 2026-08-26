@@ -82,3 +82,36 @@ begin
     );
   end loop;
 end $$;
+
+-- ============================================================
+-- REALTIME: habilita replicação para os clientes assinarem mudanças
+-- (dashboard de urgência e progresso de aulas atualizam ao vivo).
+-- ============================================================
+alter table public.disciplinas replica identity full;
+alter table public.eventos replica identity full;
+alter table public.checkpoints replica identity full;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'disciplinas'
+  ) then
+    alter publication supabase_realtime add table public.disciplinas;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'eventos'
+  ) then
+    alter publication supabase_realtime add table public.eventos;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'checkpoints'
+  ) then
+    alter publication supabase_realtime add table public.checkpoints;
+  end if;
+end $$;

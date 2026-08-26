@@ -57,3 +57,32 @@ export async function saveCheckpoint(
   }
   saveLocal(disciplinaId, aulaId, concluido);
 }
+
+/**
+ * Assina mudanças em tempo real nos checkpoints de uma disciplina (Supabase
+ * Realtime). `onChange` roda a cada insert/update/delete. Retorna unsubscribe.
+ * Sem Supabase configurado, vira no-op (app segue funcional com localStorage).
+ */
+export function subscribeCheckpoints(
+  disciplinaId: string,
+  onChange: () => void,
+): () => void {
+  const sb = getSupabase();
+  if (!sb) return () => {};
+  const channel = sb
+    .channel(`rdf-checkpoints-${disciplinaId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "checkpoints",
+        filter: `disciplina_id=eq.${disciplinaId}`,
+      },
+      () => onChange(),
+    )
+    .subscribe();
+  return () => {
+    sb.removeChannel(channel);
+  };
+}

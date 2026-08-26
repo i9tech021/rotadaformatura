@@ -42,7 +42,7 @@ export const Route = createFileRoute("/")({
 
 import { disciplinas } from '../data/disciplines';
 import { getEventosAcao, prazoDe, diasPara, type EventoAcademico } from '../data/events';
-import { getEventosAcao as fetchEventosAcao } from '@/lib/eventsService';
+import { getEventosAcao as fetchEventosAcao, subscribeEventos } from '@/lib/eventsService';
 import { seedDatabase, isSupabaseConfigured } from '@/lib/seed';
 
 function useAgora(intervalMs = 30000) {
@@ -73,6 +73,10 @@ function AcademicDashboard() {
   const [seeding, setSeeding] = useState(false);
   useEffect(() => {
     fetchEventosAcao().then(setEventosAcao);
+    const unsub = subscribeEventos(() => {
+      fetchEventosAcao().then(setEventosAcao);
+    });
+    return unsub;
   }, []);
 
   const proximaAP = eventosAcao.find((e) => e.tipo.startsWith("AP"));

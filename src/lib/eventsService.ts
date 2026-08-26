@@ -57,3 +57,24 @@ export async function getEventosPorDisciplina(
   }
   return STATIC_EVENTOS.filter((e) => e.disciplinaId === disciplinaId);
 }
+
+/**
+ * Assina mudanças em tempo real na tabela `eventos` (Supabase Realtime).
+ * `onChange` é chamado a cada insert/update/delete. Retorna função p/ cancelar.
+ * Sem Supabase configurado, vira no-op (app segue funcional com dados estáticos).
+ */
+export function subscribeEventos(onChange: () => void): () => void {
+  const sb = getSupabase();
+  if (!sb) return () => {};
+  const channel = sb
+    .channel("rdf-eventos")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "eventos" },
+      () => onChange(),
+    )
+    .subscribe();
+  return () => {
+    sb.removeChannel(channel);
+  };
+}

@@ -26,7 +26,7 @@ import { disciplinas, type Disciplina } from "@/data/disciplines";
 const disciplines = disciplinas;
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
 import { StudyAssistant } from "@/components/StudyAssistant";
-import { loadCheckpoints, saveCheckpoint } from "@/lib/checkpoints";
+import { loadCheckpoints, saveCheckpoint, subscribeCheckpoints } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -69,8 +69,14 @@ function DisciplinePage() {
     loadCheckpoints(discipline.id).then((m) => {
       if (ativo) setConcluidas(m);
     });
+    const unsub = subscribeCheckpoints(discipline.id, () => {
+      loadCheckpoints(discipline.id).then((m) => {
+        if (ativo) setConcluidas(m);
+      });
+    });
     return () => {
       ativo = false;
+      unsub();
     };
   }, [discipline?.id]);
 

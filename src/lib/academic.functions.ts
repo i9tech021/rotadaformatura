@@ -1,7 +1,8 @@
 // src/lib/academic.functions.ts
-// Proxy de IA: roda NO SERVIDOR (server function), então a VITE_AI_API_KEY
-// NUNCA vai para o bundle do navegador. O cliente só chama askAcademicAI().
-import { createServerFn } from "@tanstack/react-start";
+// Tutor de IA: chamada DIRETA ao provedor OpenAI-compatível (OpenRouter) a partir
+// do navegador. Assim funciona também em deploys estáticos (ex.: Lovable), onde
+// não há server function disponível. A chave VITE_AI_API_KEY já é exposta ao
+// bundle (prefixo VITE_), então este arquivo roda 100% no cliente.
 import { z } from "zod";
 
 // Modelo gratuito padrão da OpenRouter. Troque via VITE_AI_MODEL se quiser
@@ -25,127 +26,124 @@ Regras:
 - Se não souber uma data, diga "consulte o cronograma oficial na plataforma CEDERJ".
 - Seja conciso e prático: prefira tópicos e passos a parágrafos longos.`;
 
-export const askAcademicAI = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
-    z
-      .object({
-        question: z.string().min(1),
-        context: z
-          .object({
-            resumo: z.string().optional(), // resumo da disciplina + próximos eventos
-            history: z
-              .array(
-                z.object({
-                  role: z.enum(["user", "assistant"]),
-                  content: z.string(),
-                }),
-              )
-              .optional(),
-          })
-          .optional(),
-      })
-      .parse(data),
-  )
-  .handler(async ({ data }) => {
-    const baseUrl = import.meta.env.VITE_AI_BASE_URL as string | undefined;
-    const apiKey = import.meta.env.VITE_AI_API_KEY as string | undefined;
+const inputSchema = z.object({
+  question: z.string().min(1),
+  context: z
+    .object({
+      resumo: z.string().optional(),
+      history: z
+        .array(
+          z.object({
+            role: z.enum(["user", "assistant"]),
+            content: z.string(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
+});
 
-    const erroConexao =
-      "A IA não está disponível agora. Verifique a configuração (VITE_AI_BASE_URL / VITE_AI_API_KEY).";
-    const erroLimite =
-      "Limite de requisições da IA atingido. Aguarde alguns instantes e tente novamente.";
+export type AskAcademicAIInput = z.infer<typeof inputSchema>;
 
-    if (!baseUrl || !apiKey) {
-      // Em deploy (Lovable) sem o servidor local, retorna aviso amigável.
-      return { answer: erroConexao };
+export async function askAcademicAI(
+  input: AskAcademicAIInput,
+): Promise<{ answer: string }> {
+  const { question, context } = inputSchema.parse(input);
+
+  const baseUrl = import.meta.env.VITE_AI_BASE_URL as string | undefined;
+  const apiKey = import.meta.env.VITE_AI_API_KEY as string | undefined;
+
+  const erroConfig =
+    "A IA não está configurada. Defina VITE_AI_BASE_URL, VITE_AI_API_KEY e VITE_AI_MODEL nas variáveis de ambiente do projeto.";
+  const erroConexao =
+    "Erro de conexão com a IA. Verifique sua internet e tente novamente em instantes.";
+  const erroLimite =
+    "Limite de requisições da IA atingido. Aguarde alguns instantes e tente novamente.";
+
+  if (!baseUrl || !apiKey) {
+    return { answer: erroConfig };
+  }
+
+  const systemContent = context?.resumo
+    ? `${SYSTEM_PROMPT}\n\nCONTEXTO DO ALUNO:\n${context.resumo}`
+    : SYSTEM_PROMPT;
+
+  const messages = [
+    { role: "system" as const, content: systemContent },
+    ...(context?.history ?? []).map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
+    { role: "user" as const, content: question },
+  ];
+
+  // Modelos de raciocínio (CoT) devolvem o "processo de pensamento" junto.
+  // Desliga o reasoning só neles, para não sujar a resposta do Tutor.
+  const isReasoningModel = /(lightning|nemotron-3\.5|nemotron-3-ultra|reasoning|think|r1|o3|o4)/i.test(
+    AI_MODEL,
+  );
+  const body: Record<string, unknown> = {
+    model: AI_MODEL,
+    messages,
+    temperature: 0.5,
+    max_tokens: 600,
+  };
+  if (isReasoningModel) body.reasoning = { enabled: false };
+
+  try {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "X-Title": "Rota da Formatura",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      return { answer: res.status === 429 ? erroLimite : erroConexao };
     }
 
-    const systemContent = data.context?.resumo
-      ? `${SYSTEM_PROMPT}\n\nCONTEXTO DO ALUNO:\n${data.context.resumo}`
-      : SYSTEM_PROMPT;
-
-    const messages = [
-      { role: "system" as const, content: systemContent },
-      ...(data.context?.history ?? []).map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
-      { role: "user" as const, content: data.question },
-    ];
-
-    // Modelos de raciocínio (CoT) devolvem o "processo de pensamento" junto.
-    // Desliga o reasoning só neles, para não sujar a resposta do Tutor.
-    const isReasoningModel = /(lightning|nemotron-3\.5|nemotron-3-ultra|reasoning|think|r1|o3|o4)/i.test(
-      AI_MODEL,
-    );
-    const body: Record<string, unknown> = {
-      model: AI_MODEL,
-      messages,
-      temperature: 0.5,
-      max_tokens: 600,
-    };
-    if (isReasoningModel) body.reasoning = { enabled: false };
-
-    try {
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-          "X-Title": "Rota da Formatura",
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        return { answer: res.status === 429 ? erroLimite : erroConexao };
-      }
-
-      const answer = await extrairResposta(res);
-      if (!answer) return { answer: erroConexao };
-      return { answer };
-    } catch {
-      return { answer: erroConexao };
-    }
-  });
+    const answer = await extrairResposta(res);
+    if (!answer) return { answer: erroConexao };
+    return { answer };
+  } catch {
+    return { answer: erroConexao };
+  }
+}
 
 /**
  * Gera link do Google Calendar para uma avaliação.
  */
-export const generateCalendarLink = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
-    z
-      .object({
-        title: z.string(),
-        date: z.string(),
-        description: z.string(),
-      })
-      .parse(data),
-  )
-  .handler(async ({ data }) => {
-    const { title, date, description } = data;
-    const startDate = new Date(date);
-    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+export function generateCalendarLink(data: {
+  title: string;
+  date: string;
+  description: string;
+}): { url: string } {
+  const { title, date, description } = data;
+  const startDate = new Date(date);
+  const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
 
-    const formatDate = (d: Date) =>
-      d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+  const formatDate = (d: Date) =>
+    d.toISOString().replace(/-|:|\.\d\d\d/g, "");
 
-    const url = new URL("https://www.google.com/calendar/render");
-    url.searchParams.append("action", "TEMPLATE");
-    url.searchParams.append("text", title);
-    url.searchParams.append(
-      "dates",
-      `${formatDate(startDate)}/${formatDate(endDate)}`,
-    );
-    url.searchParams.append("details", description);
-    url.searchParams.append("sf", "true");
-    url.searchParams.append("output", "xml");
+  const url = new URL("https://www.google.com/calendar/render");
+  url.searchParams.append("action", "TEMPLATE");
+  url.searchParams.append("text", title);
+  url.searchParams.append(
+    "dates",
+    `${formatDate(startDate)}/${formatDate(endDate)}`,
+  );
+  url.searchParams.append("details", description);
+  url.searchParams.append("sf", "true");
+  url.searchParams.append("output", "xml");
 
-    return { url: url.toString() };
-  });
+  return { url: url.toString() };
+}
 
 /**
- * Extrai o texto da resposta do proxy, seja JSON único ou streaming SSE
+ * Extrai o texto da resposta do provedor, seja JSON único ou streaming SSE
  * (linhas `data: {json}` terminando em `data: [DONE]`). Suporta content em
  * `message.content` ou `delta.content`.
  */
