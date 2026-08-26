@@ -210,7 +210,7 @@ function AcademicDashboard() {
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <CalendarIcon className="w-6 h-6 text-[#D4941E] mb-2" />
             <span className="text-2xl font-black text-[#D4941E]">
-              {missaoPrioritaria ? differenceInDays(parseISO(missaoPrioritaria.dataInicio), new Date()) : 0} dias
+              {diasMissao === 0 ? "Hoje" : `${diasMissao} dias`}
             </span>
             <span className="text-xs uppercase font-bold text-[#D4941E]/60 tracking-wider">Próxima Avaliação</span>
           </div>
