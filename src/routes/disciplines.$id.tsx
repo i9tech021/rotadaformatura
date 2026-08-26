@@ -92,6 +92,32 @@ function DisciplinePage() {
         `${e.tipo}: ${format(parseISO(e.dataInicio), "dd/MM", { locale: ptBR })}${e.horario ? ` às ${e.horario}` : ""}`,
     );
 
+  const contextoDisciplina = [
+    `Disciplina: ${discipline.nome} (${discipline.codigo})`,
+    discipline.guia?.objetivoGeral
+      ? `Objetivo geral: ${discipline.guia.objetivoGeral}`
+      : "",
+    discipline.guia?.metodoEstudo
+      ? `Método de estudo sugerido: ${discipline.guia.metodoEstudo}`
+      : "",
+    discipline.formulaNota?.aprovacao
+      ? `Critério de aprovação: ${discipline.formulaNota.aprovacao}`
+      : "",
+    "",
+    `Progresso do aluno: ${feitas}/${totalAulas} aulas concluídas (checkpoints).`,
+    "",
+    "Roteiro de aulas (cronograma oficial):",
+    ...discipline.aulas.map(
+      (a) =>
+        `Aula ${a.numero} — ${a.titulo}${a.paginas ? ` (${a.paginas})` : ""} [Semana ${a.semanaEstudo}]${concluidas[a.id] ? " ✓ concluída" : ""}`,
+    ),
+    "",
+    "Próximas avaliações/entregas desta disciplina:",
+    ...proximosEventosChat.map((e) => `- ${e}`),
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   if (!discipline) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -424,9 +450,8 @@ function DisciplinePage() {
                 <MessageSquare className="w-3 h-3 text-[#D4941E]" /> Tutor IA
               </h3>
               <StudyAssistant
-                disciplinaNome={discipline.nome}
+                contexto={contextoDisciplina}
                 disciplinaCor={discipline.cor}
-                proximosEventos={proximosEventosChat}
               />
             </div>
           </div>

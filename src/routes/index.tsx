@@ -85,6 +85,19 @@ function AcademicDashboard() {
         `${e.tipo} ${e.disciplinaCodigo}: ${format(prazoDe(e), "dd/MM", { locale: ptBR })}${e.horario ? ` às ${e.horario}` : ""}`,
     );
 
+  const contextoGlobal = [
+    "Disciplinas do semestre 2026-2 (CEDERJ Administração):",
+    ...disciplinas.map((d) => `- ${d.nome} (${d.codigo})`),
+    "",
+    "Próximas avaliações/entregas (AD/AP/Questionário):",
+    ...eventosAcao
+      .slice(0, 10)
+      .map(
+        (e) =>
+          `- ${e.tipo} ${e.disciplinaCodigo}: ${format(prazoDe(e), "dd/MM", { locale: ptBR })}${e.horario ? ` às ${e.horario}` : ""} — ${e.conteudo}`,
+      ),
+  ].join("\n");
+
   // Seções de urgência (dashboard "O que fazer AGORA?")
   const secoes = useMemo(() => {
     const hojeUrgente: EventoAcademico[] = [];
@@ -384,7 +397,7 @@ function AcademicDashboard() {
             </div>
 
             <div className="flex-1 min-h-0 p-3">
-              <StudyAssistant proximosEventos={proximosEventosChat} />
+              <StudyAssistant contexto={contextoGlobal} disciplinaCor="#0A3D52" />
             </div>
           </div>
         </div>

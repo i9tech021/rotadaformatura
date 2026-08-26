@@ -12,21 +12,19 @@ interface ChatMessage {
 }
 
 interface StudyAssistantProps {
-  disciplinaNome?: string;
+  contexto: string;
   disciplinaCor?: string;
-  proximosEventos?: string[];
 }
 
 const WELCOME: ChatMessage = {
   role: "assistant",
   content:
-    "Olá! Sou seu Tutor da Rota da Formatura. Posso explicar conceitos, sugerir o que estudar hoje ou ajudar na revisão para ADs e APs. Como posso ajudar?",
+    "Olá! Sou seu Tutor da Rota da Formatura. Posso tirar dúvidas da matéria, explicar conceitos, montar seu plano de estudos e orientar sobre o cronograma. Pergunte o que quiser!",
 };
 
 export function StudyAssistant({
-  disciplinaNome,
+  contexto,
   disciplinaCor = "#0A3D52",
-  proximosEventos = [],
 }: StudyAssistantProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState("");
@@ -39,16 +37,6 @@ export function StudyAssistant({
       behavior: "smooth",
     });
   }, [messages, loading]);
-
-  const buildResumo = () => {
-    const partes: string[] = [];
-    if (disciplinaNome) partes.push(`Disciplina em foco: ${disciplinaNome}.`);
-    if (proximosEventos.length) {
-      partes.push("Próximos eventos desta disciplina:");
-      partes.push(...proximosEventos.map((e) => `- ${e}`));
-    }
-    return partes.join("\n");
-  };
 
   const send = async () => {
     const question = input.trim();
@@ -69,7 +57,7 @@ export function StudyAssistant({
       const res = await askAcademicAI({
         data: {
           question,
-          context: { resumo: buildResumo(), history },
+          context: { resumo: contexto, history },
         },
       });
       setMessages((m) => [...m, { role: "assistant", content: res.answer }]);
