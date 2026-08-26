@@ -19,7 +19,7 @@ import {
   Play
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState, useEffect, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
 import { StudyAssistant } from "@/components/StudyAssistant";
@@ -44,6 +44,7 @@ import { disciplinas as DISCIPLINAS_STATICAS } from '../data/disciplines';
 import { getEventosAcao, prazoDe, diasPara, type EventoAcademico } from '../data/events';
 import { getEventosAcao as fetchEventosAcao, subscribeEventos } from '@/lib/eventsService';
 import { getDisciplinas, subscribeDisciplinas } from '@/lib/disciplinasService';
+import { countConcluidas, subscribeCheckpointsAll } from '@/lib/checkpoints';
 import { seedDatabase, isSupabaseConfigured } from '@/lib/seed';
 
 function useAgora(intervalMs = 30000) {
@@ -88,6 +89,32 @@ function AcademicDashboard() {
     });
     return unsubDisc;
   }, []);
+
+  // Progresso REAL por disciplina = aulas concluídas / total (não hardcoded).
+  // Recalcula ao vivo quando qualquer checkpoint muda (realtime).
+  const [progressoMap, setProgressoMap] = useState<Record<string, number>>({});
+  const recalcProgresso = useCallback(
+    async (lista: typeof DISCIPLINAS_STATICAS) => {
+      const map: Record<string, number> = {};
+      await Promise.all(
+        lista.map(async (d) => {
+          const feitas = await countConcluidas(d.id);
+          map[d.id] = d.aulas.length
+            ? Math.round((feitas / d.aulas.length) * 100)
+            : 0;
+        }),
+      );
+      setProgressoMap(map);
+    },
+    [],
+  );
+  useEffect(() => {
+    recalcProgresso(disciplinas);
+  }, [disciplinas, recalcProgresso]);
+  useEffect(() => {
+    const unsub = subscribeCheckpointsAll(() => recalcProgresso(disciplinas));
+    return unsub;
+  }, [disciplinas, recalcProgresso]);
 
   const proximaAP = eventosAcao.find((e) => e.tipo.startsWith("AP"));
   const diasProxima = proximaAP ? diasPara(proximaAP, agora) : 0;
@@ -141,6 +168,7 @@ function AcademicDashboard() {
 
         return {
           ...d,
+          progresso: progressoMap[d.id] ?? d.progresso,
           ch: d.id.includes("hpa") ? "60h" : "45h",
           period: d.aulas.length > 0 ? "2º período" : "Aguardando",
           status:

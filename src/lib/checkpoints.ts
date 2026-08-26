@@ -86,3 +86,43 @@ export function subscribeCheckpoints(
     sb.removeChannel(channel);
   };
 }
+
+/**
+ * Assina TODAS as mudanças de checkpoints (sem filtro de disciplina). Usado no
+ * dashboard para recomputar o progresso geral ao vivo. Retorna unsubscribe.
+ */
+export function subscribeCheckpointsAll(onChange: () => void): () => void {
+  const sb = getSupabase();
+  if (!sb) return () => {};
+  const channel = sb
+    .channel("rdf-checkpoints-all")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "checkpoints" },
+      () => onChange(),
+    )
+    .subscribe();
+  return () => {
+    sb.removeChannel(channel);
+  };
+}
+
+/**
+ * Conta quantas aulas estão concluídas numa disciplina (Supabase se configurado,
+ * senão localStorage). Base para o progresso real exibido no dashboard.
+ */
+export async function countConcluidas(
+  disciplinaId: string,
+): Promise<number> {
+  const sb = getSupabase();
+  if (sb) {
+    const { data, error } = await sb
+      .from("checkpoints")
+      .select("concluido")
+      .eq("disciplina_id", disciplinaId);
+    if (!error && data) {
+      return data.filter((r: { concluido?: boolean }) => r.concluido).length;
+    }
+  }
+  return Object.values(loadLocal(disciplinaId)).filter(Boolean).length;
+}
