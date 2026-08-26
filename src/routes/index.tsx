@@ -470,7 +470,7 @@ function UrgenciaCard({ e, agora }: { e: EventoAcademico; agora: Date }) {
   const isQuest = e.tipo === "QUESTIONARIO";
   const cor = isAP ? "#E74C3C" : isQuest ? "#D4941E" : "#2563EB";
   const prazo = prazoDe(e);
-  const prazoLabel = format(prazo, "dd/MM" + (e.horario ? " 'às' HH:mm" : ""), { locale: ptBR });
+  const prazoLabel = format(prazo, "dd/MM", { locale: ptBR }) + (e.horario ? ` às ${e.horario}` : "");
   const statusLabel = encerrado
     ? "🔴 Encerrado"
     : venceHoje
