@@ -359,71 +359,92 @@ export const fundamentosFinancas: Disciplina = {
   ch: '45h',
   progresso: 0,
   aulas: [],
-  avaliacoes: [],
+  avaliacoes: [
+    { id: 'ffn-ad1', tipo: 'AD1', dataInicio: '2026-08-10', dataFim: '2026-08-16', horario: '23:59', conteudoCobrado: 'Atividade 1', entregue: false, observacoes: 'Entrega na plataforma até 23:59' },
+    { id: 'ffn-ap1', tipo: 'AP1', dataPresencial: '2026-09-06', horario: '09:30', conteudoCobrado: 'Avaliação Presencial 1', peso: 8, entregue: false },
+    { id: 'ffn-ad2', tipo: 'AD2', dataInicio: '2026-09-28', dataFim: '2026-10-04', horario: '23:59', conteudoCobrado: 'Atividade 2', entregue: false, observacoes: 'Entrega na plataforma até 23:59' },
+    { id: 'ffn-ap2', tipo: 'AP2', dataPresencial: '2026-10-18', horario: '09:30', conteudoCobrado: 'Avaliação Presencial 2', peso: 8, entregue: false },
+    { id: 'ffn-ap3', tipo: 'AP3', dataPresencial: '2026-11-22', horario: '08:30', conteudoCobrado: 'Avaliação Presencial 3', peso: 10, entregue: false },
+  ],
   formulaNota: { n1: 'Aguardando', n2: 'Aguardando', aprovacao: 'Aguardando', ap3: 'Aguardando' },
   guia: { objetivoGeral: 'Aguardando dados do AVA', metodoEstudo: 'Aguardando', observacoes: ['Enviar cronograma, guia e caderno didático'] },
 };
 
-export const teoriaGeralAdm: Disciplina = {
-  id: 'teoria-geral-adm-i',
-  nome: 'Teoria Geral da Administração I',
-  codigo: 'TGA1',
-  icone: '🏢',
-  cor: '#4F46E5', // indigo-600
+export const economiaBrasileiraContemporanea: Disciplina = {
+  id: 'economia-brasileira-contemporanea',
+  nome: 'Economia Brasileira Contemporânea',
+  codigo: 'EBC',
+  icone: '📈',
+  cor: '#0EA5E9', // sky-500 (cor provisória)
   coordenador: 'Aguardando dados',
   totalAulas: 0,
   period: '5º período',
   ch: '45h',
   progresso: 0,
   aulas: [],
-  avaliacoes: [],
+  avaliacoes: [
+    { id: 'ebc-ad1', tipo: 'AD1', dataInicio: '2026-08-17', dataFim: '2026-08-23', horario: '23:55', conteudoCobrado: 'Atividade Discursiva 1', entregue: false, observacoes: 'Entrega na plataforma até 23:55' },
+    { id: 'ebc-ap1', tipo: 'AP1', dataPresencial: '2026-09-12', horario: '13:30', conteudoCobrado: 'Avaliação Presencial 1', peso: 8, entregue: false },
+    { id: 'ebc-ad2', tipo: 'AD2', dataInicio: '2026-10-05', dataFim: '2026-10-11', horario: '23:55', conteudoCobrado: 'Atividade Discursiva 2', entregue: false, observacoes: 'Entrega na plataforma até 23:55' },
+    { id: 'ebc-ap2', tipo: 'AP2', dataPresencial: '2026-10-31', horario: '13:30', conteudoCobrado: 'Avaliação Presencial 2', peso: 8, entregue: false },
+    { id: 'ebc-qo', tipo: 'QUESTIONARIO', dataFim: '2026-11-08', conteudoCobrado: 'Questionário Opcional', entregue: false, observacoes: 'Opcional. Vale até 1 ponto na AP2.' },
+    { id: 'ebc-ap3', tipo: 'AP3', dataPresencial: '2026-11-21', horario: '16:30', conteudoCobrado: 'Avaliação Presencial 3', peso: 10, entregue: false },
+  ],
   formulaNota: { n1: 'Aguardando', n2: 'Aguardando', aprovacao: 'Aguardando', ap3: 'Aguardando' },
   guia: { objetivoGeral: 'Aguardando dados do AVA', metodoEstudo: 'Aguardando', observacoes: ['Enviar cronograma, guia e caderno didático'] },
 };
 
-export const matematicaFinanceira: Disciplina = {
-  id: 'matematica-financeira',
-  nome: 'Matemática Financeira',
-  codigo: 'MATFIN',
-  icone: '🧮',
-  cor: '#DC2626', // red-600
+export const gestaoPessoasI: Disciplina = {
+  id: 'gestao-pessoas-i',
+  nome: 'Gestão de Pessoas I',
+  codigo: 'GPI',
+  icone: '🤝',
+  cor: '#DB2777', // pink-600 (cor provisória)
   coordenador: 'Aguardando dados',
   totalAulas: 0,
   period: '5º período',
   ch: '45h',
   progresso: 0,
   aulas: [],
-  avaliacoes: [],
+  avaliacoes: [
+    { id: 'gpi-ad1', tipo: 'AD1', dataInicio: '2026-08-10', dataFim: '2026-08-23', horario: '23:59', conteudoCobrado: 'Atividade 1', entregue: false, observacoes: 'Entrega na plataforma até 23:59' },
+    { id: 'gpi-ap1', tipo: 'AP1', dataPresencial: '2026-09-05', horario: '13:30', conteudoCobrado: 'Avaliação Presencial 1', peso: 8, entregue: false },
+    { id: 'gpi-ap3', tipo: 'AP3', dataPresencial: '2026-11-21', horario: '11:00', conteudoCobrado: 'Avaliação Presencial 3', peso: 10, entregue: false, observacoes: 'AD2 e AP2: não informado no cronograma' },
+  ],
   formulaNota: { n1: 'Aguardando', n2: 'Aguardando', aprovacao: 'Aguardando', ap3: 'Aguardando' },
-  guia: { objetivoGeral: 'Aguardando dados do AVA', metodoEstudo: 'Aguardando', observacoes: ['Enviar cronograma, guia e caderno didático'] },
+  guia: { objetivoGeral: 'Aguardando dados do AVA', metodoEstudo: 'Aguardando', observacoes: ['AD2 e AP2: não informado no cronograma'] },
 };
 
-export const metodologiaTC: Disciplina = {
-  id: 'metodologia-trabalho-cientifico',
-  nome: 'Metodologia do Trabalho Científico',
-  codigo: 'MTC',
-  icone: '📝',
-  cor: '#0891B2', // cyan-600
+export const sociedadeEOrganizacoes: Disciplina = {
+  id: 'sociedade-e-organizacoes',
+  nome: 'Sociedade e Organizações',
+  codigo: 'SO',
+  icone: '🌐',
+  cor: '#9333EA', // purple-600 (cor provisória)
   coordenador: 'Aguardando dados',
   totalAulas: 0,
   period: '5º período',
   ch: '45h',
   progresso: 0,
   aulas: [],
-  avaliacoes: [],
+  avaliacoes: [
+    { id: 'so-ad1', tipo: 'AD1', dataInicio: '2026-08-17', dataFim: '2026-08-23', conteudoCobrado: 'Atividade 1', entregue: false },
+    { id: 'so-ap1', tipo: 'AP1', dataPresencial: '2026-09-12', horario: '09:30', conteudoCobrado: 'Avaliação Presencial 1', peso: 8, entregue: false },
+    { id: 'so-ap3', tipo: 'AP3', dataPresencial: '2026-11-21', horario: '11:00', conteudoCobrado: 'Avaliação Presencial 3', peso: 10, entregue: false, observacoes: 'AD2 e AP2: não informado no cronograma' },
+  ],
   formulaNota: { n1: 'Aguardando', n2: 'Aguardando', aprovacao: 'Aguardando', ap3: 'Aguardando' },
-  guia: { objetivoGeral: 'Aguardando dados do AVA', metodoEstudo: 'Aguardando', observacoes: ['Enviar cronograma, guia e caderno didático'] },
+  guia: { objetivoGeral: 'Aguardando dados do AVA', metodoEstudo: 'Aguardando', observacoes: ['AD2 e AP2: não informado no cronograma'] },
 };
 
-// Array completo de disciplinas
+// Array completo de disciplinas (ordem do semestre 2026-2)
 export const disciplinas: Disciplina[] = [
   metodosDeterministicos,
-  historiaPensamentoAdm,
   contabilidadeGeral,
+  economiaBrasileiraContemporanea,
   fundamentosFinancas,
-  teoriaGeralAdm,
-  matematicaFinanceira,
-  metodologiaTC,
+  gestaoPessoasI,
+  sociedadeEOrganizacoes,
+  historiaPensamentoAdm,
 ];
 
 export const disciplinasCompletas = disciplinas.filter(d => d.aulas.length > 0);

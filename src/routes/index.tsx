@@ -19,10 +19,10 @@ import {
   Play
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
-import { formatDistanceToNow, differenceInCalendarDays, parseISO, format } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/")({
@@ -40,8 +40,7 @@ export const Route = createFileRoute("/")({
 });
 
 import { disciplinas } from '../data/disciplines';
-import { eventos, getProximosEventos, getEventosUrgentes } from '../data/events';
-import { getTarefasPendentes } from '../data/studyPlan';
+import { getEventosAcao, prazoDe, diasPara, type EventoAcademico } from '../data/events';
 
 function useAgora(intervalMs = 30000) {
   const [agora, setAgora] = useState(() => new Date());
@@ -64,17 +63,23 @@ function useAgora(intervalMs = 30000) {
 function AcademicDashboard() {
   const agora = useAgora();
 
-  const proximosEventos = useMemo(
-    () =>
-      eventos
-        .filter((e) => differenceInCalendarDays(parseISO(e.dataInicio), agora) >= 0)
-        .sort((a, b) => parseISO(a.dataInicio).getTime() - parseISO(b.dataInicio).getTime()),
-    [agora],
-  );
-  const missaoPrioritaria = proximosEventos[0];
-  const diasMissao = missaoPrioritaria
-    ? differenceInCalendarDays(parseISO(missaoPrioritaria.dataInicio), agora)
-    : 0;
+  const eventosAcao = useMemo(() => getEventosAcao(), []);
+  const proximaAP = eventosAcao.find((e) => e.tipo.startsWith("AP"));
+  const diasProxima = proximaAP ? diasPara(proximaAP, agora) : 0;
+
+  // Seções de urgência (dashboard "O que fazer AGORA?")
+  const secoes = useMemo(() => {
+    const hojeUrgente: EventoAcademico[] = [];
+    const proximo: EventoAcademico[] = [];
+    const depois: EventoAcademico[] = [];
+    for (const e of eventosAcao) {
+      const d = diasPara(e, agora);
+      if (d <= 0) hojeUrgente.push(e);
+      else if (d <= 7) proximo.push(e);
+      else depois.push(e);
+    }
+    return { hojeUrgente, proximo, depois };
+  }, [eventosAcao, agora]);
 
   const profile = {
     name: "Estudante CEDERJ",
@@ -86,10 +91,8 @@ function AcademicDashboard() {
   const disciplinesList = useMemo(
     () =>
       disciplinas.map((d) => {
-        const proximo = proximosEventos.find((e) => e.disciplinaId === d.id);
-        const days = proximo
-          ? differenceInCalendarDays(parseISO(proximo.dataInicio), agora)
-          : -1;
+        const proximo = eventosAcao.find((e) => e.disciplinaId === d.id);
+        const days = proximo ? diasPara(proximo, agora) : -1;
 
         return {
           ...d,
@@ -100,7 +103,7 @@ function AcademicDashboard() {
           nextExam: proximo ? { type: proximo.tipo, daysRemaining: days } : null,
         };
       }),
-    [proximosEventos, agora],
+    [eventosAcao, agora],
   );
 
   const data = { profile, disciplines: disciplinesList };
@@ -115,9 +118,7 @@ function AcademicDashboard() {
     else setGreeting("Boa noite");
   }, [agora]);
 
-  const countdown = missaoPrioritaria
-    ? formatDistanceToNow(parseISO(missaoPrioritaria.dataInicio), { locale: ptBR, addSuffix: true })
-    : "";
+  // countdown removido: substituído pelas seções de urgência abaixo
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -210,77 +211,38 @@ function AcademicDashboard() {
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <CalendarIcon className="w-6 h-6 text-[#D4941E] mb-2" />
             <span className="text-2xl font-black text-[#D4941E]">
-              {diasMissao === 0 ? "Hoje" : `${diasMissao} dias`}
+              {diasProxima === 0 ? "Hoje" : `${diasProxima} dias`}
             </span>
             <span className="text-xs uppercase font-bold text-[#D4941E]/60 tracking-wider">Próxima Avaliação</span>
           </div>
         </div>
 
-        {/* Próxima Missão */}
-        <section className="mb-10">
-          <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <Target className="w-4 h-4" /> Próxima Missão Prioritária
-          </h3>
-          <div className="bg-white border-2 border-[#D4941E] rounded-2xl p-6 shadow-lg shadow-[#D4941E]/5 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Trophy className="w-24 h-24 text-[#D4941E]" />
-            </div>
-            <div className="relative z-10">
-              <span className="inline-block bg-[#D4941E] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter mb-2">
-                {missaoPrioritaria?.tipo || 'Próximo Evento'}
-              </span>
-              <h4 className="text-xl md:text-2xl font-bold mb-2">{missaoPrioritaria?.disciplinaNome || 'Nenhum evento próximo'}</h4>
-              <p className="text-[#0A3D52]/70 text-sm mb-4">
-                {missaoPrioritaria?.conteudo || 'Fique atento ao seu cronograma acadêmico.'}
-              </p>
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2 bg-[#F5F7FA] px-3 py-1.5 rounded-lg border border-[#0A3D52]/10">
-                  <Clock className="w-4 h-4 text-[#0A3D52]/60" />
-                  <span className="text-sm font-bold">Inicia: {countdown || '...'}</span>
-                </div>
-                <Link to="/community/chat" className="bg-[#D4941E] hover:bg-[#B87D17] text-[#0A3D52] px-6 py-2 rounded-lg font-black text-sm uppercase transition-colors shadow-md text-center">
-                  Entrar no Chat da Turma
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* URGÊNCIA: HOJE / URGENTE */}
+        <UrgenciaSection
+          titulo="Hoje / Urgente"
+          icone={<Target className="w-4 h-4" />}
+          eventos={secoes.hojeUrgente}
+          agora={agora}
+          vazio="Nada vencendo ou vencido no momento."
+        />
 
-        {/* Missões Diárias */}
-        <section className="mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Sua Rota Hoje: {format(agora, "EEEE, d 'de' MMMM", { locale: ptBR })}</h3>
-            <span className="text-[10px] font-black uppercase text-[#27AE60]">Meta Diária</span>
-          </div>
-          <div className="space-y-3">
-            {getTarefasPendentes().length > 0 ? (
-              getTarefasPendentes().map(tarefa => (
-                <div key={tarefa.id} className="bg-white p-4 rounded-2xl border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all">
-                  <div className="flex items-center gap-4">
-                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", 
-                      tarefa.tipo === 'podcast' ? "bg-[#7C3AED]/10 text-[#7C3AED]" : 
-                      tarefa.tipo === 'video' ? "bg-[#2563EB]/10 text-[#2563EB]" : "bg-[#D4941E]/10 text-[#D4941E]")}>
-                      {tarefa.tipo === 'podcast' ? <Headphones className="w-5 h-5" /> : 
-                       tarefa.tipo === 'video' ? <Play className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm leading-tight mb-1">{tarefa.titulo}</h4>
-                      <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter">{tarefa.disciplinaNome} • {tarefa.duracaoMinutos} min</p>
-                    </div>
-                  </div>
-                  <button className="w-8 h-8 rounded-full border-2 border-[#0A3D52]/10 flex items-center justify-center hover:border-[#27AE60] hover:bg-[#27AE60]/10 transition-colors group">
-                    <CheckCircle2 className="w-4 h-4 text-[#0A3D52]/10 group-hover:text-[#27AE60]" />
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="bg-[#F5F7FA] p-8 rounded-3xl border border-dashed border-[#0A3D52]/10 text-center">
-                <Trophy className="w-8 h-8 text-[#D4941E] mx-auto mb-2 opacity-50" />
-                <p className="text-sm font-bold text-[#0A3D52]/40 uppercase tracking-widest">Tudo limpo por hoje! Descanse ou adiante algo.</p>
-              </div>
-            )}
-          </div>
-        </section>
+        {/* URGÊNCIA: PRÓXIMO (7 dias) */}
+        <UrgenciaSection
+          titulo="Próximo (7 dias)"
+          icone={<Clock className="w-4 h-4" />}
+          eventos={secoes.proximo}
+          agora={agora}
+          vazio="Nenhuma entrega ou prova nos próximos 7 dias."
+        />
+
+        {/* URGÊNCIA: DEPOIS (média prazo) */}
+        <UrgenciaSection
+          titulo="Depois (média prazo)"
+          icone={<CalendarIcon className="w-4 h-4" />}
+          eventos={secoes.depois}
+          agora={agora}
+          vazio="Nada agendado além de 7 dias."
+        />
 
         {/* Disciplinas Grid */}
         <section>
@@ -494,5 +456,85 @@ function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label
       <Icon className="w-5 h-5" />
       <span className="font-black text-xs uppercase tracking-widest">{label}</span>
     </Link>
+  );
+}
+
+// ============================================================
+// Seções de urgência — "O que eu preciso fazer AGORA?"
+// ============================================================
+function UrgenciaCard({ e, agora }: { e: EventoAcademico; agora: Date }) {
+  const dias = diasPara(e, agora);
+  const encerrado = dias < 0;
+  const venceHoje = dias === 0;
+  const isAP = e.tipo.startsWith("AP");
+  const isQuest = e.tipo === "QUESTIONARIO";
+  const cor = isAP ? "#E74C3C" : isQuest ? "#D4941E" : "#2563EB";
+  const prazo = prazoDe(e);
+  const prazoLabel = format(prazo, "dd/MM" + (e.horario ? " 'às' HH:mm" : ""), { locale: ptBR });
+  const statusLabel = encerrado
+    ? "🔴 Encerrado"
+    : venceHoje
+    ? "⚠️ Vence hoje"
+    : dias <= 7
+    ? `em ${dias} ${dias === 1 ? "dia" : "dias"}`
+    : formatDistanceToNow(prazo, { locale: ptBR, addSuffix: true });
+
+  return (
+    <div className="bg-white p-4 rounded-2xl border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all gap-3">
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-white text-xs" style={{ backgroundColor: cor }}>
+          {isAP ? "AP" : isQuest ? "?" : "AD"}
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-tighter" style={{ color: cor }}>{e.tipo}</span>
+            <span className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">{e.disciplinaCodigo}</span>
+          </div>
+          <h4 className="font-bold text-sm leading-tight mb-1 truncate">{e.titulo}</h4>
+          <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter truncate">
+            {e.disciplinaNome}{e.horario ? ` • ${e.horario}` : ""}
+          </p>
+        </div>
+      </div>
+      <span className={cn(
+        "text-[10px] font-black uppercase px-2 py-1 rounded-full shrink-0 text-right",
+        encerrado ? "bg-[#E74C3C]/10 text-[#E74C3C]" : venceHoje ? "bg-[#D4941E]/15 text-[#D4941E]" : "bg-[#0A3D52]/5 text-[#0A3D52]/60"
+      )}>
+        {statusLabel}
+      </span>
+    </div>
+  );
+}
+
+function UrgenciaSection({
+  titulo,
+  icone,
+  eventos,
+  agora,
+  vazio,
+}: {
+  titulo: string;
+  icone: ReactNode;
+  eventos: EventoAcademico[];
+  agora: Date;
+  vazio: string;
+}) {
+  return (
+    <section className="mb-10">
+      <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+        {icone} {titulo}
+      </h3>
+      {eventos.length > 0 ? (
+        <div className="space-y-3">
+          {eventos.map((e) => (
+            <UrgenciaCard key={e.id} e={e} agora={agora} />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-[#F5F7FA] p-6 rounded-3xl border border-dashed border-[#0A3D52]/10 text-center">
+          <p className="text-sm font-bold text-[#0A3D52]/40 uppercase tracking-widest">{vazio}</p>
+        </div>
+      )}
+    </section>
   );
 }

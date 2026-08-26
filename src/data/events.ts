@@ -8,7 +8,7 @@ export interface EventoAcademico {
   disciplinaNome: string;
   disciplinaCodigo: string;
   disciplinaCor: string;
-  tipo: 'AD1' | 'AD2' | 'AP1' | 'AP2' | 'AP3' | 'AULA_INAUGURAL' | 'JORNADA' | 'MANUTENCAO' | 'ENADE' | 'REVISAO';
+  tipo: 'AD1' | 'AD2' | 'AP1' | 'AP2' | 'AP3' | 'AULA_INAUGURAL' | 'JORNADA' | 'MANUTENCAO' | 'ENADE' | 'REVISAO' | 'QUESTIONARIO';
   dataInicio: string; // ISO date
   dataFim?: string; // ISO date
   horario?: string;
@@ -258,7 +258,7 @@ export const eventos: EventoAcademico[] = [
     dataFim: '2026-09-30',
     conteudo: 'Questão 3 - Métodos Determinísticos I',
     peso: 0.66,
-    observacoes: 'Resolver à mão, escanear em PDF.',
+    observacoes: 'Resolver à mão, escanear em PDF. Duplicidade no cronograma oficial (30/09 e 07/10) - verificar na plataforma.',
     alertaDias: 7,
   },
   {
@@ -289,7 +289,7 @@ export const eventos: EventoAcademico[] = [
     dataFim: '2026-10-07',
     conteudo: 'Questão 3 - prazo estendido',
     peso: 0.66,
-    observacoes: 'Prazo final para AD2 Q3.',
+    observacoes: 'Prazo final para AD2 Q3. Duplicidade no cronograma oficial (30/09 e 07/10) - verificar na plataforma.',
     alertaDias: 7,
   },
   {
@@ -474,6 +474,276 @@ export const eventos: EventoAcademico[] = [
     conteudo: 'Prazo final para lançamento de notas AP3',
     alertaDias: 3,
   },
+
+  // ============================================================
+  // ECONOMIA BRASILEIRA CONTEMPORÂNEA (2026-2)
+  // ============================================================
+  {
+    id: 'evt-ebc-ad1',
+    titulo: 'AD1 - Economia Brasileira Contemporânea',
+    disciplinaId: 'economia-brasileira-contemporanea',
+    disciplinaNome: 'Economia Brasileira Contemporânea',
+    disciplinaCodigo: 'EBC',
+    disciplinaCor: '#0EA5E9',
+    tipo: 'AD1',
+    dataInicio: '2026-08-17',
+    dataFim: '2026-08-23',
+    horario: '23:55',
+    conteudo: 'Atividade Discursiva 1',
+    observacoes: 'Entrega na plataforma até 23:55',
+    alertaDias: 7,
+  },
+  {
+    id: 'evt-ebc-ap1',
+    titulo: 'AP1 - Economia Brasileira Contemporânea',
+    disciplinaId: 'economia-brasileira-contemporanea',
+    disciplinaNome: 'Economia Brasileira Contemporânea',
+    disciplinaCodigo: 'EBC',
+    disciplinaCor: '#0EA5E9',
+    tipo: 'AP1',
+    dataInicio: '2026-09-12',
+    horario: '13:30',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 1',
+    peso: 8,
+    alertaDias: 14,
+  },
+  {
+    id: 'evt-ebc-ad2',
+    titulo: 'AD2 - Economia Brasileira Contemporânea',
+    disciplinaId: 'economia-brasileira-contemporanea',
+    disciplinaNome: 'Economia Brasileira Contemporânea',
+    disciplinaCodigo: 'EBC',
+    disciplinaCor: '#0EA5E9',
+    tipo: 'AD2',
+    dataInicio: '2026-10-05',
+    dataFim: '2026-10-11',
+    horario: '23:55',
+    conteudo: 'Atividade Discursiva 2',
+    observacoes: 'Entrega na plataforma até 23:55',
+    alertaDias: 7,
+  },
+  {
+    id: 'evt-ebc-ap2',
+    titulo: 'AP2 - Economia Brasileira Contemporânea',
+    disciplinaId: 'economia-brasileira-contemporanea',
+    disciplinaNome: 'Economia Brasileira Contemporânea',
+    disciplinaCodigo: 'EBC',
+    disciplinaCor: '#0EA5E9',
+    tipo: 'AP2',
+    dataInicio: '2026-10-31',
+    horario: '13:30',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 2',
+    peso: 8,
+    alertaDias: 14,
+  },
+  {
+    id: 'evt-ebc-qo',
+    titulo: 'Questionário Opcional - Economia Brasileira Contemporânea',
+    disciplinaId: 'economia-brasileira-contemporanea',
+    disciplinaNome: 'Economia Brasileira Contemporânea',
+    disciplinaCodigo: 'EBC',
+    disciplinaCor: '#0EA5E9',
+    tipo: 'QUESTIONARIO',
+    dataInicio: '2026-11-01',
+    dataFim: '2026-11-08',
+    conteudo: 'Questionário Opcional',
+    observacoes: 'Opcional. Vale até 1 ponto na AP2.',
+    alertaDias: 7,
+  },
+  {
+    id: 'evt-ebc-ap3',
+    titulo: 'AP3 - Economia Brasileira Contemporânea',
+    disciplinaId: 'economia-brasileira-contemporanea',
+    disciplinaNome: 'Economia Brasileira Contemporânea',
+    disciplinaCodigo: 'EBC',
+    disciplinaCor: '#0EA5E9',
+    tipo: 'AP3',
+    dataInicio: '2026-11-21',
+    horario: '16:30',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 3',
+    peso: 10,
+    alertaDias: 14,
+  },
+
+  // ============================================================
+  // FUNDAMENTOS DE FINANÇAS (2026-2)
+  // ============================================================
+  {
+    id: 'evt-ffn-ad1',
+    titulo: 'AD1 - Fundamentos de Finanças',
+    disciplinaId: 'fundamentos-financas',
+    disciplinaNome: 'Fundamentos de Finanças',
+    disciplinaCodigo: 'FFN',
+    disciplinaCor: '#D97706',
+    tipo: 'AD1',
+    dataInicio: '2026-08-10',
+    dataFim: '2026-08-16',
+    horario: '23:59',
+    conteudo: 'Atividade 1',
+    observacoes: 'Entrega na plataforma até 23:59',
+    alertaDias: 7,
+  },
+  {
+    id: 'evt-ffn-ap1',
+    titulo: 'AP1 - Fundamentos de Finanças',
+    disciplinaId: 'fundamentos-financas',
+    disciplinaNome: 'Fundamentos de Finanças',
+    disciplinaCodigo: 'FFN',
+    disciplinaCor: '#D97706',
+    tipo: 'AP1',
+    dataInicio: '2026-09-06',
+    horario: '09:30',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 1',
+    peso: 8,
+    alertaDias: 14,
+  },
+  {
+    id: 'evt-ffn-ad2',
+    titulo: 'AD2 - Fundamentos de Finanças',
+    disciplinaId: 'fundamentos-financas',
+    disciplinaNome: 'Fundamentos de Finanças',
+    disciplinaCodigo: 'FFN',
+    disciplinaCor: '#D97706',
+    tipo: 'AD2',
+    dataInicio: '2026-09-28',
+    dataFim: '2026-10-04',
+    horario: '23:59',
+    conteudo: 'Atividade 2',
+    observacoes: 'Entrega na plataforma até 23:59',
+    alertaDias: 7,
+  },
+  {
+    id: 'evt-ffn-ap2',
+    titulo: 'AP2 - Fundamentos de Finanças',
+    disciplinaId: 'fundamentos-financas',
+    disciplinaNome: 'Fundamentos de Finanças',
+    disciplinaCodigo: 'FFN',
+    disciplinaCor: '#D97706',
+    tipo: 'AP2',
+    dataInicio: '2026-10-18',
+    horario: '09:30',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 2',
+    peso: 8,
+    alertaDias: 14,
+  },
+  {
+    id: 'evt-ffn-ap3',
+    titulo: 'AP3 - Fundamentos de Finanças',
+    disciplinaId: 'fundamentos-financas',
+    disciplinaNome: 'Fundamentos de Finanças',
+    disciplinaCodigo: 'FFN',
+    disciplinaCor: '#D97706',
+    tipo: 'AP3',
+    dataInicio: '2026-11-22',
+    horario: '08:30',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 3',
+    peso: 10,
+    alertaDias: 14,
+  },
+
+  // ============================================================
+  // GESTÃO DE PESSOAS I (2026-2)
+  // ============================================================
+  {
+    id: 'evt-gpi-ad1',
+    titulo: 'AD1 - Gestão de Pessoas I',
+    disciplinaId: 'gestao-pessoas-i',
+    disciplinaNome: 'Gestão de Pessoas I',
+    disciplinaCodigo: 'GPI',
+    disciplinaCor: '#DB2777',
+    tipo: 'AD1',
+    dataInicio: '2026-08-10',
+    dataFim: '2026-08-23',
+    horario: '23:59',
+    conteudo: 'Atividade 1',
+    observacoes: 'Entrega na plataforma até 23:59',
+    alertaDias: 7,
+  },
+  {
+    id: 'evt-gpi-ap1',
+    titulo: 'AP1 - Gestão de Pessoas I',
+    disciplinaId: 'gestao-pessoas-i',
+    disciplinaNome: 'Gestão de Pessoas I',
+    disciplinaCodigo: 'GPI',
+    disciplinaCor: '#DB2777',
+    tipo: 'AP1',
+    dataInicio: '2026-09-05',
+    horario: '13:30',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 1',
+    peso: 8,
+    alertaDias: 14,
+  },
+  {
+    id: 'evt-gpi-ap3',
+    titulo: 'AP3 - Gestão de Pessoas I',
+    disciplinaId: 'gestao-pessoas-i',
+    disciplinaNome: 'Gestão de Pessoas I',
+    disciplinaCodigo: 'GPI',
+    disciplinaCor: '#DB2777',
+    tipo: 'AP3',
+    dataInicio: '2026-11-21',
+    horario: '11:00',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 3',
+    peso: 10,
+    observacoes: 'AD2 e AP2: não informado no cronograma',
+    alertaDias: 14,
+  },
+
+  // ============================================================
+  // SOCIEDADE E ORGANIZAÇÕES (2026-2)
+  // ============================================================
+  {
+    id: 'evt-so-ad1',
+    titulo: 'AD1 - Sociedade e Organizações',
+    disciplinaId: 'sociedade-e-organizacoes',
+    disciplinaNome: 'Sociedade e Organizações',
+    disciplinaCodigo: 'SO',
+    disciplinaCor: '#9333EA',
+    tipo: 'AD1',
+    dataInicio: '2026-08-17',
+    dataFim: '2026-08-23',
+    conteudo: 'Atividade 1',
+    alertaDias: 7,
+  },
+  {
+    id: 'evt-so-ap1',
+    titulo: 'AP1 - Sociedade e Organizações',
+    disciplinaId: 'sociedade-e-organizacoes',
+    disciplinaNome: 'Sociedade e Organizações',
+    disciplinaCodigo: 'SO',
+    disciplinaCor: '#9333EA',
+    tipo: 'AP1',
+    dataInicio: '2026-09-12',
+    horario: '09:30',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 1',
+    peso: 8,
+    alertaDias: 14,
+  },
+  {
+    id: 'evt-so-ap3',
+    titulo: 'AP3 - Sociedade e Organizações',
+    disciplinaId: 'sociedade-e-organizacoes',
+    disciplinaNome: 'Sociedade e Organizações',
+    disciplinaCodigo: 'SO',
+    disciplinaCor: '#9333EA',
+    tipo: 'AP3',
+    dataInicio: '2026-11-21',
+    horario: '11:00',
+    local: 'Polo CEDERJ',
+    conteudo: 'Avaliação Presencial 3',
+    peso: 10,
+    observacoes: 'AD2 e AP2: não informado no cronograma',
+    alertaDias: 14,
+  },
 ];
 
 // Helpers para filtrar eventos
@@ -507,3 +777,26 @@ export const getEventosUrgentes = () => {
     return diff >= 0 && diff <= e.alertaDias;
   }).sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime());
 };
+
+// ============================================================
+// Helpers de urgência (dashboard "O que fazer AGORA")
+// ============================================================
+export const TIPOS_ACAO = ['AD1', 'AD2', 'AP1', 'AP2', 'AP3', 'QUESTIONARIO'] as const;
+
+// Prazo efetivo do evento: dataFim (ADs) ou dataPresencial/dataInicio (APs)
+export const prazoDe = (e: EventoAcademico): Date =>
+  new Date(e.dataFim ?? e.dataPresencial ?? e.dataInicio);
+
+// Dias até o prazo (negativo = vencido). Compara só a data (ignora hora).
+export const diasPara = (e: EventoAcademico, hoje: Date = new Date()): number => {
+  const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const p = prazoDe(e);
+  const alvo = new Date(p.getFullYear(), p.getMonth(), p.getDate());
+  return Math.round((alvo.getTime() - inicioHoje.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+// Eventos de ação (AD/AP/Questionário), ordenados estritamente por prazo
+export const getEventosAcao = (): EventoAcademico[] =>
+  eventos
+    .filter(e => (TIPOS_ACAO as readonly string[]).includes(e.tipo))
+    .sort((a, b) => prazoDe(a).getTime() - prazoDe(b).getTime());
