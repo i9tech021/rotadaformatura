@@ -17,13 +17,18 @@ import {
   Calendar as CalendarIcon,
   BookOpen,
   Settings,
-  MessageSquare
+  MessageSquare,
+  Database,
+  CheckCheck,
+  Loader2
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getSupabase } from "@/lib/supabase";
+import { disciplinas as DISCIPLINAS_STATICAS } from "@/data/disciplines";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -45,6 +50,52 @@ function SettingsPage() {
     materials: false,
     aiTutor: true
   });
+
+  // Editor de progresso no banco (Supabase) — grava `progresso` por disciplina
+  // e o dashboard reage ao vivo via Realtime.
+  const [progressoEdit, setProgressoEdit] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const carregarProgressoBanco = async () => {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data, error } = await sb.from("disciplinas").select("id, progresso");
+    if (error || !data) return;
+    const map: Record<string, number> = {};
+    for (const r of data as Array<{ id: string; progresso?: number }>) {
+      if (typeof r.progresso === "number") map[r.id] = r.progresso;
+    }
+    setProgressoEdit(map);
+  };
+
+  const handleSaveProgresso = async (disciplinaId: string, valor: number) => {
+    const sb = getSupabase();
+    if (!sb) {
+      toast.error("Supabase não configurado");
+      return;
+    }
+    setSaving(disciplinaId);
+    const { error } = await sb
+      .from("disciplinas")
+      .upsert({ id: disciplinaId, progresso: Math.max(0, Math.min(100, valor)) });
+    setSaving(null);
+    if (error) {
+      toast.error("Erro ao salvar: " + error.message);
+    } else {
+      toast.success("Progresso salvo — dashboard atualiza ao vivo!");
+      // recarrega para refletir o que o banco devolveu
+      carregarProgressoBanco();
+    }
+  };
+
+  // carrega ao montar (se Supabase configurado)
+  const [carregou, setCarregou] = useState(false);
+  useEffect(() => {
+    if (!carregou) {
+      carregarProgressoBanco();
+      setCarregou(true);
+    }
+  }, [carregou]);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,6 +264,57 @@ function SettingsPage() {
             </div>
           </section>
         </div>
+
+        {/* Discipline Progress Editor */}
+        <section className="bg-white rounded-3xl border border-[#0A3D52]/10 shadow-sm overflow-hidden">
+          <div className="bg-[#0A3D52]/5 px-8 py-4 border-b border-[#0A3D52]/10 flex items-center gap-3">
+            <Database className="w-5 h-5 text-[#D4941E]" />
+            <h2 className="font-black text-xs uppercase tracking-[0.2em]">Progresso no Banco (Supabase)</h2>
+          </div>
+          <div className="p-8">
+            <p className="text-xs text-[#0A3D52]/60 font-medium mb-6">
+              Edite o progresso por disciplina. O dashboard atualiza ao vivo via Realtime.
+            </p>
+            <div className="space-y-4">
+              {DISCIPLINAS_STATICAS.map((d) => (
+                <div key={d.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-[#F5F7FA] rounded-2xl">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-sm text-[#0A3D52] truncate">{d.nome}</h4>
+                    <p className="text-[10px] text-[#0A3D52]/50 font-bold uppercase">{d.codigo}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={progressoEdit[d.id] ?? d.progresso ?? 0}
+                        onChange={(e) => setProgressoEdit({ ...progressoEdit, [d.id]: parseInt(e.target.value, 10) })}
+                        className="w-32 accent-[#D4941E]"
+                      />
+                      <span className="font-black text-sm text-[#0A3D52] w-10 text-right">
+                        {progressoEdit[d.id] ?? d.progresso ?? 0}%
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleSaveProgresso(d.id, progressoEdit[d.id] ?? d.progresso ?? 0)}
+                      disabled={saving === d.id || progressoEdit[d.id] === (d.progresso ?? 0)}
+                      className="bg-[#D4941E] text-[#0A3D52] px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer"
+                    >
+                      {saving === d.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <CheckCheck className="w-3.5 h-3.5" />
+                      )}
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* Data Management */}
         <section className="bg-[#F5F7FA] rounded-3xl border-2 border-dashed border-[#0A3D52]/10 p-8 flex flex-col md:flex-row items-center justify-between gap-6">
