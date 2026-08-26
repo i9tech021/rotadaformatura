@@ -84,12 +84,38 @@ begin
 end $$;
 
 -- ============================================================
+-- CHAT COMUNITÁRIO (mensagens por sala de disciplina)
+-- ============================================================
+create table if not exists public.chat_messages (
+  id text primary key,
+  sala_id text not null,
+  user_name text not null default 'Estudante',
+  content text not null,
+  created_at timestamptz default now()
+);
+
+create index if not exists chat_messages_sala_idx on public.chat_messages (sala_id, created_at);
+
+alter table public.chat_messages enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies where policyname = 'anon_all_chat_messages'
+  ) then
+    execute 'create policy "anon_all_chat_messages" on public.chat_messages
+      for all to anon using (true) with check (true)';
+  end if;
+end $$;
+
+-- ============================================================
 -- REALTIME: habilita replicação para os clientes assinarem mudanças
 -- (dashboard de urgência e progresso de aulas atualizam ao vivo).
 -- ============================================================
 alter table public.disciplinas replica identity full;
 alter table public.eventos replica identity full;
 alter table public.checkpoints replica identity full;
+alter table public.chat_messages replica identity full;
 
 do $$
 begin
@@ -113,5 +139,12 @@ begin
       and schemaname = 'public' and tablename = 'checkpoints'
   ) then
     alter publication supabase_realtime add table public.checkpoints;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'chat_messages'
+  ) then
+    alter publication supabase_realtime add table public.chat_messages;
   end if;
 end $$;
