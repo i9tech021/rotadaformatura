@@ -23,8 +23,11 @@ Gerado no Lovable e conectado a este repo. Leia isto antes de mexer no código.
   lê/escreve). `eventsService.ts` lê eventos do Supabase quando `VITE_SUPABASE_URL`/`ANON_KEY`
   estão set; senão cai no dado estático (fallback). `seed.ts` semeia disciplinas/eventos/checkpoints.
 - **IA (Tutor):** `src/components/StudyAssistant.tsx` + `src/lib/academic.functions.ts`
-  (server function `askAcademicAI`). Chave `VITE_AI_API_KEY` fica SÓ no servidor (nunca no bundle).
-  Base `VITE_AI_BASE_URL` é um proxy OpenAI-compatível local (ex.: `http://127.0.0.1:20130/v1`).
+  (server function `askAcademicAI`). Usa a **OpenRouter** (OpenAI-compatible) — `VITE_AI_BASE_URL`
+  aponta para `https://openrouter.ai/api/v1`, funciona no deploy do Lovable. Modelo em
+  `VITE_AI_MODEL` (free padrão: `nvidia/nemotron-3.5-lightning:free`). Chave `VITE_AI_API_KEY`
+  é lida SÓ dentro da server function (nunca referencie em componentes de tela).
+  Free models podem dar 429 (limite do pool) — o app mostra "tente novamente em instantes".
 - Gerenciador: **bun** (`bun install`, `bun run dev`). npm também funciona.
 
 ## Estrutura que importa

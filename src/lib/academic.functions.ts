@@ -4,7 +4,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-export const AI_MODEL = "combofree";
+// Modelo gratuito padrão da OpenRouter. Troque via VITE_AI_MODEL se quiser
+// (ex.: nvidia/nemotron-3-ultra-550b-a55b:free, google/gemma-4-26b-a4b-it:free).
+export const AI_MODEL =
+  (import.meta.env.VITE_AI_MODEL as string) ||
+  "nvidia/nemotron-3.5-lightning:free";
 
 const SYSTEM_PROMPT = `Você é o "Tutor Rota da Formatura", assistente acadêmico de alunos do curso de Administração a distância do CEDERJ (semestre 2026-2).
 
@@ -47,7 +51,9 @@ export const askAcademicAI = createServerFn({ method: "POST" })
     const apiKey = import.meta.env.VITE_AI_API_KEY as string | undefined;
 
     const erroConexao =
-      "Erro ao conectar à IA. Verifique se o servidor local está rodando.";
+      "A IA não está disponível agora. Verifique a configuração (VITE_AI_BASE_URL / VITE_AI_API_KEY).";
+    const erroLimite =
+      "Limite de requisições da IA atingido. Aguarde alguns instantes e tente novamente.";
 
     if (!baseUrl || !apiKey) {
       // Em deploy (Lovable) sem o servidor local, retorna aviso amigável.
@@ -67,22 +73,33 @@ export const askAcademicAI = createServerFn({ method: "POST" })
       { role: "user" as const, content: data.question },
     ];
 
+    // Modelos de raciocínio (CoT) devolvem o "processo de pensamento" junto.
+    // Desliga o reasoning só neles, para não sujar a resposta do Tutor.
+    const isReasoningModel = /(lightning|nemotron-3\.5|nemotron-3-ultra|reasoning|think|r1|o3|o4)/i.test(
+      AI_MODEL,
+    );
+    const body: Record<string, unknown> = {
+      model: AI_MODEL,
+      messages,
+      temperature: 0.5,
+      max_tokens: 600,
+    };
+    if (isReasoningModel) body.reasoning = { enabled: false };
+
     try {
       const res = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
+          "X-Title": "Rota da Formatura",
         },
-        body: JSON.stringify({
-          model: AI_MODEL,
-          messages,
-          temperature: 0.5,
-          max_tokens: 600,
-        }),
+        body: JSON.stringify(body),
       });
 
-      if (!res.ok) return { answer: erroConexao };
+      if (!res.ok) {
+        return { answer: res.status === 429 ? erroLimite : erroConexao };
+      }
 
       const answer = await extrairResposta(res);
       if (!answer) return { answer: erroConexao };
