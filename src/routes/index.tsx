@@ -40,60 +40,84 @@ export const Route = createFileRoute("/")({
 });
 
 import { disciplinas } from '../data/disciplines';
-import { getProximosEventos, getEventosUrgentes } from '../data/events';
+import { eventos, getProximosEventos, getEventosUrgentes } from '../data/events';
 import { getTarefasPendentes } from '../data/studyPlan';
 
-function AcademicDashboard() {
-  const proximosEventos = useMemo(() => getProximosEventos(60), []);
-  const missaoPrioritaria = useMemo(() => proximosEventos[0], [proximosEventos]);
+function useAgora(intervalMs = 30000) {
+  const [agora, setAgora] = useState(() => new Date());
+  useEffect(() => {
+    const tick = () => setAgora(new Date());
+    tick();
+    const timer = setInterval(tick, intervalMs);
+    const onFocus = () => tick();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [intervalMs]);
+  return agora;
+}
 
-  const [data] = useState({
-    profile: {
-      name: "Estudante CEDERJ",
-      course: "Administração",
-      period: "2026-2",
-      university: "UFRRJ/CEDERJ",
-    },
-    disciplines: disciplinas.map(d => {
-      const exam = d.avaliacoes
-        .filter(a => parseISO(a.dataPresencial || a.dataFim || '') > new Date())
-        .sort((a, b) => parseISO(a.dataPresencial || a.dataFim || '').getTime() - parseISO(b.dataPresencial || b.dataFim || '').getTime())[0];
-      
-      const days = exam ? differenceInDays(parseISO(exam.dataPresencial || exam.dataFim || ''), new Date()) : -1;
-      
-      return {
-        ...d,
-        ch: d.id.includes('hpa') ? "60h" : "45h",
-        period: d.aulas.length > 0 ? "2º período" : "Aguardando",
-        status: days <= 7 && days >= 0 ? "urgent" : (days <= 14 && days >= 0 ? "warning" : "normal"),
-        nextExam: exam ? { type: exam.tipo, daysRemaining: days } : { type: "N/A", daysRemaining: 0 }
-      };
-    }),
-  });
+function AcademicDashboard() {
+  const agora = useAgora();
+
+  const proximosEventos = useMemo(
+    () =>
+      eventos
+        .filter((e) => differenceInCalendarDays(parseISO(e.dataInicio), agora) >= 0)
+        .sort((a, b) => parseISO(a.dataInicio).getTime() - parseISO(b.dataInicio).getTime()),
+    [agora],
+  );
+  const missaoPrioritaria = proximosEventos[0];
+  const diasMissao = missaoPrioritaria
+    ? differenceInCalendarDays(parseISO(missaoPrioritaria.dataInicio), agora)
+    : 0;
+
+  const profile = {
+    name: "Estudante CEDERJ",
+    course: "Administração",
+    period: "2026-2",
+    university: "UFRRJ/CEDERJ",
+  };
+
+  const disciplinesList = useMemo(
+    () =>
+      disciplinas.map((d) => {
+        const proximo = proximosEventos.find((e) => e.disciplinaId === d.id);
+        const days = proximo
+          ? differenceInCalendarDays(parseISO(proximo.dataInicio), agora)
+          : -1;
+
+        return {
+          ...d,
+          ch: d.id.includes("hpa") ? "60h" : "45h",
+          period: d.aulas.length > 0 ? "2º período" : "Aguardando",
+          status:
+            days <= 7 && days >= 0 ? "urgent" : days <= 14 && days >= 0 ? "warning" : "normal",
+          nextExam: proximo ? { type: proximo.tipo, daysRemaining: days } : null,
+        };
+      }),
+    [proximosEventos, agora],
+  );
+
+  const data = { profile, disciplines: disciplinesList };
 
   const [greeting, setGreeting] = useState("");
   const [showChat, setShowChat] = useState(false);
-  const [countdown, setCountdown] = useState("");
 
   useEffect(() => {
-    const hour = new Date().getHours();
+    const hour = agora.getHours();
     if (hour >= 6 && hour < 12) setGreeting("Bom dia");
     else if (hour >= 12 && hour < 18) setGreeting("Boa tarde");
     else setGreeting("Boa noite");
-  }, []);
+  }, [agora]);
 
-  useEffect(() => {
-    if (!missaoPrioritaria) return;
-    
-    const updateCountdown = () => {
-      const target = parseISO(missaoPrioritaria.dataInicio);
-      setCountdown(formatDistanceToNow(target, { locale: ptBR, addSuffix: true }));
-    };
-    
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 60000);
-    return () => clearInterval(timer);
-  }, [missaoPrioritaria]);
+  const countdown = missaoPrioritaria
+    ? formatDistanceToNow(parseISO(missaoPrioritaria.dataInicio), { locale: ptBR, addSuffix: true })
+    : "";
 
   const getStatusColor = (status: string) => {
     switch (status) {
