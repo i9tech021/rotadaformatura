@@ -249,7 +249,7 @@ function AcademicDashboard() {
         {/* Missões Diárias */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Sua Rota Hoje: {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+            <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em]">Sua Rota Hoje: {format(agora, "EEEE, d 'de' MMMM", { locale: ptBR })}</h3>
             <span className="text-[10px] font-black uppercase text-[#27AE60]">Meta Diária</span>
           </div>
           <div className="space-y-3">
