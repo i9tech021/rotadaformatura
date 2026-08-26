@@ -40,9 +40,10 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-import { disciplinas } from '../data/disciplines';
+import { disciplinas as DISCIPLINAS_STATICAS } from '../data/disciplines';
 import { getEventosAcao, prazoDe, diasPara, type EventoAcademico } from '../data/events';
 import { getEventosAcao as fetchEventosAcao, subscribeEventos } from '@/lib/eventsService';
+import { getDisciplinas, subscribeDisciplinas } from '@/lib/disciplinasService';
 import { seedDatabase, isSupabaseConfigured } from '@/lib/seed';
 
 function useAgora(intervalMs = 30000) {
@@ -73,10 +74,19 @@ function AcademicDashboard() {
   const [seeding, setSeeding] = useState(false);
   useEffect(() => {
     fetchEventosAcao().then(setEventosAcao);
-    const unsub = subscribeEventos(() => {
+    const unsubEv = subscribeEventos(() => {
       fetchEventosAcao().then(setEventosAcao);
     });
-    return unsub;
+    return unsubEv;
+  }, []);
+
+  const [disciplinas, setDisciplinas] = useState(DISCIPLINAS_STATICAS);
+  useEffect(() => {
+    getDisciplinas().then(setDisciplinas);
+    const unsubDisc = subscribeDisciplinas(() => {
+      getDisciplinas().then(setDisciplinas);
+    });
+    return unsubDisc;
   }, []);
 
   const proximaAP = eventosAcao.find((e) => e.tipo.startsWith("AP"));
@@ -138,7 +148,7 @@ function AcademicDashboard() {
           nextExam: proximo ? { type: proximo.tipo, daysRemaining: days } : null,
         };
       }),
-    [eventosAcao, agora],
+    [disciplinas, eventosAcao, agora],
   );
 
   const data = { profile, disciplines: disciplinesList };
