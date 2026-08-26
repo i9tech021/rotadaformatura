@@ -50,17 +50,19 @@ export async function askAcademicAI(
 ): Promise<{ answer: string }> {
   const { question, context } = inputSchema.parse(input);
 
-  const baseUrl = import.meta.env.VITE_AI_BASE_URL as string | undefined;
+  const baseUrl =
+    (import.meta.env.VITE_AI_BASE_URL as string) ||
+    "https://openrouter.ai/api/v1";
   const apiKey = import.meta.env.VITE_AI_API_KEY as string | undefined;
 
   const erroConfig =
-    "A IA não está configurada. Defina VITE_AI_BASE_URL, VITE_AI_API_KEY e VITE_AI_MODEL nas variáveis de ambiente do projeto.";
+    "A IA não está configurada. Defina a variável de ambiente VITE_AI_API_KEY (e, opcionalmente, VITE_AI_MODEL) no projeto.";
   const erroConexao =
     "Erro de conexão com a IA. Verifique sua internet e tente novamente em instantes.";
   const erroLimite =
     "Limite de requisições da IA atingido. Aguarde alguns instantes e tente novamente.";
 
-  if (!baseUrl || !apiKey) {
+  if (!apiKey) {
     return { answer: erroConfig };
   }
 
