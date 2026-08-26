@@ -18,7 +18,13 @@ Gerado no Lovable e conectado a este repo. Leia isto antes de mexer no código.
 - **TanStack Start** (full-stack: roteamento file-based + SSR via Nitro) + React 19 + TS.
 - Tailwind CSS v4 + tokens shadcn-style (oklch) em `src/styles.css`.
 - Componentes Radix/shadcn em `src/components/ui/*`.
-- Dados **mockados** em `src/data/*` (sem backend/Supabase).
+- Dados de referência em `src/data/*` (disciplinas/eventos reais 2026-2, sem inventar).
+- **Supabase (opcional):** `src/lib/supabase.ts` + `supabase/schema.sql`. RLS permissiva (anon
+  lê/escreve). `eventsService.ts` lê eventos do Supabase quando `VITE_SUPABASE_URL`/`ANON_KEY`
+  estão set; senão cai no dado estático (fallback). `seed.ts` semeia disciplinas/eventos/checkpoints.
+- **IA (Tutor):** `src/components/StudyAssistant.tsx` + `src/lib/academic.functions.ts`
+  (server function `askAcademicAI`). Chave `VITE_AI_API_KEY` fica SÓ no servidor (nunca no bundle).
+  Base `VITE_AI_BASE_URL` é um proxy OpenAI-compatível local (ex.: `http://127.0.0.1:20130/v1`).
 - Gerenciador: **bun** (`bun install`, `bun run dev`). npm também funciona.
 
 ## Estrutura que importa
@@ -47,8 +53,8 @@ Gerado no Lovable e conectado a este repo. Leia isto antes de mexer no código.
 Se o semestre mudar, edite `events.ts`.
 
 ## O que NÃO está implementado (não "invente" como se fosse real)
-- Sem auth/backend/Supabase. Tudo é mock/local.
-- Chat (`community/chat.tsx`): `handleSend` só altera estado da sessão — não persiste,
+- **Sem auth/login.** Supabase usa RLS anon permissiva (app multiusuário sem conta).
+- Chat comunitário (`community/chat.tsx`): `handleSend` só altera estado da sessão — não persiste,
   não é multiusuário, não tem servidor.
 - "Probabilidade de aprovação" 65% é **hardcoded** em `disciplines.$id.tsx` (~linha 331).
 - `progresso` das disciplinas é hardcoded em `disciplines.ts` (não reflete conclusão).

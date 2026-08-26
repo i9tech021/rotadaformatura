@@ -84,10 +84,7 @@ export const askAcademicAI = createServerFn({ method: "POST" })
 
       if (!res.ok) return { answer: erroConexao };
 
-      const json = (await res.json()) as {
-        choices?: { message?: { content?: string } }[];
-      };
-      const answer = json.choices?.[0]?.message?.content?.trim();
+      const answer = await extrairResposta(res);
       if (!answer) return { answer: erroConexao };
       return { answer };
     } catch {
@@ -129,3 +126,45 @@ export const generateCalendarLink = createServerFn({ method: "POST" })
 
     return { url: url.toString() };
   });
+
+/**
+ * Extrai o texto da resposta do proxy, seja JSON único ou streaming SSE
+ * (linhas `data: {json}` terminando em `data: [DONE]`). Suporta content em
+ * `message.content` ou `delta.content`.
+ */
+async function extrairResposta(res: Response): Promise<string> {
+  const text = await res.text();
+  if (!text.includes("data:")) {
+    try {
+      const json = JSON.parse(text) as {
+        choices?: { message?: { content?: string } }[];
+      };
+      return json.choices?.[0]?.message?.content?.trim() ?? "";
+    } catch {
+      return "";
+    }
+  }
+
+  let content = "";
+  for (const line of text.split("\n")) {
+    const s = line.trim();
+    if (!s.startsWith("data:")) continue;
+    const d = s.slice(5).trim();
+    if (d === "[DONE]") continue;
+    try {
+      const json = JSON.parse(d) as {
+        choices?: {
+          message?: { content?: string };
+          delta?: { content?: string };
+        }[];
+      };
+      content +=
+        json.choices?.[0]?.message?.content ??
+        json.choices?.[0]?.delta?.content ??
+        "";
+    } catch {
+      // ignora linhas que não são JSON válido
+    }
+  }
+  return content.trim();
+}
