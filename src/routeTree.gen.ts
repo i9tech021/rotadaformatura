@@ -10,9 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CalculadoraRouteImport } from './routes/calculadora'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as DisciplinesRouteImport } from './routes/disciplines'
 import { Route as MaterialsRouteImport } from './routes/materials'
+import { Route as PodcastsRouteImport } from './routes/podcasts'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as CommunityIndexRouteImport } from './routes/community/index'
 import { Route as CommunityChatRouteImport } from './routes/community/chat'
@@ -21,6 +23,11 @@ import { Route as DisciplinesIdRouteImport } from './routes/disciplines.$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalculadoraRoute = CalculadoraRouteImport.update({
+  id: '/calculadora',
+  path: '/calculadora',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarRoute = CalendarRouteImport.update({
@@ -36,6 +43,11 @@ const DisciplinesRoute = DisciplinesRouteImport.update({
 const MaterialsRoute = MaterialsRouteImport.update({
   id: '/materials',
   path: '/materials',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PodcastsRoute = PodcastsRouteImport.update({
+  id: '/podcasts',
+  path: '/podcasts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -61,9 +73,11 @@ const DisciplinesIdRoute = DisciplinesIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
+  '/podcasts': typeof PodcastsRoute
   '/settings': typeof SettingsRoute
   '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
@@ -71,9 +85,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
+  '/podcasts': typeof PodcastsRoute
   '/settings': typeof SettingsRoute
   '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
@@ -82,9 +98,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
+  '/podcasts': typeof PodcastsRoute
   '/settings': typeof SettingsRoute
   '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
@@ -94,9 +112,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/calculadora'
     | '/calendar'
     | '/disciplines'
     | '/materials'
+    | '/podcasts'
     | '/settings'
     | '/community/chat'
     | '/disciplines/$id'
@@ -104,9 +124,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/calculadora'
     | '/calendar'
     | '/disciplines'
     | '/materials'
+    | '/podcasts'
     | '/settings'
     | '/community/chat'
     | '/disciplines/$id'
@@ -114,9 +136,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/calculadora'
     | '/calendar'
     | '/disciplines'
     | '/materials'
+    | '/podcasts'
     | '/settings'
     | '/community/chat'
     | '/disciplines/$id'
@@ -125,9 +149,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CalculadoraRoute: typeof CalculadoraRoute
   CalendarRoute: typeof CalendarRoute
   DisciplinesRoute: typeof DisciplinesRouteWithChildren
   MaterialsRoute: typeof MaterialsRoute
+  PodcastsRoute: typeof PodcastsRoute
   SettingsRoute: typeof SettingsRoute
   CommunityChatRoute: typeof CommunityChatRoute
   CommunityIndexRoute: typeof CommunityIndexRoute
@@ -140,6 +166,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calculadora': {
+      id: '/calculadora'
+      path: '/calculadora'
+      fullPath: '/calculadora'
+      preLoaderRoute: typeof CalculadoraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendar': {
@@ -161,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/materials'
       fullPath: '/materials'
       preLoaderRoute: typeof MaterialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/podcasts': {
+      id: '/podcasts'
+      path: '/podcasts'
+      fullPath: '/podcasts'
+      preLoaderRoute: typeof PodcastsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -208,9 +248,11 @@ const DisciplinesRouteWithChildren = DisciplinesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalculadoraRoute: CalculadoraRoute,
   CalendarRoute: CalendarRoute,
   DisciplinesRoute: DisciplinesRouteWithChildren,
   MaterialsRoute: MaterialsRoute,
+  PodcastsRoute: PodcastsRoute,
   SettingsRoute: SettingsRoute,
   CommunityChatRoute: CommunityChatRoute,
   CommunityIndexRoute: CommunityIndexRoute,

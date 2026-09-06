@@ -17,6 +17,7 @@ import {
   Menu,
   Headphones,
   Play,
+  Calculator,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
@@ -56,6 +57,13 @@ import { getEventosAcao as fetchEventosAcao, subscribeEventos } from "@/lib/even
 import { getDisciplinas, subscribeDisciplinas } from "@/lib/disciplinasService";
 import { countConcluidas, subscribeCheckpointsAll } from "@/lib/checkpoints";
 import { seedDatabase, isSupabaseConfigured } from "@/lib/seed";
+import {
+  getStatusEvento,
+  getProximaEtapa,
+  getDiasParaProximaAP,
+  getProgressoSemestre,
+  formatarDataBrasil,
+} from "@/lib/timeline";
 
 function useAgora(intervalMs = 30000) {
   const [agora, setAgora] = useState(() => new Date());
@@ -119,8 +127,20 @@ function AcademicDashboard() {
     return unsub;
   }, [disciplinas, recalcProgresso]);
 
-  const proximaAP = eventosAcao.find((e) => e.tipo.startsWith("AP"));
-  const diasProxima = proximaAP ? diasPara(proximaAP, agora) : 0;
+  const proximaEtapa = getProximaEtapa(eventosAcao);
+  const diasEtapa = proximaEtapa ? diasPara(proximaEtapa, agora) : null;
+  const progressoSemestre = getProgressoSemestre(eventosAcao);
+  const totalAPs = eventosAcao.filter((e) => e.tipo?.startsWith("AP")).length;
+  const apsConcluidas = Math.round((progressoSemestre / 100) * totalAPs);
+
+  // Rodada AP1: todas as AP1 do semestre com status calculado pela timeline real
+  const ap1s = useMemo(
+    () =>
+      eventosAcao
+        .filter((e) => e.tipo === "AP1")
+        .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime()),
+    [eventosAcao],
+  );
 
   const proximosEventosChat = eventosAcao
     .slice(0, 6)
@@ -148,13 +168,20 @@ function AcademicDashboard() {
     const proximo: EventoAcademico[] = [];
     const depois: EventoAcademico[] = [];
     for (const e of eventosAcao) {
-      const d = diasPara(e, agora);
-      if (d <= 0) hojeUrgente.push(e);
-      else if (d <= 7) proximo.push(e);
-      else depois.push(e);
+      const status = getStatusEvento(e.dataInicio);
+      if (status === "concluido") {
+        // eventos já passados — não mostramos na urgência ativa
+        // mas podemos contar para progresso
+      } else if (status === "hoje") {
+        hojeUrgente.push(e);
+      } else if (status === "em_breve") {
+        proximo.push(e);
+      } else {
+        depois.push(e);
+      }
     }
     return { hojeUrgente, proximo, depois };
-  }, [eventosAcao, agora]);
+  }, [eventosAcao]);
 
   const profile = {
     name: "Estudante CEDERJ",
@@ -163,26 +190,41 @@ function AcademicDashboard() {
     university: "UFRRJ/CEDERJ",
   };
 
-  const disciplinesList = useMemo(
-    () =>
-      disciplinas.map((d) => {
-        const proximo = eventosAcao.find((e) => e.disciplinaId === d.id);
-        const days = proximo ? diasPara(proximo, agora) : -1;
+  const disciplinesList = useMemo(() => {
+    let totalAulas = 0;
+    let progressoPeso = 0;
+    const ad2Events = eventosAcao.filter(
+      (e) => e.tipo === "AD2" && new Date(e.dataInicio) >= new Date(agora),
+    );
+    const ad2IniciaEm =
+      ad2Events.length > 0
+        ? new Date(
+            Math.min(...ad2Events.map((e) => new Date(e.dataInicio).getTime())),
+          ).toLocaleDateString("pt-BR")
+        : "Aguardando";
+    const ad2Count = ad2Events.length;
+    const dados = disciplinas.map((d) => {
+      const feitos = progressoMap[d.id] ?? 0;
+      totalAulas += d.aulas.length;
+      progressoPeso += feitos;
+      const proximo = eventosAcao.find((e) => e.disciplinaId === d.id);
+      const days = proximo ? diasPara(proximo, agora) : -1;
 
-        return {
-          ...d,
-          progresso: progressoMap[d.id] ?? d.progresso,
-          ch: d.id.includes("hpa") ? "60h" : "45h",
-          period: d.aulas.length > 0 ? "2º período" : "Aguardando",
-          status:
-            days <= 7 && days >= 0 ? "urgent" : days <= 14 && days >= 0 ? "warning" : "normal",
-          nextExam: proximo ? { type: proximo.tipo, daysRemaining: days } : null,
-        };
-      }),
-    [disciplinas, eventosAcao, agora],
-  );
+      return {
+        ...d,
+        progresso: feitos,
+        ch: d.id.includes("hpa") ? "60h" : "45h",
+        period: d.aulas.length > 0 ? "2º período" : "Aguardando",
+        status: days <= 7 && days >= 0 ? "urgent" : days <= 14 && days >= 0 ? "warning" : "normal",
+        nextExam: proximo ? { type: proximo.tipo, daysRemaining: days } : null,
+      };
+    });
+    const progressoMapTotal = totalAulas ? Math.round((progressoPeso / totalAulas) * 100) : 0;
+    return { dados, progressoMapTotal, totalAulas, ad2Count, ad2IniciaEm };
+  }, [disciplinas, eventosAcao, agora, progressoMap]);
+  const { dados, progressoMapTotal, totalAulas, ad2Count, ad2IniciaEm } = disciplinesList;
 
-  const data = { profile, disciplines: disciplinesList };
+  const data = { profile, disciplines: dados };
 
   const [greeting, setGreeting] = useState("");
   const [showChat, setShowChat] = useState(false);
@@ -264,6 +306,7 @@ function AcademicDashboard() {
                   <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
                   <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
                   <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
+                  <MobileNavLink to="/calculadora" icon={Calculator} label="Calculadora" />
                   <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
                   <MobileNavLink to="/community" icon={MessageCircle} label="Comunidade" />
                   <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
@@ -303,6 +346,12 @@ function AcademicDashboard() {
             className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
           >
             Biblioteca
+          </Link>
+          <Link
+            to="/calculadora"
+            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+          >
+            Calculadora
           </Link>
           <Link
             to="/materials"
@@ -369,7 +418,7 @@ function AcademicDashboard() {
           )}
         </div>
 
-        {/* Resumo Cards */}
+        {/* Resumo Cards Dinâmicos */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <BookOpen className="w-6 h-6 text-[#0A3D52] mb-2" />
@@ -380,19 +429,33 @@ function AcademicDashboard() {
           </div>
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <Clock className="w-6 h-6 text-[#0A3D52] mb-2" />
-            <span className="text-2xl font-black">330h</span>
+            <span className="text-2xl font-black">{progressoMapTotal}</span>
             <span className="text-xs uppercase font-bold text-[#0A3D52]/50 tracking-wider">
               Carga Total
             </span>
+            <p className="text-xs text-[#0A3D52]/40 mt-1">
+              {totalAulas} aulas • {Math.round(progressoMapTotal / 10)}% concluído
+            </p>
           </div>
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <CalendarIcon className="w-6 h-6 text-[#D4941E] mb-2" />
             <span className="text-2xl font-black text-[#D4941E]">
-              {diasProxima === 0 ? "Hoje" : `${diasProxima} dias`}
+              {diasEtapa === 0
+                ? "Hoje"
+                : diasEtapa === 1
+                  ? "Amanhã"
+                  : diasEtapa !== null
+                    ? `${diasEtapa} dias`
+                    : "—"}
             </span>
             <span className="text-xs uppercase font-bold text-[#D4941E]/60 tracking-wider">
-              Próxima Avaliação
+              Próxima Etapa
             </span>
+            <p className="text-xs text-[#0A3D52]/40 mt-1">
+              {proximaEtapa
+                ? `${proximaEtapa.tipo} ${proximaEtapa.disciplinaCodigo}`
+                : "Aguardando cronograma"}
+            </p>
           </div>
         </div>
 
@@ -507,6 +570,114 @@ function AcademicDashboard() {
           agora={agora}
           vazio="Nada agendado além de 7 dias."
         />
+
+        {/* URGÊNCIA: DEPOIS (média prazo) */}
+        <UrgenciaSection
+          titulo="Depois (média prazo)"
+          icone={<CalendarIcon className="w-4 h-4" />}
+          eventos={secoes.depois}
+          agora={agora}
+          vazio="Nada agendado além de 7 dias."
+        />
+
+        {/* PRÓXIMA ETAPA - AD2 iniciando */}
+        <section className="mb-10">
+          <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-[#D4941E]" /> Próxima Etapa
+          </h3>
+          <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-6 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-[#D4941E]/10 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-[#D4941E]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40">
+                  AD2 começa amanhã
+                </p>
+                <h4 className="font-bold text-lg">
+                  {ad2Count > 0 ? `${ad2Count}` : "0"} disciplinas
+                </h4>
+                <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">Questões AD2</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/60">
+                Próxima prova:{" "}
+                {proximaEtapa
+                  ? `${proximaEtapa.tipo} ${proximaEtapa.disciplinaCodigo} ${formatarDataBrasil(proximaEtapa.dataInicio)}`
+                  : "Aguardando"}
+              </p>
+              <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">
+                {ad2Count > 0 ? `AD2 começando ${ad2IniciaEm}` : "Sem AD2 próxima"}
+              </p>
+            </div>
+          </div>
+
+          {/* Barra de progresso do semestre (APs concluídas) */}
+          <div className="bg-[#F5F7FA] rounded-2xl border border-[#0A3D52]/10 p-4 mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#0A3D52]/40">
+                Avanço das provas
+              </span>
+              <span className="text-[10px] font-black uppercase text-[#0A3D52]/60">
+                {apsConcluidas}/{totalAPs} • {progressoSemestre}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-white rounded-full overflow-hidden border border-[#0A3D52]/5">
+              <div
+                className="h-full bg-[#27AE60] transition-all duration-700"
+                style={{ width: `${progressoSemestre}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Rodada AP1 — todas com status calculado */}
+          <div className="mt-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40 mb-2 flex items-center gap-2">
+              <Target className="w-3.5 h-3.5 text-[#D4941E]" /> Rodada AP1
+            </p>
+            <div className="space-y-2">
+              {ap1s.map((e) => {
+                const st = getStatusEvento(e.dataInicio);
+                const badge =
+                  st === "concluido"
+                    ? { label: "✓ Concluída", cls: "bg-[#27AE60]/10 text-[#27AE60]" }
+                    : st === "hoje"
+                      ? { label: "Hoje", cls: "bg-[#D4941E]/15 text-[#D4941E]" }
+                      : st === "em_breve"
+                        ? {
+                            label: `em ${diasPara(e, agora)} dias`,
+                            cls: "bg-[#D4941E]/15 text-[#D4941E]",
+                          }
+                        : {
+                            label: formatarDataBrasil(e.dataInicio),
+                            cls: "bg-[#0A3D52]/5 text-[#0A3D52]/60",
+                          };
+                return (
+                  <div
+                    key={e.id}
+                    className="bg-white rounded-xl border border-[#0A3D52]/10 p-3 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase text-[#0A3D52]/40">
+                        {e.disciplinaCodigo} • {formatarDataBrasil(e.dataInicio)}
+                      </p>
+                      <p className="font-bold text-sm truncate">{e.titulo}</p>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-black uppercase px-2 py-1 rounded-full shrink-0",
+                        badge.cls,
+                      )}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
 
         {/* Disciplinas Grid */}
         <section>
@@ -692,7 +863,15 @@ function MoreVertical({ className }: { className?: string }) {
   );
 }
 
-function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+function MobileNavLink({
+  to,
+  icon: Icon,
+  label,
+}: {
+  to: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+}) {
   return (
     <Link
       to={to}

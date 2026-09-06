@@ -94,7 +94,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['disciplinas', 'eventos', 'checkpoints', 'notas', 'chat_messages'] loop
+  foreach t in array array['disciplinas', 'eventos', 'checkpoints', 'notas', 'chat_messages', 'podcasts'] loop
     execute format(
       'drop policy if exists "anon_all_%I" on public.%I;'
       'create policy "anon_all_%I" on public.%I for all to anon using (true) with check (true);',
@@ -125,6 +125,44 @@ begin
   ) then
     execute 'create policy "anon_all_chat_messages" on public.chat_messages
       for all to anon using (true) with check (true)';
+  end if;
+end $$;
+
+-- ============================================================
+-- PODCASTS (áudios de estudo por disciplina)
+-- ============================================================
+create table if not exists public.podcasts (
+  id text primary key,
+  disciplina_id text not null,
+  titulo text not null,
+  descricao text,
+  url text not null,
+  duracao_seg numeric,
+  criado_em timestamptz default now()
+);
+
+create index if not exists podcasts_disciplina_idx on public.podcasts (disciplina_id);
+
+alter table public.podcasts enable row level security;
+
+-- Bucket de Storage para os arquivos de áudio (público para leitura)
+insert into storage.buckets (id, name, public)
+  values ('podcasts', 'podcasts', true)
+  on conflict (id) do nothing;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies where policyname = 'podcasts_public_read'
+  ) then
+    execute 'create policy "podcasts_public_read" on storage.objects
+      for select using (bucket_id = ''podcasts'')';
+  end if;
+  if not exists (
+    select 1 from pg_policies where policyname = 'podcasts_public_write'
+  ) then
+    execute 'create policy "podcasts_public_write" on storage.objects
+      for all to anon using (bucket_id = ''podcasts'') with check (bucket_id = ''podcasts'')';
   end if;
 end $$;
 
@@ -174,5 +212,12 @@ begin
       and schemaname = 'public' and tablename = 'notas'
   ) then
     alter publication supabase_realtime add table public.notas;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'podcasts'
+  ) then
+    alter publication supabase_realtime add table public.podcasts;
   end if;
 end $$;
