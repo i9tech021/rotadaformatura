@@ -169,7 +169,7 @@ function SettingsPage() {
               to="/calendar"
               className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
             >
-              Agenda
+              Calendário
             </Link>
             <Link
               to="/disciplines"

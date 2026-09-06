@@ -44,15 +44,10 @@ export async function getEventosAcao(): Promise<EventoAcademico[]> {
   return ordenaAcao(STATIC_EVENTOS);
 }
 
-export async function getEventosPorDisciplina(
-  disciplinaId: string,
-): Promise<EventoAcademico[]> {
+export async function getEventosPorDisciplina(disciplinaId: string): Promise<EventoAcademico[]> {
   const sb = getSupabase();
   if (sb) {
-    const { data, error } = await sb
-      .from("eventos")
-      .select("*")
-      .eq("disciplina_id", disciplinaId);
+    const { data, error } = await sb.from("eventos").select("*").eq("disciplina_id", disciplinaId);
     if (!error && data) return data.map(rowToEvento);
   }
   return STATIC_EVENTOS.filter((e) => e.disciplinaId === disciplinaId);
@@ -68,11 +63,7 @@ export function subscribeEventos(onChange: () => void): () => void {
   if (!sb) return () => {};
   const channel = sb
     .channel("rdf-eventos")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "eventos" },
-      () => onChange(),
-    )
+    .on("postgres_changes", { event: "*", schema: "public", table: "eventos" }, () => onChange())
     .subscribe();
   return () => {
     sb.removeChannel(channel);

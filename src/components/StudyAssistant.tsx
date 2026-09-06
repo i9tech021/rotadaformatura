@@ -22,10 +22,7 @@ const WELCOME: ChatMessage = {
     "Olá! Sou seu Tutor da Rota da Formatura. Posso tirar dúvidas da matéria, explicar conceitos, montar seu plano de estudos e orientar sobre o cronograma. Pergunte o que quiser!",
 };
 
-export function StudyAssistant({
-  contexto,
-  disciplinaCor = "#0A3D52",
-}: StudyAssistantProps) {
+export function StudyAssistant({ contexto, disciplinaCor = "#0A3D52" }: StudyAssistantProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -64,8 +61,7 @@ export function StudyAssistant({
         ...m,
         {
           role: "assistant",
-          content:
-            "Erro de conexão com a IA. Tente novamente em instantes.",
+          content: "Erro de conexão com a IA. Tente novamente em instantes.",
         },
       ]);
     } finally {
@@ -102,17 +98,12 @@ export function StudyAssistant({
         {messages.map((m, i) => (
           <div
             key={i}
-            className={cn(
-              "flex gap-2.5",
-              m.role === "user" ? "flex-row-reverse" : "flex-row",
-            )}
+            className={cn("flex gap-2.5", m.role === "user" ? "flex-row-reverse" : "flex-row")}
           >
             <div
               className={cn(
                 "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                m.role === "user"
-                  ? "bg-[#0A3D52] text-white"
-                  : "text-white",
+                m.role === "user" ? "bg-[#0A3D52] text-white" : "text-white",
               )}
               style={m.role === "assistant" ? { background: disciplinaCor } : undefined}
             >

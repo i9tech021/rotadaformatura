@@ -296,7 +296,7 @@ function AcademicDashboard() {
             to="/calendar"
             className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
           >
-            Agenda
+            Calendário
           </Link>
           <Link
             to="/disciplines"
@@ -649,7 +649,7 @@ function AcademicDashboard() {
           className="flex flex-col items-center"
         >
           <CalendarIcon className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Agenda</span>
+          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Calendário</span>
         </Link>
         <Link
           to="/materials"

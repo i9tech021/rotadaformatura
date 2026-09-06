@@ -2,7 +2,7 @@ export interface AcademicEvent {
   id: string;
   disciplineId: string;
   title: string;
-  type: 'AD1' | 'AD2' | 'AP1' | 'AP2' | 'AP3' | 'Other';
+  type: "AD1" | "AD2" | "AP1" | "AP2" | "AP3" | "Other";
   date: string; // ISO string
   time: string;
 }

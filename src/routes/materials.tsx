@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { 
-  FileUp, 
-  Search, 
-  Filter, 
-  FileText, 
-  Link as LinkIcon, 
-  Trash2, 
-  Download, 
+import {
+  FileUp,
+  Search,
+  Filter,
+  FileText,
+  Link as LinkIcon,
+  Trash2,
+  Download,
   ArrowLeft,
   GraduationCap,
   Plus,
@@ -16,12 +16,16 @@ import {
   Calendar as CalendarIcon,
   BookOpen,
   Settings,
-  MessageSquare
+  MessageSquare,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useMemo } from "react";
 import { MATERIALS, type Material } from "@/data/materials";
-import { metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral } from "@/data/disciplines";
+import {
+  metodosDeterministicos,
+  historiaPensamentoAdm,
+  contabilidadeGeral,
+} from "@/data/disciplines";
 const disciplines = [metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral];
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -39,11 +43,12 @@ function MaterialsManager() {
   const [filterDiscipline, setFilterDiscipline] = useState("Todas");
 
   const filteredMaterials = useMemo(() => {
-    return MATERIALS.filter(m => {
-      const discipline = disciplines.find(d => d.id === m.disciplineId);
+    return MATERIALS.filter((m) => {
+      const discipline = disciplines.find((d) => d.id === m.disciplineId);
       const disciplineName = discipline?.nome || "";
-      const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           disciplineName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch =
+        m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        disciplineName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDiscipline = filterDiscipline === "Todas" || m.disciplineId === filterDiscipline;
       return matchesSearch && matchesDiscipline;
     });
@@ -69,7 +74,9 @@ function MaterialsManager() {
                 <div className="p-6 pt-12 flex flex-col gap-6">
                   <div className="flex items-center gap-2 mb-4">
                     <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-                    <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
+                    <span className="font-bold text-lg tracking-tight uppercase">
+                      Menu Acadêmico
+                    </span>
                   </div>
                   <div className="flex flex-col gap-2">
                     <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
@@ -86,15 +93,37 @@ function MaterialsManager() {
               <Link to="/" className="hover:bg-white/10 p-2 rounded-full transition-colors">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
-              <h1 className="font-bold text-lg uppercase tracking-tight hidden xs:inline">Materiais</h1>
+              <h1 className="font-bold text-lg uppercase tracking-tight hidden xs:inline">
+                Materiais
+              </h1>
             </div>
           </div>
 
           <div className="hidden md:flex items-center gap-6 mr-6">
-            <Link to="/" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Dashboard</Link>
-            <Link to="/calendar" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Agenda</Link>
-            <Link to="/disciplines" className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors">Biblioteca</Link>
-            <Link to="/materials" className="text-xs font-black uppercase tracking-widest text-[#D4941E]">Arquivos</Link>
+            <Link
+              to="/"
+              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/calendar"
+              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+            >
+              Calendário
+            </Link>
+            <Link
+              to="/disciplines"
+              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+            >
+              Biblioteca
+            </Link>
+            <Link
+              to="/materials"
+              className="text-xs font-black uppercase tracking-widest text-[#D4941E]"
+            >
+              Arquivos
+            </Link>
           </div>
 
           <button className="bg-[#D4941E] text-[#0A3D52] p-2 rounded-xl hover:scale-105 transition-all">
@@ -108,8 +137,8 @@ function MaterialsManager() {
         <div className="bg-white p-6 rounded-3xl border border-[#0A3D52]/10 shadow-sm mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A3D52]/30" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Buscar por título ou matéria..."
               className="w-full bg-[#F5F7FA] border-none rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E]"
               value={searchTerm}
@@ -118,14 +147,16 @@ function MaterialsManager() {
           </div>
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-[#0A3D52]/30 shrink-0" />
-            <select 
+            <select
               className="flex-1 bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E]"
               value={filterDiscipline}
               onChange={(e) => setFilterDiscipline(e.target.value)}
             >
               <option value="Todas">Todas as Disciplinas</option>
-              {disciplines.map(d => (
-                <option key={d.id} value={d.id}>{d.nome}</option>
+              {disciplines.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.nome}
+                </option>
               ))}
             </select>
           </div>
@@ -138,7 +169,9 @@ function MaterialsManager() {
           </div>
           <h3 className="font-black text-sm uppercase tracking-widest mb-2">Upload de Materiais</h3>
           <p className="text-xs text-[#0A3D52]/40 max-w-xs uppercase font-bold leading-relaxed">
-            Arraste arquivos PDF ou clique para selecionar.<br/>Limite de 20MB por arquivo.
+            Arraste arquivos PDF ou clique para selecionar.
+            <br />
+            Limite de 20MB por arquivo.
           </p>
         </div>
 
@@ -149,22 +182,37 @@ function MaterialsManager() {
             <span className="hidden md:block">Data de Upload</span>
             <span>Ações</span>
           </div>
-          
-          {filteredMaterials.map(material => {
-            const discipline = disciplines.find(d => d.id === material.disciplineId);
+
+          {filteredMaterials.map((material) => {
+            const discipline = disciplines.find((d) => d.id === material.disciplineId);
             return (
-              <div key={material.id} className="bg-white rounded-2xl p-4 border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all">
+              <div
+                key={material.id}
+                className="bg-white rounded-2xl p-4 border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all"
+              >
                 <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
-                    material.type === 'pdf' ? "bg-[#E74C3C]/10 text-[#E74C3C]" : 
-                    material.type === 'link' ? "bg-[#D4941E]/10 text-[#D4941E]" : "bg-[#27AE60]/10 text-[#27AE60]"
-                  )}>
-                    {material.type === 'pdf' ? <FileText className="w-6 h-6" /> : 
-                     material.type === 'link' ? <LinkIcon className="w-6 h-6" /> : <File className="w-6 h-6" />}
+                  <div
+                    className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                      material.type === "pdf"
+                        ? "bg-[#E74C3C]/10 text-[#E74C3C]"
+                        : material.type === "link"
+                          ? "bg-[#D4941E]/10 text-[#D4941E]"
+                          : "bg-[#27AE60]/10 text-[#27AE60]",
+                    )}
+                  >
+                    {material.type === "pdf" ? (
+                      <FileText className="w-6 h-6" />
+                    ) : material.type === "link" ? (
+                      <LinkIcon className="w-6 h-6" />
+                    ) : (
+                      <File className="w-6 h-6" />
+                    )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm leading-tight group-hover:text-[#D4941E] transition-colors">{material.title}</h4>
+                    <h4 className="font-bold text-sm leading-tight group-hover:text-[#D4941E] transition-colors">
+                      {material.title}
+                    </h4>
                     <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter mt-0.5">
                       {discipline?.nome || "Geral"}
                     </p>
@@ -179,7 +227,7 @@ function MaterialsManager() {
                   <button className="p-2 hover:bg-[#F5F7FA] rounded-lg text-[#0A3D52]/40 hover:text-[#0A3D52] transition-colors">
                     <Download className="w-4 h-4" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDelete(material.id)}
                     className="p-2 hover:bg-[#E74C3C]/10 rounded-lg text-[#0A3D52]/40 hover:text-[#E74C3C] transition-colors"
                   >
@@ -193,7 +241,9 @@ function MaterialsManager() {
           {filteredMaterials.length === 0 && (
             <div className="text-center py-20">
               <FileUp className="w-12 h-12 text-[#0A3D52]/10 mx-auto mb-4" />
-              <p className="font-bold text-[#0A3D52]/30 uppercase text-xs tracking-widest">Nenhum material encontrado</p>
+              <p className="font-bold text-[#0A3D52]/30 uppercase text-xs tracking-widest">
+                Nenhum material encontrado
+              </p>
             </div>
           )}
         </div>
@@ -204,8 +254,8 @@ function MaterialsManager() {
 
 function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
   return (
-    <Link 
-      to={to} 
+    <Link
+      to={to}
       className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
       activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
     >
@@ -217,13 +267,13 @@ function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label
 
 function MoreVertical({ className }: { className?: string }) {
   return (
-    <svg 
-      className={className} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
       strokeLinejoin="round"
     >
       <circle cx="12" cy="12" r="1" />

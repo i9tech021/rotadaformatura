@@ -14,20 +14,14 @@ function loadLocal(disciplinaId: string): Record<string, boolean> {
   }
 }
 
-function saveLocal(
-  disciplinaId: string,
-  aulaId: string,
-  concluido: boolean,
-) {
+function saveLocal(disciplinaId: string, aulaId: string, concluido: boolean) {
   if (typeof window === "undefined") return;
   const map = loadLocal(disciplinaId);
   map[aulaId] = concluido;
   window.localStorage.setItem(lsKey(disciplinaId), JSON.stringify(map));
 }
 
-export async function loadCheckpoints(
-  disciplinaId: string,
-): Promise<Record<string, boolean>> {
+export async function loadCheckpoints(disciplinaId: string): Promise<Record<string, boolean>> {
   const sb = getSupabase();
   const local = loadLocal(disciplinaId);
   if (sb) {
@@ -44,11 +38,7 @@ export async function loadCheckpoints(
   return local;
 }
 
-export async function saveCheckpoint(
-  disciplinaId: string,
-  aulaId: string,
-  concluido: boolean,
-) {
+export async function saveCheckpoint(disciplinaId: string, aulaId: string, concluido: boolean) {
   const sb = getSupabase();
   if (sb) {
     await sb
@@ -63,10 +53,7 @@ export async function saveCheckpoint(
  * Realtime). `onChange` roda a cada insert/update/delete. Retorna unsubscribe.
  * Sem Supabase configurado, vira no-op (app segue funcional com localStorage).
  */
-export function subscribeCheckpoints(
-  disciplinaId: string,
-  onChange: () => void,
-): () => void {
+export function subscribeCheckpoints(disciplinaId: string, onChange: () => void): () => void {
   const sb = getSupabase();
   if (!sb) return () => {};
   const channel = sb
@@ -96,10 +83,8 @@ export function subscribeCheckpointsAll(onChange: () => void): () => void {
   if (!sb) return () => {};
   const channel = sb
     .channel("rdf-checkpoints-all")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "checkpoints" },
-      () => onChange(),
+    .on("postgres_changes", { event: "*", schema: "public", table: "checkpoints" }, () =>
+      onChange(),
     )
     .subscribe();
   return () => {
@@ -111,9 +96,7 @@ export function subscribeCheckpointsAll(onChange: () => void): () => void {
  * Conta quantas aulas estão concluídas numa disciplina (Supabase se configurado,
  * senão localStorage). Base para o progresso real exibido no dashboard.
  */
-export async function countConcluidas(
-  disciplinaId: string,
-): Promise<number> {
+export async function countConcluidas(disciplinaId: string): Promise<number> {
   const sb = getSupabase();
   if (sb) {
     const { data, error } = await sb

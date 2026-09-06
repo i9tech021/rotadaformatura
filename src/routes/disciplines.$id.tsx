@@ -19,6 +19,7 @@ import {
   Star,
   Trophy,
   ChevronDown,
+  Calculator,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect, useMemo } from "react";
@@ -26,6 +27,7 @@ import { disciplinas, type Disciplina } from "@/data/disciplines";
 const disciplines = disciplinas;
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
 import { StudyAssistant } from "@/components/StudyAssistant";
+import { GradesCalculator } from "@/components/GradesCalculator";
 import { loadCheckpoints, saveCheckpoint, subscribeCheckpoints } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO } from "date-fns";
@@ -38,24 +40,20 @@ export const Route = createFileRoute("/disciplines/$id")({
   }),
 });
 
-type TabType = 'guia' | 'cronograma' | 'podcasts' | 'resumos' | 'provas' | 'simulados';
+type TabType = "guia" | "cronograma" | "notas" | "podcasts" | "resumos" | "provas" | "simulados";
 
 function DisciplinePage() {
   const { id } = useParams({ from: "/disciplines/$id" });
-  const [activeTab, setActiveTab] = useState<TabType>('cronograma');
+  const [activeTab, setActiveTab] = useState<TabType>("cronograma");
 
   const discipline = useMemo(() => disciplines.find((d) => d.id === id), [id]);
-  const events = useMemo(
-    () => CALENDAR_EVENTS.filter((e: any) => e.disciplinaId === id),
-    [id],
-  );
+  const events = useMemo(() => CALENDAR_EVENTS.filter((e: any) => e.disciplinaId === id), [id]);
 
   const nextExam = useMemo(() => {
     return events
       .filter((e: any) => isAfter(parseISO(e.dataInicio), new Date()))
       .sort(
-        (a: any, b: any) =>
-          parseISO(a.dataInicio).getTime() - parseISO(b.dataInicio).getTime(),
+        (a: any, b: any) => parseISO(a.dataInicio).getTime() - parseISO(b.dataInicio).getTime(),
       )[0];
   }, [events]);
 
@@ -100,9 +98,7 @@ function DisciplinePage() {
 
   const contextoDisciplina = [
     `Disciplina: ${discipline.nome} (${discipline.codigo})`,
-    discipline.guia?.objetivoGeral
-      ? `Objetivo geral: ${discipline.guia.objetivoGeral}`
-      : "",
+    discipline.guia?.objetivoGeral ? `Objetivo geral: ${discipline.guia.objetivoGeral}` : "",
     discipline.guia?.metodoEstudo
       ? `Método de estudo sugerido: ${discipline.guia.metodoEstudo}`
       : "",
@@ -128,10 +124,7 @@ function DisciplinePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <h1 className="text-2xl font-bold mb-4">Disciplina não encontrada</h1>
-        <Link
-          to="/disciplines"
-          className="text-[#D4941E] font-bold uppercase underline"
-        >
+        <Link to="/disciplines" className="text-[#D4941E] font-bold uppercase underline">
           Voltar para Biblioteca
         </Link>
       </div>
@@ -139,12 +132,13 @@ function DisciplinePage() {
   }
 
   const tabs: { id: TabType; label: string; icon: any }[] = [
-    { id: 'guia', label: 'Guia', icon: Info },
-    { id: 'cronograma', label: 'Cronograma', icon: Layout },
-    { id: 'podcasts', label: 'Podcasts', icon: Headphones },
-    { id: 'resumos', label: 'Resumos', icon: FileText },
-    { id: 'provas', label: 'Provas Antigas', icon: History },
-    { id: 'simulados', label: 'Simulados', icon: Star },
+    { id: "guia", label: "Guia", icon: Info },
+    { id: "cronograma", label: "Cronograma", icon: Layout },
+    { id: "notas", label: "Notas", icon: Calculator },
+    { id: "podcasts", label: "Podcasts", icon: Headphones },
+    { id: "resumos", label: "Resumos", icon: FileText },
+    { id: "provas", label: "Provas Antigas", icon: History },
+    { id: "simulados", label: "Simulados", icon: Star },
   ];
 
   return (
@@ -164,7 +158,9 @@ function DisciplinePage() {
                 <div className="p-6 pt-12 flex flex-col gap-6">
                   <div className="flex items-center gap-2 mb-4">
                     <LayoutDashboard className="w-8 h-8 text-[#D4941E]" />
-                    <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
+                    <span className="font-bold text-lg tracking-tight uppercase">
+                      Menu Acadêmico
+                    </span>
                   </div>
                   <div className="flex flex-col gap-2">
                     <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
@@ -277,7 +273,7 @@ function DisciplinePage() {
 
             {/* Tab Content */}
             <div className="bg-white rounded-3xl border border-[#0A3D52]/10 p-8 shadow-sm min-h-[400px]">
-              {activeTab === 'guia' && (
+              {activeTab === "guia" && (
                 <div className="prose prose-slate max-w-none">
                   <h3 className="text-xl font-black mb-4 uppercase tracking-tight flex items-center gap-2">
                     <Info className="w-5 h-5 text-[#D4941E]" /> Guia da Disciplina
@@ -287,9 +283,7 @@ function DisciplinePage() {
                       "Informações sobre a ementa e objetivos da disciplina estarão disponíveis em breve."}
                   </p>
                   <div className="mt-8 p-6 bg-[#F5F7FA] rounded-2xl border border-[#0A3D52]/5">
-                    <h4 className="font-bold text-sm uppercase mb-3">
-                      Objetivos de Aprendizagem
-                    </h4>
+                    <h4 className="font-bold text-sm uppercase mb-3">Objetivos de Aprendizagem</h4>
                     <ul className="space-y-3">
                       {[1, 2, 3].map((i) => (
                         <li key={i} className="flex gap-3 text-sm text-[#0A3D52]/70">
@@ -302,12 +296,10 @@ function DisciplinePage() {
                 </div>
               )}
 
-              {activeTab === 'cronograma' && (
+              {activeTab === "cronograma" && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xl font-black uppercase tracking-tight">
-                      Roteiro Semanal
-                    </h3>
+                    <h3 className="text-xl font-black uppercase tracking-tight">Roteiro Semanal</h3>
                     <span className="text-[10px] font-black text-[#27AE60] bg-[#27AE60]/10 px-2 py-1 rounded-full uppercase">
                       {progressoCheckpoints}% concluído
                     </span>
@@ -377,7 +369,13 @@ function DisciplinePage() {
                 </div>
               )}
 
-              {activeTab === 'podcasts' && (
+              {activeTab === "notas" && (
+                <div className="space-y-6">
+                  <GradesCalculator disciplinaId={discipline.id} disciplinaCor={discipline.cor} />
+                </div>
+              )}
+
+              {activeTab === "podcasts" && (
                 <div className="space-y-4">
                   <h3 className="text-xl font-black uppercase tracking-tight mb-6">
                     Podcasts & Áudios
@@ -386,7 +384,7 @@ function DisciplinePage() {
                 </div>
               )}
 
-              {activeTab === 'resumos' && (
+              {activeTab === "resumos" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="col-span-full">
                     <EmptyState icon={FileText} message="Sem resumos cadastrados" />
@@ -394,14 +392,13 @@ function DisciplinePage() {
                 </div>
               )}
 
-              {activeTab === 'provas' && (
+              {activeTab === "provas" && (
                 <div className="space-y-4">
                   <h3 className="text-xl font-black uppercase tracking-tight mb-6">
                     Banco de Provas
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {discipline.avaliacoes.filter((a) => a.tipo.startsWith("AP"))
-                      .length > 0 ? (
+                    {discipline.avaliacoes.filter((a) => a.tipo.startsWith("AP")).length > 0 ? (
                       discipline.avaliacoes
                         .filter((a) => a.tipo.startsWith("AP"))
                         .map((exam) => (
@@ -432,7 +429,7 @@ function DisciplinePage() {
                 </div>
               )}
 
-              {activeTab === 'simulados' && (
+              {activeTab === "simulados" && (
                 <div className="flex flex-col items-center justify-center text-center py-10 space-y-6">
                   <div className="w-20 h-20 rounded-full bg-[#D4941E]/10 flex items-center justify-center">
                     <Star className="w-10 h-10 text-[#D4941E]" />
@@ -455,10 +452,7 @@ function DisciplinePage() {
               <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                 <MessageSquare className="w-3 h-3 text-[#D4941E]" /> Tutor IA
               </h3>
-              <StudyAssistant
-                contexto={contextoDisciplina}
-                disciplinaCor={discipline.cor}
-              />
+              <StudyAssistant contexto={contextoDisciplina} disciplinaCor={discipline.cor} />
             </div>
           </div>
 

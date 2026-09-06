@@ -15,8 +15,7 @@ export async function seedDatabase(): Promise<SeedResult> {
   if (!sb) {
     return {
       ok: false,
-      message:
-        "Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.",
+      message: "Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.",
     };
   }
 
@@ -63,9 +62,7 @@ export async function seedDatabase(): Promise<SeedResult> {
     observacoes: e.observacoes ?? null,
     alerta_dias: e.alertaDias,
   }));
-  const { error: eEvt } = await sb
-    .from("eventos")
-    .upsert(eventosRows, { onConflict: "id" });
+  const { error: eEvt } = await sb.from("eventos").upsert(eventosRows, { onConflict: "id" });
   if (eEvt) return { ok: false, message: `Erro ao semear eventos: ${eEvt.message}` };
 
   // 3) Checkpoints (1 por aula, concluido=false por padrão)

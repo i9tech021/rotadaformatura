@@ -52,6 +52,26 @@ create index if not exists eventos_disciplina_id_idx on public.eventos (discipli
 create index if not exists eventos_data_inicio_idx on public.eventos (data_inicio);
 
 -- ============================================================
+-- NOTAS (notas de avaliações por aluno — calculadora de média)
+-- ============================================================
+create table if not exists public.notas (
+  id text primary key,
+  student_id text not null default 'default',
+  disciplina_id text not null,
+  avaliacao_tipo text not null,
+  avaliacao_numero int default 1,
+  nota numeric,
+  peso numeric default 1,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index if not exists notas_student_idx on public.notas (student_id);
+create index if not exists notas_disciplina_idx on public.notas (disciplina_id);
+
+alter table public.notas enable row level security;
+
+-- ============================================================
 -- CHECKPOINTS (progresso de aula por aluno — concluído ou não)
 -- ============================================================
 create table if not exists public.checkpoints (
@@ -74,7 +94,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['disciplinas', 'eventos', 'checkpoints'] loop
+  foreach t in array array['disciplinas', 'eventos', 'checkpoints', 'notas', 'chat_messages'] loop
     execute format(
       'drop policy if exists "anon_all_%I" on public.%I;'
       'create policy "anon_all_%I" on public.%I for all to anon using (true) with check (true);',
@@ -115,6 +135,7 @@ end $$;
 alter table public.disciplinas replica identity full;
 alter table public.eventos replica identity full;
 alter table public.checkpoints replica identity full;
+alter table public.notas replica identity full;
 alter table public.chat_messages replica identity full;
 
 do $$
@@ -146,5 +167,12 @@ begin
       and schemaname = 'public' and tablename = 'chat_messages'
   ) then
     alter publication supabase_realtime add table public.chat_messages;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'notas'
+  ) then
+    alter publication supabase_realtime add table public.notas;
   end if;
 end $$;

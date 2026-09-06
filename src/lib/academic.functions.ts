@@ -8,8 +8,7 @@ import { z } from "zod";
 // Modelo gratuito padrão da OpenRouter. Troque via VITE_AI_MODEL se quiser
 // (ex.: nvidia/nemotron-3-ultra-550b-a55b:free, google/gemma-4-26b-a4b-it:free).
 export const AI_MODEL =
-  (import.meta.env.VITE_AI_MODEL as string) ||
-  "nvidia/nemotron-3.5-lightning:free";
+  (import.meta.env.VITE_AI_MODEL as string) || "nvidia/nemotron-3.5-lightning:free";
 
 const SYSTEM_PROMPT = `Você é o "Tutor Rota da Formatura", assistente acadêmico de alunos do curso de Administração a distância do CEDERJ (semestre 2026-2).
 
@@ -45,14 +44,10 @@ const inputSchema = z.object({
 
 export type AskAcademicAIInput = z.infer<typeof inputSchema>;
 
-export async function askAcademicAI(
-  input: AskAcademicAIInput,
-): Promise<{ answer: string }> {
+export async function askAcademicAI(input: AskAcademicAIInput): Promise<{ answer: string }> {
   const { question, context } = inputSchema.parse(input);
 
-  const baseUrl =
-    (import.meta.env.VITE_AI_BASE_URL as string) ||
-    "https://openrouter.ai/api/v1";
+  const baseUrl = (import.meta.env.VITE_AI_BASE_URL as string) || "https://openrouter.ai/api/v1";
   const apiKey = import.meta.env.VITE_AI_API_KEY as string | undefined;
 
   const erroConfig =
@@ -81,9 +76,8 @@ export async function askAcademicAI(
 
   // Modelos de raciocínio (CoT) devolvem o "processo de pensamento" junto.
   // Desliga o reasoning só neles, para não sujar a resposta do Tutor.
-  const isReasoningModel = /(lightning|nemotron-3\.5|nemotron-3-ultra|reasoning|think|r1|o3|o4)/i.test(
-    AI_MODEL,
-  );
+  const isReasoningModel =
+    /(lightning|nemotron-3\.5|nemotron-3-ultra|reasoning|think|r1|o3|o4)/i.test(AI_MODEL);
   const body: Record<string, unknown> = {
     model: AI_MODEL,
     messages,
@@ -118,25 +112,19 @@ export async function askAcademicAI(
 /**
  * Gera link do Google Calendar para uma avaliação.
  */
-export function generateCalendarLink(data: {
-  title: string;
-  date: string;
-  description: string;
-}): { url: string } {
+export function generateCalendarLink(data: { title: string; date: string; description: string }): {
+  url: string;
+} {
   const { title, date, description } = data;
   const startDate = new Date(date);
   const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
 
-  const formatDate = (d: Date) =>
-    d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+  const formatDate = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
 
   const url = new URL("https://www.google.com/calendar/render");
   url.searchParams.append("action", "TEMPLATE");
   url.searchParams.append("text", title);
-  url.searchParams.append(
-    "dates",
-    `${formatDate(startDate)}/${formatDate(endDate)}`,
-  );
+  url.searchParams.append("dates", `${formatDate(startDate)}/${formatDate(endDate)}`);
   url.searchParams.append("details", description);
   url.searchParams.append("sf", "true");
   url.searchParams.append("output", "xml");
@@ -175,10 +163,7 @@ async function extrairResposta(res: Response): Promise<string> {
           delta?: { content?: string };
         }[];
       };
-      content +=
-        json.choices?.[0]?.message?.content ??
-        json.choices?.[0]?.delta?.content ??
-        "";
+      content += json.choices?.[0]?.message?.content ?? json.choices?.[0]?.delta?.content ?? "";
     } catch {
       // ignora linhas que não são JSON válido
     }
