@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useNavigate, createFileRoute } from "@tanstack/react-router";
 import { GraduationCap, User, Key, ArrowRight, Shield } from "lucide-react";
-import { salvarIdentidade, validarCodigoTurma, getCodigoTurmaValido } from "@/lib/auth";
+import { salvarIdentidade, validarCodigoTurma } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -19,7 +19,6 @@ function LoginPage() {
   const [polo, setPolo] = useState("");
   const [erro, setErro] = useState("");
 
-  const codigosValidos = getCodigoTurmaValido();
   const codigoValido = validarCodigoTurma(codigo);
   const podeEntrar = codigoValido && nome.trim().length >= 2 && polo.trim().length >= 2;
 
@@ -68,17 +67,17 @@ function LoginPage() {
                 autoFocus
                 value={codigo}
                 onChange={(e) => {
-                  setCodigo(e.target.value.toUpperCase());
+                  setCodigo(e.target.value.toLowerCase().trim());
                   setErro("");
                 }}
-                placeholder="Ex: CEDERJ-ADM-2026"
+                placeholder="Digite o código da turma"
                 maxLength={30}
-                className="w-full bg-[#F5F7FA] rounded-xl pl-9 pr-3 py-2.5 text-sm font-bold text-[#0A3D52] placeholder:text-[#0A3D52]/30 focus:ring-2 focus:ring-[#D4941E] outline-none uppercase"
+                className="w-full bg-[#F5F7FA] rounded-xl pl-9 pr-3 py-2.5 text-sm font-bold text-[#0A3D52] placeholder:text-[#0A3D52]/30 focus:ring-2 focus:ring-[#D4941E] outline-none lowercase"
               />
             </div>
             {codigo && !codigoValido && (
               <p className="text-[10px] text-red-500 mt-1 font-bold">
-                Código inválido. Valores aceitos: {codigosValidos.join(", ")}
+                Código inválido. Peça o código ao administrador da turma.
               </p>
             )}
           </div>

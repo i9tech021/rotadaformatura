@@ -38,7 +38,7 @@ import {
   type ProvaAntiga,
 } from "@/lib/provasService";
 import { ETAPAS_QUESTAO, type EtapaQuestao } from "@/lib/questoesService";
-import { getIdentidade, salvarIdentidade, type Identidade } from "@/lib/publicacoesService";
+import { CODIGO_TURMA_PADRAO, getIdentidade, salvarIdentidade, type Identidade } from "@/lib/publicacoesService";
 import { IdentidadeModal } from "@/components/IdentidadeModal";
 import {
   RevisePorQuestao,
@@ -100,7 +100,7 @@ function SimuladosPage() {
   }, [recarregar, disciplinaId, etapa]);
 
   const salvarIdent = (nome: string, polo: string) => {
-    const ident = salvarIdentidade(nome, polo, "CEDERJ-ADM-2026");
+    const ident = salvarIdentidade(nome, polo, CODIGO_TURMA_PADRAO);
     setIdentidade(ident);
     setModalAberto(false);
     toast.success("Identificação salva!");

@@ -10,14 +10,16 @@ export interface Identidade {
 }
 
 const STORAGE_KEY = "rdf:identidade";
-const CODIGOS_TURMA = ["CEDERJ-ADM-2026"];
+// Código único da turma (minúsculo, simples). Nunca exibir em telas públicas.
+export const CODIGO_TURMA_PADRAO = "turma2026";
+const CODIGOS_TURMA = [CODIGO_TURMA_PADRAO];
 
 export function getCodigoTurmaValido(): string[] {
   return CODIGOS_TURMA;
 }
 
 export function validarCodigoTurma(codigo: string): boolean {
-  return CODIGOS_TURMA.includes(codigo.trim().toUpperCase());
+  return CODIGOS_TURMA.includes(codigo.trim().toLowerCase());
 }
 
 export function getIdentidade(): Identidade | null {
@@ -39,7 +41,7 @@ export function salvarIdentidade(nome: string, polo: string, turma: string): Ide
   const ident: Identidade = {
     nome: nome.trim(),
     polo: polo.trim(),
-    turma: turma.trim().toUpperCase(),
+    turma: turma.trim().toLowerCase(),
     autorLocalId: existing?.autorLocalId ?? crypto.randomUUID(),
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(ident));

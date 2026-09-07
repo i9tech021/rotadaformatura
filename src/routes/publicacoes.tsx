@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { disciplinas } from "@/data/disciplines";
 import {
+  CODIGO_TURMA_PADRAO,
   denunciarPublicacao,
   excluirPublicacao,
   getIdentidade,
@@ -105,7 +106,7 @@ function PublicacoesPage() {
   };
 
   const salvarIdentidadeSubmit = (nome: string, polo: string) => {
-    const ident = salvarIdentidade(nome, polo, "CEDERJ-ADM-2026");
+    const ident = salvarIdentidade(nome, polo, CODIGO_TURMA_PADRAO);
     setIdentidade(ident);
     setModalAberto(false);
     setFormAberto(true);

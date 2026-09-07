@@ -27,7 +27,7 @@ export interface Publicacao {
 }
 
 // Re-exporta do módulo de auth unificado
-export { getIdentidade, salvarIdentidade } from "@/lib/auth";
+export { CODIGO_TURMA_PADRAO, getIdentidade, salvarIdentidade } from "@/lib/auth";
 export type { Identidade } from "@/lib/auth";
 
 // Importa localmente para uso neste módulo

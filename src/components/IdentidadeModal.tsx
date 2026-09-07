@@ -2,7 +2,7 @@
 // Modal para identificar o autor (nome + polo) antes de publicar.
 import { useState } from "react";
 import { GraduationCap, User, X } from "lucide-react";
-import { getIdentidade, salvarIdentidade } from "@/lib/auth";
+import { CODIGO_TURMA_PADRAO, getIdentidade, salvarIdentidade } from "@/lib/auth";
 
 interface Props {
   aberto: boolean;
@@ -23,7 +23,7 @@ export function IdentidadeModal({ aberto, aoSalvar, aoFechar }: Props) {
     e.preventDefault();
     if (!podeSalvar) return;
     // Salva no novo sistema de auth
-    salvarIdentidade(nome, polo, existente?.turma ?? "CEDERJ-ADM-2026");
+    salvarIdentidade(nome, polo, existente?.turma ?? CODIGO_TURMA_PADRAO);
     aoSalvar(nome, polo);
   };
 

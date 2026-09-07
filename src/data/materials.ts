@@ -7,29 +7,245 @@ export interface Material {
   uploadedAt: string; // ISO string
 }
 
+// Materiais curados em 2026-09-07 a partir de busca aberta.
+// Fontes oficiais e gratuitas: Canal CECIERJ, portal eduCAPES, YouTube, Brasil Escola.
+// Links marcados "(requer login)" exigem conta gratuita no site de origem.
 export const MATERIALS: Material[] = [
+  // ============================================================
+  // MÉTODOS DETERMINÍSTICOS I
+  // ============================================================
   {
-    id: "mat-1",
-    disciplineId: "metodos-1",
-    title: "Notas de Aula Conjuntos",
-    type: "pdf",
-    url: "#",
-    uploadedAt: "2026-08-01T10:00:00Z",
-  },
-  {
-    id: "mat-2",
-    disciplineId: "metodos-1",
-    title: "Exercícios Resolvidos Lógica",
-    type: "doc",
-    url: "#",
-    uploadedAt: "2026-08-02T14:30:00Z",
-  },
-  {
-    id: "mat-3",
-    disciplineId: "hpa-2",
-    title: "Artigo: Pensamento Administrativo Clássico",
+    id: "mat-mdi-caderno",
+    disciplineId: "metodos-deterministicos-i",
+    title: "Caderno Didático — Volume Único (oficial CECIERJ)",
     type: "link",
-    url: "https://example.com/artigo",
-    uploadedAt: "2026-07-28T09:00:00Z",
+    url: "https://canal.cecierj.edu.br/recurso/6447",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-mdi-yt-resolucoes",
+    disciplineId: "metodos-deterministicos-i",
+    title: "Playlist: resolução de ADs e APs anteriores (YouTube)",
+    type: "link",
+    url: "https://www.youtube.com/playlist?list=PLAt-5nteLWz9ModE5PvX-zAsPYz-ptPt1",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-mdi-ap1-2025",
+    disciplineId: "metodos-deterministicos-i",
+    title: "AP1 2025.1 com gabarito — Scribd (requer login)",
+    type: "link",
+    url: "https://pt.scribd.com/document/866427958/AP1-MetDet1-2025-1-Gabarito-1-250502-180638",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-mdi-educapes",
+    disciplineId: "metodos-deterministicos-i",
+    title: "Livro Volume Único no portal eduCAPES",
+    type: "link",
+    url: "https://educapes.capes.gov.br/handle/capes/191571?mode=full",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  // ============================================================
+  // HISTÓRIA DO PENSAMENTO ADMINISTRATIVO II
+  // ============================================================
+  {
+    id: "mat-hpa-caderno",
+    disciplineId: "historia-pensamento-administrativo-ii",
+    title: "Caderno Didático — Vol. 1 em PDF (oficial CECIERJ)",
+    type: "pdf",
+    url: "https://canal.cecierj.edu.br/012016/72ffe7394f8b75e0e0f3ece7eb2e4eb6.pdf",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-hpa-yt-taylor-fayol",
+    disciplineId: "historia-pensamento-administrativo-ii",
+    title: "Escola Clássica: Taylor, Fayol (YouTube)",
+    type: "link",
+    url: "https://www.youtube.com/watch?v=dPgJDZrWPd4",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-hpa-yt-teorias",
+    disciplineId: "historia-pensamento-administrativo-ii",
+    title: "Teorias da Administração — Taylor à Escola Clássica (YouTube)",
+    type: "link",
+    url: "https://www.youtube.com/watch?v=HrKVZfvTdeE",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-hpa-ap1-2024",
+    disciplineId: "historia-pensamento-administrativo-ii",
+    title: "AP1 2024.1 com gabarito — Scribd (requer login)",
+    type: "link",
+    url: "https://pt.scribd.com/document/875586103/AP1-HISTORIA-DO-PENSAMENTO-ADMINISTRATIVO-1-GABARITO-1-2024-Passei-Direto",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  // ============================================================
+  // CONTABILIDADE GERAL I
+  // ============================================================
+  {
+    id: "mat-cg1-caderno",
+    disciplineId: "contabilidade-geral-i",
+    title: "Caderno Didático — Vol. 1 (oficial CECIERJ)",
+    type: "link",
+    url: "https://canal.cecierj.edu.br/recurso/6417",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-cg1-yt-partidas",
+    disciplineId: "contabilidade-geral-i",
+    title: "Partida dobrada explicada (YouTube)",
+    type: "link",
+    url: "https://www.youtube.com/watch?v=JvzIbcNEKVg",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-cg1-ap1-2025",
+    disciplineId: "contabilidade-geral-i",
+    title: "Gabarito AP1 2025.1 — Passei Direto (requer login)",
+    type: "link",
+    url: "https://www.passeidireto.com/arquivo/173955517/gabarito-ap-1-2025-1-contabilidade-geral-i-cederj",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  // ============================================================
+  // ECONOMIA BRASILEIRA CONTEMPORÂNEA
+  // ============================================================
+  {
+    id: "mat-ebc-educapes-v1",
+    disciplineId: "economia-brasileira-contemporanea",
+    title: "Caderno Vol. 1 no portal eduCAPES (aulas 1 a 8)",
+    type: "link",
+    url: "https://educapes.capes.gov.br/handle/capes/191551?mode=full",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-ebc-educapes-v2",
+    disciplineId: "economia-brasileira-contemporanea",
+    title: "Caderno Vol. 2 no portal eduCAPES",
+    type: "link",
+    url: "https://educapes.capes.gov.br/handle/capes/191676?mode=full",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-ebc-yt-milagre",
+    disciplineId: "economia-brasileira-contemporanea",
+    title: "Milagre Econômico Brasileiro (YouTube — Geobrasil)",
+    type: "link",
+    url: "https://www.youtube.com/watch?v=_B-tiJQy3u4",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-ebc-plano-cruzado",
+    disciplineId: "economia-brasileira-contemporanea",
+    title: "Plano Cruzado: o que foi e por que fracassou — Brasil Escola",
+    type: "link",
+    url: "https://brasilescola.uol.com.br/historiab/plano-cruzado.htm",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-ebc-questoes",
+    disciplineId: "economia-brasileira-contemporanea",
+    title: "Questões de prova — Passei Direto (requer login)",
+    type: "link",
+    url: "https://www.passeidireto.com/arquivo/118495588/prova-economia-brasileira-contemporanea-questoes",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  // ============================================================
+  // FUNDAMENTOS DE FINANÇAS
+  // ============================================================
+  {
+    id: "mat-ffn-caderno",
+    disciplineId: "fundamentos-financas",
+    title: "Caderno Didático em PDF (oficial CECIERJ)",
+    type: "pdf",
+    url: "https://canal.cecierj.edu.br/012016/91157df7bac270868510352726733aa2.pdf",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-ffn-educapes",
+    disciplineId: "fundamentos-financas",
+    title: "Livro Vol. 1 no portal eduCAPES",
+    type: "link",
+    url: "https://educapes.capes.gov.br/handle/capes/191555?mode=full",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-ffn-yt-juros",
+    disciplineId: "fundamentos-financas",
+    title: "Juros compostos — Matemática Financeira (YouTube)",
+    type: "link",
+    url: "https://www.youtube.com/watch?v=X652ApXFTJA",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-ffn-ap1-2022",
+    disciplineId: "fundamentos-financas",
+    title: "AP1 2022.2 com gabarito — Passei Direto (requer login)",
+    type: "link",
+    url: "https://www.passeidireto.com/arquivo/113859736/fundamentos-de-financas-ap-1-2022-2-gabarito-cederj",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  // ============================================================
+  // GESTÃO DE PESSOAS I
+  // ============================================================
+  {
+    id: "mat-gpi-caderno",
+    disciplineId: "gestao-pessoas-i",
+    title: "Caderno Didático em PDF (oficial CECIERJ)",
+    type: "pdf",
+    url: "https://canal.cecierj.edu.br/012016/f20ce1dee6f19364e14ebbe16556ba08.pdf",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-gpi-educapes",
+    disciplineId: "gestao-pessoas-i",
+    title: "Livro Vol. 1 no portal eduCAPES",
+    type: "link",
+    url: "https://educapes.capes.gov.br/handle/capes/191558?mode=full",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-gpi-yt-recrutamento",
+    disciplineId: "gestao-pessoas-i",
+    title: "Recrutamento e Seleção — aula (YouTube)",
+    type: "link",
+    url: "https://www.youtube.com/watch?v=nS3PknT_9Sc",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-gpi-ap1-2025",
+    disciplineId: "gestao-pessoas-i",
+    title: "Gabarito AP1 2025.1 — Passei Direto (requer login)",
+    type: "link",
+    url: "https://www.passeidireto.com/arquivo/173954525/gabarito-ap-1-2025-1-gestao-de-pessoas-i-cederj",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  // ============================================================
+  // SOCIEDADE E ORGANIZAÇÕES
+  // ============================================================
+  {
+    id: "mat-so-caderno-v1",
+    disciplineId: "sociedade-e-organizacoes",
+    title: "Caderno Didático — Vol. 1, aulas 1 a 7 (oficial CECIERJ)",
+    type: "link",
+    url: "https://canal.cecierj.edu.br/recurso/6453",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-so-caderno-v2",
+    disciplineId: "sociedade-e-organizacoes",
+    title: "Caderno Didático — Vol. 2, aulas 8 a 14 (oficial CECIERJ)",
+    type: "link",
+    url: "https://canal.cecierj.edu.br/recurso/6850",
+    uploadedAt: "2026-09-07T10:00:00Z",
+  },
+  {
+    id: "mat-so-educapes",
+    disciplineId: "sociedade-e-organizacoes",
+    title: "Livro Vol. 1 no portal eduCAPES",
+    type: "link",
+    url: "https://educapes.capes.gov.br/handle/capes/191577",
+    uploadedAt: "2026-09-07T10:00:00Z",
   },
 ];
