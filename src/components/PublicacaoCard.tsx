@@ -5,6 +5,9 @@ import { AudioPlayer } from "./AudioPlayer";
 import type { Publicacao } from "@/lib/publicacoesService";
 import { cn } from "@/lib/utils";
 
+const WHATSAPP_DENUNCIA = "5521996235681";
+const ADMIN_SENHA = "cederj2026";
+
 interface Props {
   publicacao: Publicacao;
   disciplinaCor: string;
@@ -23,6 +26,33 @@ export function PublicacaoCard({
   aoDenunciar,
 }: Props) {
   const assunto = publicacao.titulo || publicacao.descricao || "Sem título";
+
+  const handleDenunciar = () => {
+    const msg = encodeURIComponent(
+      `Denúncia no Rota da Formatura:\n` +
+        `Publicação: ${assunto}\n` +
+        `Tipo: ${publicacao.tipo}\n` +
+        `Autor: ${publicacao.autor_nome} (${publicacao.autor_polo})\n` +
+        `Motivo: [descreva o problema]`,
+    );
+    window.open(`https://wa.me/${WHATSAPP_DENUNCIA}?text=${msg}`, "_blank");
+    aoDenunciar(publicacao);
+  };
+
+  const handleExcluir = () => {
+    if (ehAutor) {
+      if (window.confirm("Tem certeza que deseja excluir esta publicação?")) {
+        aoExcluir(publicacao);
+      }
+    } else {
+      const senha = window.prompt("Digite a senha de administrador para excluir:");
+      if (senha === ADMIN_SENHA) {
+        aoExcluir(publicacao);
+      } else if (senha !== null) {
+        window.alert("Senha incorreta.");
+      }
+    }
+  };
 
   const cabecalho = (
     <div className="flex items-start gap-3">
@@ -70,20 +100,25 @@ export function PublicacaoCard({
         )}
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        {ehAutor ? (
+        <button
+          onClick={handleExcluir}
+          className={cn(
+            "transition-colors p-1 cursor-pointer",
+            ehAutor
+              ? "text-[#0A3D52]/25 hover:text-[#E74C3C]"
+              : "text-[#0A3D52]/25 hover:text-[#E74C3C]",
+          )}
+          aria-label={ehAutor ? "Excluir publicação" : "Excluir (requer senha)"}
+          title={ehAutor ? "Excluir" : "Excluir (requer senha admin)"}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+        {!ehAutor && (
           <button
-            onClick={() => aoExcluir(publicacao)}
-            className="text-[#0A3D52]/25 hover:text-[#E74C3C] transition-colors p-1 cursor-pointer"
-            aria-label="Excluir publicação"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={() => aoDenunciar(publicacao)}
+            onClick={handleDenunciar}
             className="text-[#0A3D52]/20 hover:text-[#E74C3C] transition-colors p-1 cursor-pointer"
             aria-label="Denunciar publicação"
-            title="Denunciar"
+            title="Denunciar via WhatsApp"
           >
             <Flag className="w-4 h-4" />
           </button>

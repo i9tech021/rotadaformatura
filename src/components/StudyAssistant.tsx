@@ -19,7 +19,7 @@ interface StudyAssistantProps {
 const WELCOME: ChatMessage = {
   role: "assistant",
   content:
-    "Olá! Sou seu Tutor da Rota da Formatura. Posso tirar dúvidas da matéria, explicar conceitos, montar seu plano de estudos e orientar sobre o cronograma. Pergunte o que quiser!",
+    "Olá! Sou o Tutor da Rota da Formatura. Posso tirar dúvidas sobre a matéria, explicar conceitos, ajudar a se preparar para ADs e APs, e orientar sobre o cronograma. Pergunte o que quiser!",
 };
 
 export function StudyAssistant({ contexto, disciplinaCor = "#0A3D52" }: StudyAssistantProps) {

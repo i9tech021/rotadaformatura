@@ -100,7 +100,8 @@ function DisciplinePage() {
   const contextoDisciplina = !discipline
     ? ""
     : [
-        `Disciplina: ${discipline.nome} (${discipline.codigo})`,
+        `Disciplina: ${discipline.nome} (${discipline.codigo}) — CEDERJ Administração 2026-2`,
+        `Modalidade: EAD com avaliações presenciais (AP) e a distância (AD)`,
         discipline.guia?.objetivoGeral ? `Objetivo geral: ${discipline.guia.objetivoGeral}` : "",
         discipline.guia?.metodoEstudo
           ? `Método de estudo sugerido: ${discipline.guia.metodoEstudo}`
@@ -108,8 +109,11 @@ function DisciplinePage() {
         discipline.formulaNota?.aprovacao
           ? `Critério de aprovação: ${discipline.formulaNota.aprovacao}`
           : "",
+        discipline.formulaNota?.n1 ? `Fórmula N1: ${discipline.formulaNota.n1}` : "",
+        discipline.formulaNota?.n2 ? `Fórmula N2: ${discipline.formulaNota.n2}` : "",
         "",
-        `Progresso do aluno: ${feitas}/${totalAulas} aulas concluídas (checkpoints).`,
+        `Progresso do aluno: ${feitas}/${totalAulas} aulas concluídas.`,
+        `CH: ${discipline.ch ?? "45h"}`,
         "",
         "Roteiro de aulas (cronograma oficial):",
         ...discipline.aulas.map(
@@ -119,6 +123,12 @@ function DisciplinePage() {
         "",
         "Próximas avaliações/entregas desta disciplina:",
         ...proximosEventosChat.map((e) => `- ${e}`),
+        "",
+        "INSTRUÇÕES PARA O TUTOR:",
+        "- Responda sempre no contexto do CEDERJ (formato AD/AP, EAD)",
+        "- Seja prático e objetivo, focado em ajudar a se preparar para as provas",
+        "- Use exemplos reais quando possível",
+        "- Se não souber algo específico do CEDERJ, diga 'consulte o cronograma oficial'",
       ]
         .filter(Boolean)
         .join("\n");
