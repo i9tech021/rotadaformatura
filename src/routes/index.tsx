@@ -31,6 +31,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getTarefasPorDia, type TarefaDiaria } from "@/data/studyPlan";
 import { ListChecks } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   component: AcademicDashboard,
@@ -218,16 +219,24 @@ function AcademicDashboard() {
       return {
         ...d,
         progresso: feitos,
-        ch: d.id.includes("hpa") ? "60h" : "45h",
+        ch: d.ch ?? "45h",
         period: d.aulas.length > 0 ? "2º período" : "Aguardando",
         status: days <= 7 && days >= 0 ? "urgent" : days <= 14 && days >= 0 ? "warning" : "normal",
         nextExam: proximo ? { type: proximo.tipo, daysRemaining: days } : null,
       };
     });
+
+    // Calcula CH total do semestre (soma dos valores numéricos)
+    const chTotal = dados.reduce<number>((acc, d) => {
+      const chStr = String(d.ch ?? "45");
+      const match = chStr.match(/(\d+)/);
+      return acc + (match ? parseInt(match[1] ?? "45") : 45);
+    }, 0);
+
     const progressoMapTotal = totalAulas ? Math.round((progressoPeso / totalAulas) * 100) : 0;
-    return { dados, progressoMapTotal, totalAulas, ad2Count, ad2IniciaEm };
+    return { dados, progressoMapTotal, totalAulas, chTotal, ad2Count, ad2IniciaEm };
   }, [disciplinas, eventosAcao, agora, progressoMap]);
-  const { dados, progressoMapTotal, totalAulas, ad2Count, ad2IniciaEm } = disciplinesList;
+  const { dados, progressoMapTotal, totalAulas, chTotal, ad2Count, ad2IniciaEm } = disciplinesList;
 
   const data = { profile, disciplines: dados };
 
@@ -383,12 +392,12 @@ function AcademicDashboard() {
           </div>
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
             <Clock className="w-6 h-6 text-[#0A3D52] mb-2" />
-            <span className="text-2xl font-black">{progressoMapTotal}</span>
+            <span className="text-2xl font-black">{chTotal}h</span>
             <span className="text-xs uppercase font-bold text-[#0A3D52]/50 tracking-wider">
-              Carga Total
+              Carga Horária
             </span>
             <p className="text-xs text-[#0A3D52]/40 mt-1">
-              {totalAulas} aulas • {Math.round(progressoMapTotal / 10)}% concluído
+              {totalAulas} aulas • {Math.round(progressoMapTotal)}% concluído
             </p>
           </div>
           <div className="bg-[#F5F7FA] p-6 rounded-xl border border-[#0A3D52]/10 shadow-sm flex flex-col items-center text-center">
@@ -721,6 +730,12 @@ function AcademicDashboard() {
             ))}
           </div>
         </section>
+
+        {/* Ranking dos Alunos */}
+        <RankingAlunos />
+
+        {/* Publicar Nota */}
+        <PublicarNotaSecao disciplinas={dados} />
       </main>
 
       {/* Floating Action Button (IA Chat) */}
@@ -922,6 +937,272 @@ function SecaoColapsavel({
         </span>
       </button>
       {aberto && children}
+    </section>
+  );
+}
+
+// ============================================================
+// RANKING DOS ALUNOS
+// ============================================================
+function RankingAlunos() {
+  const [rankings, setRankings] = useState<
+    {
+      autor_local_id: string;
+      autor_nome: string;
+      autor_polo: string;
+      melhor_nota: number;
+      media: number;
+      total: number;
+    }[]
+  >([]);
+  const [filtro, setFiltro] = useState<"global" | "disciplina" | "polo">("global");
+
+  useEffect(() => {
+    async function carregar() {
+      try {
+        const res = await fetch(
+          "https://pboacygsibfjivrdejcp.supabase.co/rest/v1/simulados_realizados?select=autor_local_id,autor_nome,autor_polo,nota,disciplina_id&nota=not.is.null",
+          {
+            headers: {
+              apikey: "sb_publishable_7r3Rp7pgda5Jxdc7rlYWAw_CLjbrpG0",
+              Authorization: "Bearer sb_publishable_7r3Rp7pgda5Jxdc7rlYWAw_CLjbrpG0",
+            },
+          },
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        // Agrupa por autor
+        const porAutor = new Map<string, { nome: string; polo: string; notas: number[] }>();
+        for (const r of data) {
+          const key = r.autor_local_id;
+          if (!porAutor.has(key)) {
+            porAutor.set(key, {
+              nome: r.autor_nome || "Anônimo",
+              polo: r.autor_polo || "",
+              notas: [],
+            });
+          }
+          porAutor.get(key)!.notas.push(Number(r.nota));
+        }
+        const ranking = Array.from(porAutor.entries())
+          .map(([id, { nome, polo, notas }]) => ({
+            autor_local_id: id,
+            autor_nome: nome,
+            autor_polo: polo,
+            melhor_nota: Math.max(...notas),
+            media: notas.reduce((a, b) => a + b, 0) / notas.length,
+            total: notas.length,
+          }))
+          .sort((a, b) => b.melhor_nota - a.melhor_nota)
+          .slice(0, 10);
+        setRankings(ranking);
+      } catch {
+        // silencioso
+      }
+    }
+    carregar();
+  }, []);
+
+  if (rankings.length === 0) return null;
+
+  return (
+    <section className="mb-10">
+      <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+        <Trophy className="w-4 h-4 text-[#D4941E]" /> Ranking dos Alunos
+      </h3>
+      <div className="bg-white rounded-2xl border border-[#0A3D52]/10 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-[#0A3D52]/5 flex gap-2">
+          {(["global", "disciplina", "polo"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFiltro(f)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer",
+                filtro === f
+                  ? "bg-[#0A3D52] text-white"
+                  : "bg-[#F5F7FA] text-[#0A3D52]/50 hover:bg-[#0A3D52]/10",
+              )}
+            >
+              {f === "global" ? "Global" : f === "disciplina" ? "Por Disciplina" : "Por Polo"}
+            </button>
+          ))}
+        </div>
+        <div className="divide-y divide-[#0A3D52]/5">
+          {rankings.map((r, i) => (
+            <div key={r.autor_local_id} className="flex items-center gap-3 px-4 py-3">
+              <span
+                className={cn(
+                  "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0",
+                  i === 0
+                    ? "bg-[#D4941E]/15 text-[#D4941E]"
+                    : i === 1
+                      ? "bg-[#0A3D52]/10 text-[#0A3D52]"
+                      : "bg-[#F5F7FA] text-[#0A3D52]/40",
+                )}
+              >
+                {i + 1}º
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-sm truncate">{r.autor_nome}</p>
+                <p className="text-[10px] text-[#0A3D52]/40 font-medium">{r.autor_polo}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="font-black text-sm font-mono">{r.melhor_nota.toFixed(1)}</p>
+                <p className="text-[10px] text-[#0A3D52]/40">
+                  {r.total} simulado{r.total > 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// PUBLICAR NOTA
+// ============================================================
+function PublicarNotaSecao({
+  disciplinas,
+}: {
+  disciplinas: { id: string; nome: string; codigo?: string }[];
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [disciplinaId, setDisciplinaId] = useState(disciplinas[0]?.id ?? "");
+  const [tipo, setTipo] = useState("AP1");
+  const [nota, setNota] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  const handlePublicar = async () => {
+    const notaNum = parseFloat(nota);
+    if (isNaN(notaNum) || notaNum < 0 || notaNum > 10) return;
+
+    setEnviando(true);
+    try {
+      // Pega identidade do localStorage
+      const identRaw = localStorage.getItem("rdf:identidade");
+      const ident = identRaw ? JSON.parse(identRaw) : null;
+
+      const id = `nota-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const res = await fetch("https://pboacygsibfjivrdejcp.supabase.co/rest/v1/notas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: "sb_publishable_7r3Rp7pgda5Jxdc7rlYWAw_CLjbrpG0",
+          Authorization: "Bearer sb_publishable_7r3Rp7pgda5Jxdc7rlYWAw_CLjbrpG0",
+        },
+        body: JSON.stringify({
+          id,
+          student_id: ident?.autor_local_id ?? "unknown",
+          disciplina_id: disciplinaId,
+          avaliacao_tipo: tipo,
+          nota: notaNum,
+          autor_local_id: ident?.autor_local_id ?? "unknown",
+          autor_nome: ident?.nome ?? "Anônimo",
+          autor_polo: ident?.polo ?? "",
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Nota publicada com sucesso!");
+        setAberto(false);
+        setNota("");
+      } else {
+        toast.error("Erro ao publicar nota.");
+      }
+    } catch {
+      toast.error("Erro ao publicar nota.");
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <section className="mb-10">
+      {!aberto ? (
+        <button
+          onClick={() => setAberto(true)}
+          className="w-full bg-[#0A3D52]/5 hover:bg-[#0A3D52]/10 border border-dashed border-[#0A3D52]/20 rounded-2xl p-6 text-center transition-colors cursor-pointer"
+        >
+          <Trophy className="w-6 h-6 mx-auto mb-2 text-[#D4941E]" />
+          <p className="font-black text-xs uppercase tracking-widest text-[#0A3D52]/50">
+            Publicar Nota
+          </p>
+          <p className="text-[10px] text-[#0A3D52]/30 mt-1">Compartilhe sua nota no ranking</p>
+        </button>
+      ) : (
+        <div className="bg-white rounded-2xl border border-[#0A3D52]/10 shadow-sm p-6">
+          <h3 className="font-black text-sm uppercase tracking-wider text-[#0A3D52] mb-4">
+            Publicar Nota
+          </h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black uppercase text-[#0A3D52]/50 block mb-1">
+                  Disciplina
+                </label>
+                <select
+                  value={disciplinaId}
+                  onChange={(e) => setDisciplinaId(e.target.value)}
+                  className="w-full bg-[#F5F7FA] rounded-xl px-3 py-2.5 text-sm font-bold text-[#0A3D52] outline-none"
+                >
+                  {disciplinas.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.codigo ?? d.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-[#0A3D52]/50 block mb-1">
+                  Etapa
+                </label>
+                <select
+                  value={tipo}
+                  onChange={(e) => setTipo(e.target.value)}
+                  className="w-full bg-[#F5F7FA] rounded-xl px-3 py-2.5 text-sm font-bold text-[#0A3D52] outline-none"
+                >
+                  <option value="AD1">AD1</option>
+                  <option value="AP1">AP1</option>
+                  <option value="AD2">AD2</option>
+                  <option value="AP2">AP2</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-black uppercase text-[#0A3D52]/50 block mb-1">
+                Nota (0-10)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={nota}
+                onChange={(e) => setNota(e.target.value)}
+                placeholder="Ex: 8.5"
+                className="w-full bg-[#F5F7FA] rounded-xl px-3 py-2.5 text-sm font-bold text-[#0A3D52] placeholder:text-[#0A3D52]/30 outline-none focus:ring-2 focus:ring-[#D4941E]"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handlePublicar}
+                disabled={enviando || !nota}
+                className="flex-1 bg-[#0A3D52] text-white py-2.5 rounded-xl font-black text-xs uppercase tracking-widest disabled:opacity-40 cursor-pointer"
+              >
+                {enviando ? "Publicando..." : "Confirmar Publicação"}
+              </button>
+              <button
+                onClick={() => setAberto(false)}
+                className="px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-[#0A3D52]/50 hover:bg-[#F5F7FA] cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
