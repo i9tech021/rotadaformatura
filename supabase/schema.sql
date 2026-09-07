@@ -94,7 +94,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['disciplinas', 'eventos', 'checkpoints', 'notas', 'chat_messages', 'podcasts'] loop
+  foreach t in array array['disciplinas', 'eventos', 'checkpoints', 'notas', 'chat_messages', 'podcasts', 'questoes', 'simulados_realizados'] loop
     execute format(
       'drop policy if exists "anon_all_%I" on public.%I;'
       'create policy "anon_all_%I" on public.%I for all to anon using (true) with check (true);',
@@ -129,7 +129,78 @@ begin
 end $$;
 
 -- ============================================================
--- PODCASTS (áudios de estudo por disciplina)
+-- PUBLICACOES (Comunidade aberta: podcast | pdf | nota por disciplina)
+-- Substitui/generaliza a tabela podcasts. Autores se identificam
+-- por nome + polo (sem login). Delete/update só do próprio autor.
+-- ============================================================
+create table if not exists public.publicacoes (
+  id text primary key,
+  tipo text not null, -- "podcast" | "pdf" | "nota"
+  disciplina_id text not null,
+  titulo text not null,
+  descricao text,
+  url text, -- podcast/pfd (Supabase Storage)
+  conteudo text, -- nota (texto direto)
+  autor_nome text not null,
+  autor_polo text not null,
+  autor_local_id text not null, -- gerado no navegador
+  tags text[] default '{}',
+  criado_em timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index if not exists publicacoes_disciplina_idx on public.publicacoes (disciplina_id);
+create index if not exists publicacoes_tipo_idx on public.publicacoes (tipo);
+
+alter table public.publicacoes enable row level security;
+
+-- Leitura pública (anon select)
+-- Função auxiliar: devolve o autor_local_id enviado via request header custom.
+-- O cliente envia o header 'X-Author-Local-Id' em update/delete.
+create or replace function public.auth_uid_or_default() returns text
+  language sql stable as $$
+    select coalesce(
+      current_setting('request.headers', true)::json->>'x-author-local-id',
+      'unknown'
+    );
+  $$;
+
+-- Leitura pública (anon select)
+create policy "publicacoes_anon_select" on public.publicacoes
+  for select to anon using (true);
+
+-- Inserção pública (anon insert)
+create policy "publicacoes_anon_insert" on public.publicacoes
+  for insert to anon with check (tipo in ('podcast', 'pdf', 'nota'));
+
+-- Exclusão apenas do próprio autor (autor_local_id bate com o informado no update/delete)
+create policy "publicacoes_anon_delete_own" on public.publicacoes
+  for delete to anon
+  using (autor_local_id = auth_uid_or_default());
+
+-- Atualização apenas do próprio autor
+create policy "publicacoes_anon_update_own" on public.publicacoes
+  for update to anon
+  using (autor_local_id = auth_uid_or_default());
+
+-- ============================================================
+-- DENUNCIAS (moderação leve — só guarda o dado p/ revisão futura)
+-- ============================================================
+create table if not exists public.denuncias (
+  id text primary key default gen_random_uuid()::text,
+  publicacao_id text not null,
+  criado_em timestamptz default now()
+);
+
+create index if not exists denuncias_publicacao_idx on public.denuncias (publicacao_id);
+
+alter table public.denuncias enable row level security;
+
+create policy "denuncias_anon_insert" on public.denuncias
+  for insert to anon with check (true);
+
+-- ============================================================
+-- PODCASTS (legado — mantida p/ compatibilidade; novos posts vão p/ publicacoes)
 -- ============================================================
 create table if not exists public.podcasts (
   id text primary key,
@@ -141,9 +212,18 @@ create table if not exists public.podcasts (
   criado_em timestamptz default now()
 );
 
-create index if not exists podcasts_disciplina_idx on public.podcasts (disciplina_id);
+-- Migração: podcasts existentes → publicacoes (tipo 'podcast')
+insert into public.publicacoes (
+  id, tipo, disciplina_id, titulo, descricao, url, conteudo,
+  autor_nome, autor_polo, autor_local_id, tags, criado_em
+)
+select
+  id, 'podcast', disciplina_id, titulo, descricao, url, null,
+  'Podcast', 'CEDERJ', id, array['podcast'], criado_em
+from public.podcasts
+on conflict (id) do nothing;
 
-alter table public.podcasts enable row level security;
+create index if not exists podcasts_disciplina_idx on public.podcasts (disciplina_id);
 
 -- Bucket de Storage para os arquivos de áudio (público para leitura)
 insert into storage.buckets (id, name, public)
@@ -166,6 +246,59 @@ begin
   end if;
 end $$;
 
+-- Bucket de Storage único para publicacoes (podcast/pfd)
+insert into storage.buckets (id, name, public)
+  values ('publicacoes', 'publicacoes', true)
+  on conflict (id) do nothing;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies where policyname = 'publicacoes_public_read'
+  ) then
+    execute 'create policy "publicacoes_public_read" on storage.objects
+      for select using (bucket_id = ''publicacoes'')';
+  end if;
+  if not exists (
+    select 1 from pg_policies where policyname = 'publicacoes_public_write'
+  ) then
+    execute 'create policy "publicacoes_public_write" on storage.objects
+      for all to anon using (bucket_id = ''publicacoes'') with check (bucket_id = ''publicacoes'')';
+  end if;
+end $$;
+
+-- ============================================================
+-- SIMULADOS (gerados por IA, limite 1/semana por aluno)
+-- ============================================================
+create table if not exists public.questoes (
+  id text primary key,
+  disciplina_id text not null,
+  enunciado text not null,
+  alternativas jsonb not null,
+  resposta_correta int not null,
+  explicacao text,
+  tipo text not null,
+  fonte text
+);
+
+create table if not exists public.simulados_realizados (
+  id text primary key,
+  user_id text not null default 'default',
+  disciplina_id text not null,
+  questoes jsonb not null,
+  respostas jsonb,
+  acertos int default 0,
+  total int default 0,
+  percentual int default 0,
+  criado_em timestamptz default now()
+);
+
+create index if not exists simulados_user_idx
+  on public.simulados_realizados (user_id, criado_em desc);
+
+alter table public.questoes enable row level security;
+alter table public.simulados_realizados enable row level security;
+
 -- ============================================================
 -- REALTIME: habilita replicação para os clientes assinarem mudanças
 -- (dashboard de urgência e progresso de aulas atualizam ao vivo).
@@ -175,6 +308,8 @@ alter table public.eventos replica identity full;
 alter table public.checkpoints replica identity full;
 alter table public.notas replica identity full;
 alter table public.chat_messages replica identity full;
+alter table public.publicacoes replica identity full;
+alter table public.simulados_realizados replica identity full;
 
 do $$
 begin
@@ -219,5 +354,26 @@ begin
       and schemaname = 'public' and tablename = 'podcasts'
   ) then
     alter publication supabase_realtime add table public.podcasts;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'simulados_realizados'
+  ) then
+    alter publication supabase_realtime add table public.simulados_realizados;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'publicacoes'
+  ) then
+    alter publication supabase_realtime add table public.publicacoes;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'denuncias'
+  ) then
+    alter publication supabase_realtime add table public.denuncias;
   end if;
 end $$;

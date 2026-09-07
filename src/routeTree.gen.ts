@@ -15,7 +15,9 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as DisciplinesRouteImport } from './routes/disciplines'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as PodcastsRouteImport } from './routes/podcasts'
+import { Route as PublicacoesRouteImport } from './routes/publicacoes'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SimuladosRouteImport } from './routes/simulados'
 import { Route as CommunityIndexRouteImport } from './routes/community/index'
 import { Route as CommunityChatRouteImport } from './routes/community/chat'
 import { Route as DisciplinesIdRouteImport } from './routes/disciplines.$id'
@@ -50,9 +52,19 @@ const PodcastsRoute = PodcastsRouteImport.update({
   path: '/podcasts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PublicacoesRoute = PublicacoesRouteImport.update({
+  id: '/publicacoes',
+  path: '/publicacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimuladosRoute = SimuladosRouteImport.update({
+  id: '/simulados',
+  path: '/simulados',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityIndexRoute = CommunityIndexRouteImport.update({
@@ -78,7 +90,9 @@ export interface FileRoutesByFullPath {
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/podcasts': typeof PodcastsRoute
+  '/publicacoes': typeof PublicacoesRoute
   '/settings': typeof SettingsRoute
+  '/simulados': typeof SimuladosRoute
   '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
   '/community/': typeof CommunityIndexRoute
@@ -90,7 +104,9 @@ export interface FileRoutesByTo {
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/podcasts': typeof PodcastsRoute
+  '/publicacoes': typeof PublicacoesRoute
   '/settings': typeof SettingsRoute
+  '/simulados': typeof SimuladosRoute
   '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
   '/community': typeof CommunityIndexRoute
@@ -103,7 +119,9 @@ export interface FileRoutesById {
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/podcasts': typeof PodcastsRoute
+  '/publicacoes': typeof PublicacoesRoute
   '/settings': typeof SettingsRoute
+  '/simulados': typeof SimuladosRoute
   '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
   '/community/': typeof CommunityIndexRoute
@@ -117,7 +135,9 @@ export interface FileRouteTypes {
     | '/disciplines'
     | '/materials'
     | '/podcasts'
+    | '/publicacoes'
     | '/settings'
+    | '/simulados'
     | '/community/chat'
     | '/disciplines/$id'
     | '/community/'
@@ -129,7 +149,9 @@ export interface FileRouteTypes {
     | '/disciplines'
     | '/materials'
     | '/podcasts'
+    | '/publicacoes'
     | '/settings'
+    | '/simulados'
     | '/community/chat'
     | '/disciplines/$id'
     | '/community'
@@ -141,7 +163,9 @@ export interface FileRouteTypes {
     | '/disciplines'
     | '/materials'
     | '/podcasts'
+    | '/publicacoes'
     | '/settings'
+    | '/simulados'
     | '/community/chat'
     | '/disciplines/$id'
     | '/community/'
@@ -154,7 +178,9 @@ export interface RootRouteChildren {
   DisciplinesRoute: typeof DisciplinesRouteWithChildren
   MaterialsRoute: typeof MaterialsRoute
   PodcastsRoute: typeof PodcastsRoute
+  PublicacoesRoute: typeof PublicacoesRoute
   SettingsRoute: typeof SettingsRoute
+  SimuladosRoute: typeof SimuladosRoute
   CommunityChatRoute: typeof CommunityChatRoute
   CommunityIndexRoute: typeof CommunityIndexRoute
 }
@@ -203,11 +229,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PodcastsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/publicacoes': {
+      id: '/publicacoes'
+      path: '/publicacoes'
+      fullPath: '/publicacoes'
+      preLoaderRoute: typeof PublicacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulados': {
+      id: '/simulados'
+      path: '/simulados'
+      fullPath: '/simulados'
+      preLoaderRoute: typeof SimuladosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community/': {
@@ -253,7 +293,9 @@ const rootRouteChildren: RootRouteChildren = {
   DisciplinesRoute: DisciplinesRouteWithChildren,
   MaterialsRoute: MaterialsRoute,
   PodcastsRoute: PodcastsRoute,
+  PublicacoesRoute: PublicacoesRoute,
   SettingsRoute: SettingsRoute,
+  SimuladosRoute: SimuladosRoute,
   CommunityChatRoute: CommunityChatRoute,
   CommunityIndexRoute: CommunityIndexRoute,
 }

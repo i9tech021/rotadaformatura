@@ -18,6 +18,7 @@ import {
   Headphones,
   Play,
   Calculator,
+  Users,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
@@ -306,9 +307,11 @@ function AcademicDashboard() {
                   <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
                   <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
                   <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
+                  <MobileNavLink to="/podcasts" icon={Headphones} label="Podcasts" />
+                  <MobileNavLink to="/simulados" icon={Target} label="Simulados" />
                   <MobileNavLink to="/calculadora" icon={Calculator} label="Calculadora" />
+                  <MobileNavLink to="/publicacoes" icon={Users} label="Comunidade" />
                   <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
-                  <MobileNavLink to="/community" icon={MessageCircle} label="Comunidade" />
                   <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
                 </div>
               </div>
@@ -330,10 +333,16 @@ function AcademicDashboard() {
             Dashboard
           </Link>
           <Link
-            to="/community"
+            to="/publicacoes"
             className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
           >
             Comunidade
+          </Link>
+          <Link
+            to="/simulados"
+            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
+          >
+            Simulados
           </Link>
           <Link
             to="/calendar"
@@ -805,7 +814,7 @@ function AcademicDashboard() {
           <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
         </Link>
         <Link
-          to="/community"
+          to="/publicacoes"
           activeProps={{ className: "text-[#D4941E]" }}
           inactiveProps={{ className: "text-[#0A3D52]/40" }}
           className="flex flex-col items-center"
