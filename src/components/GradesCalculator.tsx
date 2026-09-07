@@ -50,7 +50,7 @@ export function GradesCalculator({ disciplinaId, disciplinaCor }: Props) {
   };
 
   const handleSave = async (tipo: string) => {
-    const valor = notas[tipo];
+    const valor = notas[tipo] ?? "";
     const av = AVALIACOES.find((a) => a.tipo === tipo);
     if (!av) return;
 

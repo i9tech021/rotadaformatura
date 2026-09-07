@@ -11,21 +11,21 @@ import {
 
 function rowToEvento(r: Record<string, any>): EventoAcademico {
   return {
-    id: r.id,
-    titulo: r.titulo,
-    disciplinaId: r.disciplina_id,
-    disciplinaNome: r.disciplina_nome,
-    disciplinaCodigo: r.disciplina_codigo,
-    disciplinaCor: r.disciplina_cor,
-    tipo: r.tipo,
-    dataInicio: r.data_inicio,
-    dataFim: r.data_fim ?? undefined,
-    horario: r.horario ?? undefined,
-    local: r.local ?? undefined,
-    conteudo: r.conteudo,
-    peso: r.peso ?? undefined,
-    observacoes: r.observacoes ?? undefined,
-    alertaDias: r.alerta_dias ?? 7,
+    id: r["id"],
+    titulo: r["titulo"],
+    disciplinaId: r["disciplina_id"],
+    disciplinaNome: r["disciplina_nome"],
+    disciplinaCodigo: r["disciplina_codigo"],
+    disciplinaCor: r["disciplina_cor"],
+    tipo: r["tipo"],
+    dataInicio: r["data_inicio"],
+    dataFim: r["data_fim"] ?? undefined,
+    horario: r["horario"] ?? undefined,
+    local: r["local"] ?? undefined,
+    conteudo: r["conteudo"],
+    peso: r["peso"] ?? undefined,
+    observacoes: r["observacoes"] ?? undefined,
+    alertaDias: r["alerta_dias"] ?? 7,
   };
 }
 

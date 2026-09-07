@@ -67,13 +67,13 @@ function saveLocal(notas: Nota[]) {
 
 function rowToNota(r: Record<string, unknown>): Nota {
   return {
-    id: r.id as string,
-    studentId: (r.student_id as string) || "default",
-    disciplinaId: r.disciplina_id as string,
-    avaliacaoTipo: r.avaliacao_tipo as string,
-    avaliacaoNumero: (r.avaliacao_numero as number) || 1,
-    nota: r.nota != null ? Number(r.nota) : null,
-    peso: (r.peso as number) || 1,
+    id: r["id"] as string,
+    studentId: (r["student_id"] as string) || "default",
+    disciplinaId: r["disciplina_id"] as string,
+    avaliacaoTipo: r["avaliacao_tipo"] as string,
+    avaliacaoNumero: (r["avaliacao_numero"] as number) || 1,
+    nota: r["nota"] != null ? Number(r["nota"]) : null,
+    peso: (r["peso"] as number) || 1,
   };
 }
 

@@ -40,11 +40,11 @@ export async function loadMessages(roomId: string): Promise<ChatMessage[]> {
       .order("created_at", { ascending: true });
     if (!error && data?.length) {
       return data.map((r: Record<string, unknown>) => ({
-        id: r.id as string,
-        userId: (r.user_id as string) || "anon",
-        userName: (r.user_name as string) || "Estudante",
-        content: r.content as string,
-        createdAt: (r.created_at as string) || new Date().toISOString(),
+        id: r["id"] as string,
+        userId: (r["user_id"] as string) || "anon",
+        userName: (r["user_name"] as string) || "Estudante",
+        content: r["content"] as string,
+        createdAt: (r["created_at"] as string) || new Date().toISOString(),
       }));
     }
   }
@@ -102,11 +102,11 @@ export function subscribeMessages(
       (payload) => {
         const r = payload.new as Record<string, unknown>;
         onMessage({
-          id: r.id as string,
-          userId: (r.user_id as string) || "anon",
-          userName: (r.user_name as string) || "Estudante",
-          content: r.content as string,
-          createdAt: (r.created_at as string) || new Date().toISOString(),
+          id: r["id"] as string,
+          userId: (r["user_id"] as string) || "anon",
+          userName: (r["user_name"] as string) || "Estudante",
+          content: r["content"] as string,
+          createdAt: (r["created_at"] as string) || new Date().toISOString(),
         });
       },
     )

@@ -14,12 +14,15 @@ import {
   FileText,
   Settings,
   MessageSquare,
+  Bell,
+  ExternalLink,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
 import { disciplinas } from "@/data/disciplines";
+import { generateCalendarLink } from "@/lib/academic.functions";
 const DISCIPLINES = disciplinas;
 import {
   format,
@@ -205,23 +208,57 @@ function AcademicCalendarPage() {
               <div className="space-y-6">
                 {CALENDAR_EVENTS.filter((e) => parseISO(e.dataInicio) >= new Date())
                   .slice(0, 5)
-                  .map((event: any) => (
-                    <div key={event.id} className="relative pl-6 border-l-2 border-white/10 group">
-                      <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-[#D4941E] group-hover:scale-150 transition-transform" />
-                      <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">
-                        {format(parseISO(event.dataInicio), "dd 'de' MMMM", { locale: ptBR })}
-                      </p>
-                      <h4 className="font-bold text-sm mb-2">{event.titulo}</h4>
-                      <div className="flex items-center gap-3 text-[9px] text-white/60 font-bold uppercase">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {event.horario || "Ver guia"}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> Polo Presencial
-                        </span>
+                  .map((event: any) => {
+                    const disc = DISCIPLINES.find((d) => d.id === event.disciplinaId);
+                    const calLink = generateCalendarLink({
+                      title: `${event.tipo} — ${disc?.nome ?? event.disciplinaCodigo}`,
+                      date: event.dataInicio,
+                      description: `${event.titulo}\n${event.conteudo || ""}\nLocal: ${event.local || "Polo Presencial"}`,
+                    });
+                    return (
+                      <div key={event.id} className="relative pl-6 border-l-2 border-white/10 group">
+                        <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-[#D4941E] group-hover:scale-150 transition-transform" />
+                        <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">
+                          {format(parseISO(event.dataInicio), "dd 'de' MMMM", { locale: ptBR })}
+                        </p>
+                        <h4 className="font-bold text-sm mb-2">{event.titulo}</h4>
+                        <div className="flex items-center gap-3 text-[9px] text-white/60 font-bold uppercase">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {event.horario || "Ver guia"}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" /> Polo Presencial
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <a
+                            href={calLink.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-[8px] font-black uppercase text-white/40 hover:text-[#D4941E] transition-colors"
+                          >
+                            <ExternalLink className="w-2.5 h-2.5" /> Google Calendar
+                          </a>
+                          <button
+                            onClick={() => {
+                              if ("Notification" in window) {
+                                Notification.requestPermission().then((perm) => {
+                                  if (perm === "granted") {
+                                    new Notification("Lembrete configurado!", {
+                                      body: `${event.tipo} — ${disc?.nome ?? event.disciplinaCodigo}`,
+                                    });
+                                  }
+                                });
+                              }
+                            }}
+                            className="flex items-center gap-1 text-[8px] font-black uppercase text-white/40 hover:text-[#D4941E] transition-colors cursor-pointer"
+                          >
+                            <Bell className="w-2.5 h-2.5" /> Lembrete
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
 

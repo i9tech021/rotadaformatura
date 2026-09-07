@@ -22,6 +22,7 @@ export interface EventoAcademico {
     | "QUESTIONARIO";
   dataInicio: string; // ISO date
   dataFim?: string; // ISO date
+  dataPresencial?: string; // ISO date (for APs)
   horario?: string;
   local?: string;
   conteudo: string;

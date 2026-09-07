@@ -18,7 +18,7 @@ export interface Aula {
 
 export interface Avaliacao {
   id: string;
-  tipo: "AD1" | "AD2" | "AP1" | "AP2" | "AP3";
+  tipo: "AD1" | "AD2" | "AP1" | "AP2" | "AP3" | "QUESTIONARIO";
   dataInicio?: string; // ISO date
   dataFim?: string; // ISO date (para ADs com prazo)
   dataPresencial?: string; // ISO date (para APs)

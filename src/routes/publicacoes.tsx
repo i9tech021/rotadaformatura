@@ -161,6 +161,15 @@ function PublicacoesPage() {
       etapa: etapaForm,
     };
 
+    // Confirmação antes de publicar
+    const disciplinaNome = disciplinas.find((d) => d.id === disciplinaForm)?.nome ?? disciplinaForm;
+    const tipoLabel = tipoForm === "podcast" ? "Podcast" : tipoForm === "pdf" ? "PDF" : "Nota";
+    const confirmMsg = `Confirmar publicação?\n\nTipo: ${tipoLabel}\nDisciplina: ${disciplinaNome}\nEtapa: ${etapaForm}\nAutor: ${identidade.nome} (${identidade.polo})`;
+    if (!window.confirm(confirmMsg)) {
+      setPublicando(false);
+      return;
+    }
+
     let r: { ok: boolean; error?: string } = { ok: false };
     if (tipoForm === "podcast") r = await publicarPodcast(base, arquivoForm as File);
     else if (tipoForm === "pdf") r = await publicarPdf(base, arquivoForm as File);

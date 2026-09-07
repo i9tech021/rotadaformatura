@@ -8,7 +8,7 @@ import { z } from "zod";
 // Modelo gratuito padrão da OpenRouter. Troque via VITE_AI_MODEL se quiser
 // (ex.: nvidia/nemotron-3-ultra-550b-a55b:free, google/gemma-4-26b-a4b-it:free).
 export const AI_MODEL =
-  (import.meta.env.VITE_AI_MODEL as string) || "nvidia/nemotron-3.5-lightning:free";
+  (import.meta.env as any).VITE_AI_MODEL || "nvidia/nemotron-3.5-lightning:free";
 
 const SYSTEM_PROMPT = `Você é o "Tutor Rota da Formatura", assistente acadêmico de alunos do curso de Administração a distância do CEDERJ (semestre 2026-2).
 
@@ -47,8 +47,9 @@ export type AskAcademicAIInput = z.infer<typeof inputSchema>;
 export async function askAcademicAI(input: AskAcademicAIInput): Promise<{ answer: string }> {
   const { question, context } = inputSchema.parse(input);
 
-  const baseUrl = (import.meta.env.VITE_AI_BASE_URL as string) || "https://openrouter.ai/api/v1";
-  const apiKey = import.meta.env.VITE_AI_API_KEY as string | undefined;
+  const env = import.meta.env as any;
+  const baseUrl = env.VITE_AI_BASE_URL || "https://openrouter.ai/api/v1";
+  const apiKey = env.VITE_AI_API_KEY;
 
   const erroConfig =
     "A IA não está configurada. Defina a variável de ambiente VITE_AI_API_KEY (e, opcionalmente, VITE_AI_MODEL) no projeto.";
@@ -84,7 +85,7 @@ export async function askAcademicAI(input: AskAcademicAIInput): Promise<{ answer
     temperature: 0.5,
     max_tokens: 600,
   };
-  if (isReasoningModel) body.reasoning = { enabled: false };
+  if (isReasoningModel) body["reasoning"] = { enabled: false };
 
   try {
     const res = await fetch(`${baseUrl}/chat/completions`, {
