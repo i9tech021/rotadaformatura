@@ -26,50 +26,13 @@ export interface Publicacao {
   criado_em: string;
 }
 
-export interface Identidade {
-  nome: string;
-  polo: string;
-  autorLocalId: string;
-}
+// Re-exporta do módulo de auth unificado
+export { getIdentidade, salvarIdentidade } from "@/lib/auth";
+export type { Identidade } from "@/lib/auth";
 
-// ============================================================
-// IDENTIDADE DO AUTOR (localStorage — nome + polo + id único)
-// ============================================================
-const IDENT_KEY = "rdf:autor_identidade";
-
-function generateUuid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-export function getIdentidade(): Identidade | null {
-  try {
-    const raw = localStorage.getItem(IDENT_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as Partial<Identidade>;
-    if (!p.nome || !p.polo) return null;
-    return {
-      nome: p.nome,
-      polo: p.polo,
-      autorLocalId: p.autorLocalId || generateUuid(),
-    };
-  } catch {
-    return null;
-  }
-}
-
-export function salvarIdentidade(nome: string, polo: string): Identidade {
-  const atual = getIdentidade();
-  const ident: Identidade = {
-    nome: nome.trim(),
-    polo: polo.trim(),
-    autorLocalId: atual?.autorLocalId || generateUuid(),
-  };
-  localStorage.setItem(IDENT_KEY, JSON.stringify(ident));
-  return ident;
-}
+// Importa localmente para uso neste módulo
+import { getIdentidade } from "@/lib/auth";
+import type { Identidade } from "@/lib/auth";
 
 // ============================================================
 // CRUD

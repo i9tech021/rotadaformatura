@@ -3,11 +3,12 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
-  useRouter,
   HeadContent,
   Scripts,
+  useMatches,
 } from "@tanstack/react-router";
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { temIdentidade } from "@/lib/auth";
 
 import appCss from "../styles.css?url";
 
@@ -35,7 +36,6 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
-  const router = useRouter();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -49,7 +49,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              router.invalidate();
               reset();
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
@@ -121,6 +120,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const matches = useMatches();
+  const [checked, setChecked] = useState(false);
+
+  // Auth guard: redireciona para /login se não tiver identidade
+  useEffect(() => {
+    const isLoginPage = matches.some((m) => m.pathname === "/login");
+    if (!isLoginPage && !temIdentidade()) {
+      window.location.href = "/login";
+      return;
+    }
+    setChecked(true);
+  }, [matches]);
+
+  // Aguarda verificação antes de renderizar
+  const isLoginPage = matches.some((m) => m.pathname === "/login");
+  if (!isLoginPage && !checked) return null;
 
   return (
     <QueryClientProvider client={queryClient}>

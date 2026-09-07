@@ -2,6 +2,7 @@
 // Modal para identificar o autor (nome + polo) antes de publicar.
 import { useState } from "react";
 import { GraduationCap, User, X } from "lucide-react";
+import { getIdentidade, salvarIdentidade } from "@/lib/auth";
 
 interface Props {
   aberto: boolean;
@@ -10,8 +11,9 @@ interface Props {
 }
 
 export function IdentidadeModal({ aberto, aoSalvar, aoFechar }: Props) {
-  const [nome, setNome] = useState("");
-  const [polo, setPolo] = useState("");
+  const existente = getIdentidade();
+  const [nome, setNome] = useState(existente?.nome ?? "");
+  const [polo, setPolo] = useState(existente?.polo ?? "");
 
   if (!aberto) return null;
 
@@ -20,6 +22,8 @@ export function IdentidadeModal({ aberto, aoSalvar, aoFechar }: Props) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!podeSalvar) return;
+    // Salva no novo sistema de auth
+    salvarIdentidade(nome, polo, existente?.turma ?? "CEDERJ-ADM-2026");
     aoSalvar(nome, polo);
   };
 

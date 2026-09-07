@@ -24,6 +24,8 @@ export type { QuestaoBanco };
 export interface SimuladoRow {
   id: string;
   autor_local_id: string;
+  autor_nome: string | undefined;
+  autor_polo: string | undefined;
   disciplina_id: string;
   tipo: EtapaQuestao;
   questoes: string[]; // ids
@@ -65,6 +67,8 @@ function saveLocal(lista: SimuladoRow[]) {
 function rowToSimulado(r: {
   id: string;
   autor_local_id: string;
+  autor_nome?: string;
+  autor_polo?: string;
   disciplina_id: string;
   tipo: string;
   questoes: unknown;
@@ -76,6 +80,8 @@ function rowToSimulado(r: {
   return {
     id: r.id,
     autor_local_id: r.autor_local_id,
+    autor_nome: (r.autor_nome as string) ?? undefined,
+    autor_polo: (r.autor_polo as string) ?? undefined,
     disciplina_id: r.disciplina_id,
     tipo: (r.tipo as EtapaQuestao) || "AP1",
     questoes: Array.isArray(r.questoes) ? r.questoes.map(String) : [],
@@ -198,6 +204,8 @@ function gerarOffline(
  */
 export async function montarSimulado(input: {
   autorLocalId: string;
+  autorNome?: string;
+  autorPolo?: string;
   disciplinaId: string;
   disciplinaNome: string;
   tipo: EtapaQuestao;
@@ -292,6 +300,8 @@ export async function montarSimulado(input: {
   const row: SimuladoRow = {
     id: `sim-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     autor_local_id: input.autorLocalId,
+    autor_nome: input.autorNome,
+    autor_polo: input.autorPolo,
     disciplina_id: input.disciplinaId,
     tipo: input.tipo,
     questoes: todas.map((q) => q.id),
@@ -307,6 +317,8 @@ export async function montarSimulado(input: {
       {
         id: row.id,
         autor_local_id: row.autor_local_id,
+        autor_nome: row.autor_nome,
+        autor_polo: row.autor_polo,
         disciplina_id: row.disciplina_id,
         tipo: row.tipo,
         questoes: row.questoes,

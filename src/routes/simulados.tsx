@@ -99,7 +99,7 @@ function SimuladosPage() {
   }, [recarregar, disciplinaId, etapa]);
 
   const salvarIdent = (nome: string, polo: string) => {
-    const ident = salvarIdentidade(nome, polo);
+    const ident = salvarIdentidade(nome, polo, "CEDERJ-ADM-2026");
     setIdentidade(ident);
     setModalAberto(false);
     toast.success("Identificação salva!");
@@ -119,6 +119,8 @@ function SimuladosPage() {
     setGerando(true);
     const r = await montarSimulado({
       autorLocalId: ident.autorLocalId,
+      autorNome: ident.nome,
+      autorPolo: ident.polo,
       disciplinaId,
       disciplinaNome: disciplina?.nome ?? disciplinaId,
       tipo: etapa,
@@ -479,6 +481,11 @@ function SimuladosPage() {
                             {new Date(s.criado_em).toLocaleDateString("pt-BR")}
                           </p>
                           <p className="font-bold text-sm truncate">{d?.nome ?? "Simulado"}</p>
+                          {s.autor_nome && (
+                            <p className="text-[10px] text-[#0A3D52]/50 font-medium mt-0.5">
+                              {s.autor_nome} • {s.autor_polo}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <div className="text-right">

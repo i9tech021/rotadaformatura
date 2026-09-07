@@ -105,7 +105,7 @@ function PublicacoesPage() {
   };
 
   const salvarIdentidadeSubmit = (nome: string, polo: string) => {
-    const ident = salvarIdentidade(nome, polo);
+    const ident = salvarIdentidade(nome, polo, "CEDERJ-ADM-2026");
     setIdentidade(ident);
     setModalAberto(false);
     setFormAberto(true);

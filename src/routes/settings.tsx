@@ -21,6 +21,7 @@ import {
   Database,
   CheckCheck,
   Loader2,
+  Key,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
@@ -30,6 +31,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
 import { disciplinas as DISCIPLINAS_STATICAS } from "@/data/disciplines";
+import { getIdentidade, limparIdentidade } from "@/lib/auth";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -39,11 +41,12 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
+  const identidade = getIdentidade();
   const [profile, setProfile] = useLocalStorage("academic_profile", {
-    name: "Vinícius Mendonça Lobo",
+    name: identidade?.nome ?? "Estudante",
     course: "Administração",
-    period: "5º período",
-    email: "vinicius@exemplo.com",
+    period: "2º período",
+    email: "",
   });
 
   const [notifications, setNotifications] = useState({
@@ -131,7 +134,7 @@ function SettingsPage() {
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-              <AppMobileMenu />
+                <AppMobileMenu />
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-3">
@@ -144,7 +147,7 @@ function SettingsPage() {
             </div>
           </div>
 
-                    <AppDesktopNav />
+          <AppDesktopNav />
         </div>
       </nav>
 
@@ -216,6 +219,35 @@ function SettingsPage() {
               </button>
             </div>
           </form>
+        </section>
+
+        {/* Identidade Section */}
+        <section className="bg-white rounded-3xl border border-[#0A3D52]/10 shadow-sm overflow-hidden">
+          <div className="bg-[#0A3D52]/5 px-8 py-4 border-b border-[#0A3D52]/10 flex items-center gap-3">
+            <Key className="w-5 h-5 text-[#D4941E]" />
+            <h2 className="font-black text-xs uppercase tracking-[0.2em]">Identificação</h2>
+          </div>
+          <div className="p-8 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-[#F5F7FA] rounded-xl p-4">
+                <p className="text-[10px] font-black uppercase text-[#0A3D52]/40 mb-1">Nome</p>
+                <p className="font-bold text-sm text-[#0A3D52]">
+                  {identidade?.nome ?? "Não identificado"}
+                </p>
+              </div>
+              <div className="bg-[#F5F7FA] rounded-xl p-4">
+                <p className="text-[10px] font-black uppercase text-[#0A3D52]/40 mb-1">Polo</p>
+                <p className="font-bold text-sm text-[#0A3D52]">{identidade?.polo ?? "—"}</p>
+              </div>
+              <div className="bg-[#F5F7FA] rounded-xl p-4">
+                <p className="text-[10px] font-black uppercase text-[#0A3D52]/40 mb-1">Turma</p>
+                <p className="font-bold text-sm text-[#0A3D52]">{identidade?.turma ?? "—"}</p>
+              </div>
+            </div>
+            <p className="text-[10px] text-[#0A3D52]/40 font-medium">
+              Para alterar sua identificação, saia e faça login novamente.
+            </p>
+          </div>
         </section>
 
         {/* Notifications & Materials */}
@@ -361,7 +393,13 @@ function SettingsPage() {
         </section>
 
         <div className="pt-8 flex justify-center">
-          <button className="flex items-center gap-2 text-[#E74C3C]/60 hover:text-[#E74C3C] font-black text-xs uppercase tracking-widest transition-colors">
+          <button
+            onClick={() => {
+              limparIdentidade();
+              window.location.href = "/login";
+            }}
+            className="flex items-center gap-2 text-[#E74C3C]/60 hover:text-[#E74C3C] font-black text-xs uppercase tracking-widest transition-colors cursor-pointer"
+          >
             <LogOut className="w-4 h-4" /> Sair da Plataforma
           </button>
         </div>
@@ -389,7 +427,6 @@ function Switch({ active, onToggle }: { active: boolean; onToggle: () => void })
     </button>
   );
 }
-
 
 function MoreVertical({ className }: { className?: string }) {
   return (
