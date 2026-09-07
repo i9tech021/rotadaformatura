@@ -897,12 +897,285 @@ export const fundamentosFinancas: Disciplina = {
   codigo: "FFN",
   icone: "💰",
   cor: "#D97706", // amber-600
-  coordenador: "Aguardando dados",
-  totalAulas: 0,
+  coordenador: "Ana Luiza Barbosa da Costa Veiga",
+  totalAulas: 17,
   period: "5º período",
   ch: "45h",
   progresso: 0,
-  aulas: [],
+  aulas: [
+    {
+      id: "ffn-a1",
+      numero: 1,
+      titulo: "O que são finanças?",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 1", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a2",
+      numero: 2,
+      titulo: "O ambiente legal e tributário",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 2", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a3",
+      numero: 3,
+      titulo: "Mercado financeiro, segmentação e instituições – uma abordagem geral",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 3", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a4",
+      numero: 4,
+      titulo: "O uso das tabelas financeiras",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 4", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a5",
+      numero: 5,
+      titulo: "Fundamentos de retorno e risco de um ativo",
+      semanaEstudo: 2,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 5", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a6",
+      numero: 6,
+      titulo: "Risco de um ativo",
+      semanaEstudo: 2,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 6", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a7",
+      numero: 7,
+      titulo: "Risco de uma carteira de ativos – 1ª parte",
+      semanaEstudo: 2,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 7", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a8",
+      numero: 8,
+      titulo: "Risco de uma carteira de ativos – 2ª parte",
+      semanaEstudo: 4,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 8", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a9",
+      numero: 9,
+      titulo: "CAPM e APT: modelos para medir o retorno exigido",
+      semanaEstudo: 5,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 9", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a10",
+      numero: 10,
+      titulo: "Títulos mobiliários básicos: ações, debêntures e outros títulos de dívida – 1ª parte",
+      semanaEstudo: 7,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 10", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a11",
+      numero: 11,
+      titulo: "Títulos mobiliários básicos: ações, debêntures e outros títulos de dívida – 2ª parte",
+      semanaEstudo: 7,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 11", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a12",
+      numero: 12,
+      titulo: "Avaliação de títulos de dívida",
+      semanaEstudo: 8,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 12", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a13",
+      numero: 13,
+      titulo: "Avaliação de ações ordinárias e preferenciais",
+      semanaEstudo: 8,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 13", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a14",
+      numero: 14,
+      titulo: "Alavancagem operacional",
+      semanaEstudo: 9,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 14", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a15",
+      numero: 15,
+      titulo: "Alavancagem financeira e alavancagem combinada",
+      semanaEstudo: 9,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 15", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a16",
+      numero: 16,
+      titulo: "O que é arrendamento mercantil?",
+      semanaEstudo: 11,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 16", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "ffn-a17",
+      numero: 17,
+      titulo: "Títulos de dívida conversíveis, warrants e opções",
+      semanaEstudo: 11,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 17", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades e exercícios práticos da aula",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+  ],
   avaliacoes: [
     {
       id: "ffn-ad1",
@@ -912,7 +1185,7 @@ export const fundamentosFinancas: Disciplina = {
       horario: "23:59",
       conteudoCobrado: "Aulas 1 a 7",
       entregue: false,
-      observacoes: "Entrega na plataforma até 23:59",
+      observacoes: "Envio em PDF com todos os cálculos (obrigatórios). Entrega na plataforma até 23:59",
     },
     {
       id: "ffn-ap1",
@@ -931,7 +1204,7 @@ export const fundamentosFinancas: Disciplina = {
       horario: "23:59",
       conteudoCobrado: "Aulas 10 a 13",
       entregue: false,
-      observacoes: "Entrega na plataforma até 23:59",
+      observacoes: "Envio em PDF com todos os cálculos (obrigatórios). Entrega na plataforma até 23:59",
     },
     {
       id: "ffn-ap2",
@@ -952,11 +1225,25 @@ export const fundamentosFinancas: Disciplina = {
       entregue: false,
     },
   ],
-  formulaNota: { n1: "Aguardando", n2: "Aguardando", aprovacao: "Aguardando", ap3: "Aguardando" },
+  formulaNota: {
+    n1: "N1 = (AD1 × 0,20) + (AP1 × 0,80)",
+    n2: "N2 = (AD2 × 0,20) + (AP2 × 0,80)",
+    aprovacao: "(N1 + N2) / 2 ≥ 6,0 — aprovação direta",
+    ap3: "N3 = (maior(N1, N2) + AP3) / 2 — aprovação se N3 ≥ 5,0",
+  },
   guia: {
-    objetivoGeral: "Aguardando dados do AVA",
-    metodoEstudo: "Aguardando",
-    observacoes: ["Enviar cronograma, guia e caderno didático"],
+    objetivoGeral:
+      "Fazer com que o aluno entenda os fundamentos do mercado financeiro, bem como seus instrumentos. Demonstrar a relação entre as variáveis risco e retorno, e o impacto que estas causam na avaliação de ativos. Permitir a compreensão do conceito de alavancagem, seus tipos e riscos associados.",
+    metodoEstudo:
+      "A disciplina está organizada em seis módulos, divididos em 17 aulas. Cada aula apresenta os objetivos específicos, os temas desenvolvidos, boxes com conceitos-chave e exercícios práticos. Ao final de cada aula há referências bibliográficas complementares. Recomenda-se fazer as atividades assim que terminar a leitura, para avaliar a compreensão. Você tem total autonomia para definir seu ritmo, mas é importante seguir o cronograma e não acumular leituras. Conte com os tutores presenciais e a distância para tirar dúvidas. Aproveite os fóruns para discutir os temas com os colegas.",
+    observacoes: [
+      "Tutor a distância: Marco Aurélio Ramos.",
+      "As ADs são feitas na plataforma com envio em PDF — todos os cálculos são obrigatórios; sem cálculos, a questão não é aceita.",
+      "AD1: aulas 1 a 7, entrega até 16/08 23:59. AD2: aulas 10 a 13, entrega até 04/10 23:59.",
+      "Revisão de notas das APs deve ser fundamentada (indicar as questões e descrever a discordância) em até 72h após o lançamento das notas.",
+      "A AP3 é de recuperação (aulas 1 a 17) e substitui a menor nota entre N1 e N2 (aprovação com N3 ≥ 5,0).",
+      "Bibliografia básica: Gitman (2004), Assaf Neto (2006).",
+    ],
   },
 };
 
