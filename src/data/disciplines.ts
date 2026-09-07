@@ -1553,13 +1553,254 @@ export const gestaoPessoasI: Disciplina = {
   nome: "Gestão de Pessoas I",
   codigo: "GPI",
   icone: "🤝",
-  cor: "#DB2777", // pink-600 (cor provisória)
-  coordenador: "Aguardando dados",
-  totalAulas: 0,
+  cor: "#DB2777", // pink-600
+  coordenador: "Profa. Márcia Cristina Rodrigues Cova",
+  totalAulas: 15,
   period: "5º período",
   ch: "45h",
   progresso: 0,
-  aulas: [],
+  aulas: [
+    {
+      id: "gpi-a1",
+      numero: 1,
+      titulo: "Por que fazer Gestão de Pessoas?",
+      semanaEstudo: 0,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 1", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a2",
+      numero: 2,
+      titulo: "Como chegamos à Gestão de Pessoas?",
+      semanaEstudo: 0,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 2", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a3",
+      numero: 3,
+      titulo: "Planejamento estratégico de Recursos Humanos",
+      semanaEstudo: 0,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 3", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a4",
+      numero: 4,
+      titulo: "Mercados de trabalho e de Recursos Humanos",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 4", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a5",
+      numero: 5,
+      titulo: "Recrutamento de pessoal",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 5", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a6",
+      numero: 6,
+      titulo: "Seleção de pessoal",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 6", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a7",
+      numero: 7,
+      titulo: "Técnicas de seleção",
+      semanaEstudo: 2,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 7", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a8",
+      numero: 8,
+      titulo: "Cultura organizacional",
+      semanaEstudo: 2,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 8", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a9",
+      numero: 9,
+      titulo: "Socialização organizacional",
+      semanaEstudo: 2,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 9", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a10",
+      numero: 10,
+      titulo: "Administração de carreira",
+      semanaEstudo: 4,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 10", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a11",
+      numero: 11,
+      titulo: "Desenho de cargos",
+      semanaEstudo: 4,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 11", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a12",
+      numero: 12,
+      titulo: "Descrição e análise de cargos",
+      semanaEstudo: 4,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 12", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a13",
+      numero: 13,
+      titulo: "Avaliação de desempenho",
+      semanaEstudo: 5,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 13", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a14",
+      numero: 14,
+      titulo: "Qualidade de vida no trabalho",
+      semanaEstudo: 5,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 14", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "gpi-a15",
+      numero: 15,
+      titulo: "Segurança do trabalho",
+      semanaEstudo: 5,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 15", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao término de cada ponto relevante",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+  ],
   avaliacoes: [
     {
       id: "gpi-ad1",
@@ -1569,7 +1810,7 @@ export const gestaoPessoasI: Disciplina = {
       horario: "23:59",
       conteudoCobrado: "Aulas 1 a 7",
       entregue: false,
-      observacoes: "Entrega na plataforma até 23:59",
+      observacoes: "Questionário online com 3 horas de duração, 10 questões objetivas (1,0 ponto cada). Entrega na plataforma até 23:59",
     },
     {
       id: "gpi-ap1",
@@ -1585,17 +1826,33 @@ export const gestaoPessoasI: Disciplina = {
       tipo: "AP3",
       dataPresencial: "2026-11-21",
       horario: "11:00 às 13:00",
-      conteudoCobrado: "Todas as aulas",
+      conteudoCobrado: "Todas as aulas (1 a 15)",
       peso: 10,
       entregue: false,
-      observacoes: "AD2 e AP2: não informado no cronograma",
+      observacoes: "Recuperação. Disciplina com avaliação única (AD1 + AP1); sem AD2/AP2",
     },
   ],
-  formulaNota: { n1: "Aguardando", n2: "Aguardando", aprovacao: "Aguardando", ap3: "Aguardando" },
+  formulaNota: {
+    n1: "N1 = (AD1 × 0,20) + (AP1 × 0,80)",
+    n2: "Disciplina com avaliação única (sem AD2/AP2)",
+    aprovacao: "N1 ≥ 6,0 — aprovação direta",
+    ap3: "Média entre a maior nota e a AP3 — aprovação se ≥ 5,0",
+  },
   guia: {
-    objetivoGeral: "Aguardando dados do AVA",
-    metodoEstudo: "Aguardando",
-    observacoes: ["AD2 e AP2: não informado no cronograma"],
+    objetivoGeral:
+      "Desenvolver os conceitos básicos da Gestão de Pessoas, demonstrando que a Administração de Recursos Humanos utiliza um conjunto de metodologias dinâmicas e versáteis, receptivas às mudanças operacionais e comportamentais do mercado de trabalho e que, quando utilizadas dentro da filosofia da Gestão de Pessoas podem se tornar um diferencial competitivo para a organização.",
+    metodoEstudo:
+      "A disciplina está organizada em 15 aulas, divididas em dois módulos. Cada aula apresenta metas, objetivos, pré-requisitos e atividades. As atividades são inseridas ao término de cada ponto relevante, e a atividade final envolve os principais pontos do conteúdo estudado. Fique atento aos boxes de atenção, verbetes e sugestões de filmes e sites. As referências bibliográficas servem de suporte para aprofundamento. Recomenda-se seguir o cronograma semanal (2 aulas por semana, com a última semana dedicada à aula 15). Conte com os tutores presenciais e a distância para tirar dúvidas.",
+    observacoes: [
+      "Tutora a distância: Gezany Moura.",
+      "Módulo I (aulas 1 a 7): fundamentos e processos de RH — introdução, evolução, planejamento, mercados, recrutamento e seleção.",
+      "Módulo II (aulas 8 a 15): desenvolvimento e qualidade no trabalho — cultura, socialização, carreiras, cargos, avaliação de desempenho, qualidade de vida e segurança.",
+      "AD1: questionário online com 3 horas de duração, 10 questões objetivas (1,0 ponto cada), aulas 1 a 7, de 10/08 a 23/08 até 23:59.",
+      "AP1 (05/09, 13:30–16:00) cobre SOMENTE as aulas 8 a 15.",
+      "AP3 (21/11, 11:00–13:00) é de recuperação, com todas as aulas (1 a 15).",
+      "Revisão de notas das APs deve ser fundamentada (indicar as questões e descrever a discordância) em até 72h após o lançamento das notas.",
+      "Bibliografia básica: Carvalho & Nascimento (2004), Chiavenato (2005), Marras (2000), Milkovich & Boudreau (2000), Tachizawa (2004).",
+    ],
   },
 };
 

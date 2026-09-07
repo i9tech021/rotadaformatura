@@ -678,7 +678,7 @@ export const eventos: EventoAcademico[] = [
     dataFim: "2026-08-23",
     horario: "23:59",
     conteudo: "Aulas 1 a 7",
-    observacoes: "Entrega na plataforma até 23:59",
+    observacoes: "Questionário online com 3 horas de duração, 10 questões objetivas",
     alertaDias: 7,
   },
   {
@@ -707,9 +707,9 @@ export const eventos: EventoAcademico[] = [
     dataInicio: "2026-11-21",
     horario: "11:00 às 13:00",
     local: "Polo CEDERJ",
-    conteudo: "Todas as aulas",
+    conteudo: "Todas as aulas (1 a 15)",
     peso: 10,
-    observacoes: "AD2 e AP2: não informado no cronograma",
+    observacoes: "Recuperação. Disciplina com avaliação única (AD1 + AP1); sem AD2/AP2",
     alertaDias: 14,
   },
 
