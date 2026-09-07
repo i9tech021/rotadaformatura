@@ -10,27 +10,38 @@ import {
   Send,
   XCircle,
 } from "lucide-react";
-import { corrigirSimulado, type SimuladoRealizado } from "@/lib/simuladoService";
+import { corrigirSimulado, type QuestaoBanco, type SessaoSimulado } from "@/lib/simuladoService";
 import { cn } from "@/lib/utils";
 
+export interface ResultadoCorrigido {
+  nota: number;
+  percentual: number;
+  acertos: number;
+  total: number;
+  questoes: QuestaoBanco[];
+  respostas: (number | null)[];
+}
+
 interface Props {
-  simulado: SimuladoRealizado;
-  onConcluido?: (atualizado: SimuladoRealizado) => void;
+  sessao: SessaoSimulado;
+  disciplinaNome?: string | undefined;
+  onConcluido?: (resultado: ResultadoCorrigido) => void;
   minutos?: number;
 }
 
-export function SimuladoPlayer({ simulado, onConcluido, minutos = 45 }: Props) {
+export function SimuladoPlayer({ sessao, disciplinaNome, onConcluido, minutos = 45 }: Props) {
+  const questoes = sessao.questoesCompletas;
   const [indice, setIndice] = useState(0);
-  const [respostas, setRespostas] = useState<(number | null)[]>(
-    () => simulado.respostas ?? new Array(simulado.questoes.length).fill(null),
+  const [respostas, setRespostas] = useState<(number | null)[]>(() =>
+    new Array(questoes.length).fill(null),
   );
   const [segundosRestantes, setSegundosRestantes] = useState(minutos * 60);
   const [enviado, setEnviado] = useState(false);
-  const [resultado, setResultado] = useState<SimuladoRealizado | null>(null);
+  const [resultado, setResultado] = useState<ResultadoCorrigido | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const questao = simulado.questoes[indice];
-  const total = simulado.questoes.length;
+  const questao = questoes[indice];
+  const total = questoes.length;
   const marcadas = useMemo(() => respostas.filter((r) => r != null).length, [respostas]);
 
   // Timer
@@ -61,13 +72,21 @@ export function SimuladoPlayer({ simulado, onConcluido, minutos = 45 }: Props) {
 
   const enviar = useCallback(async () => {
     if (enviado) return;
-    const atualizado = await corrigirSimulado(simulado.id, respostas);
-    if (atualizado) {
-      setResultado(atualizado);
+    const corrigido = await corrigirSimulado(sessao.id, respostas);
+    if (corrigido) {
+      const r: ResultadoCorrigido = {
+        nota: corrigido.nota ?? 0,
+        percentual: corrigido.percentual ?? 0,
+        acertos: corrigido.acertos,
+        total: corrigido.questoesCompletas.length,
+        questoes: corrigido.questoesCompletas,
+        respostas: corrigido.respostas ?? [],
+      };
+      setResultado(r);
       setEnviado(true);
-      onConcluido?.(atualizado);
+      onConcluido?.(r);
     }
-  }, [enviado, respostas, simulado.id, onConcluido]);
+  }, [enviado, respostas, sessao.id, onConcluido]);
 
   const tempoEsgotado = segundosRestantes <= 0;
 
@@ -91,7 +110,8 @@ export function SimuladoPlayer({ simulado, onConcluido, minutos = 45 }: Props) {
           <div className="flex items-center gap-2">
             <Send className="w-4 h-4 text-[#D4941E]" />
             <span className="text-xs font-black uppercase tracking-widest text-[#0A3D52]/60">
-              Questão {indice + 1} de {total}
+              {sessao.tipo}
+              {disciplinaNome ? ` • ${disciplinaNome}` : ""} • Questão {indice + 1} de {total}
             </span>
           </div>
           <div
@@ -190,7 +210,7 @@ export function SimuladoPlayer({ simulado, onConcluido, minutos = 45 }: Props) {
 
       {/* Dot map das questões */}
       <div className="flex gap-1.5 flex-wrap">
-        {simulado.questoes.map((_, i) => (
+        {questoes.map((_, i) => (
           <button
             key={i}
             onClick={() => {
@@ -217,7 +237,7 @@ function ResultadoCard({
   resultado,
   onRefazer,
 }: {
-  resultado: SimuladoRealizado;
+  resultado: ResultadoCorrigido;
   onRefazer: () => void;
 }) {
   const aprovado = resultado.percentual >= 60;
@@ -235,6 +255,9 @@ function ResultadoCard({
         <Icone className={cn("w-8 h-8", cor)} />
       </div>
       <h3 className="text-2xl font-black mb-1">{resultado.percentual}% de acerto</h3>
+      <p className="text-lg font-black font-mono text-[#0A3D52]">
+        Nota {resultado.nota.toFixed(1)}
+      </p>
       <p className={cn("text-sm font-bold mb-2", cor)}>
         {aprovado ? "Você iria passar! (estilo CEDERJ)" : "Não atingiu os 60% ainda"}
       </p>
@@ -252,7 +275,7 @@ function ResultadoCard({
   );
 }
 
-export function RevisePorQuestao({ resultado }: { resultado: SimuladoRealizado }) {
+export function RevisePorQuestao({ resultado }: { resultado: ResultadoCorrigido }) {
   return (
     <div className="space-y-3">
       {resultado.questoes.map((q, i) => {

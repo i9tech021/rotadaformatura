@@ -1,15 +1,14 @@
 // src/routes/simulados.tsx
-// Simulados de prova — geração por IA (1/semana), cronômetro, correção automática.
+// Simulados de prova — banco de questões + IA, 1 a cada 7 dias por autor.
+// Identidade = a mesma da Comunidade (nome + polo, sem login).
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  ArrowLeft,
   Calculator,
   Calendar as CalendarIcon,
   FileText,
   GraduationCap,
   LayoutDashboard,
   Menu,
-  MessageCircle,
   RefreshCcw,
   Settings,
   Sparkles,
@@ -21,13 +20,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { disciplinas } from "@/data/disciplines";
 import {
-  gerarSimuladoIA,
-  listarSimulados,
-  podeGerar,
-  type Questao,
-  type SimuladoRealizado,
+  carregarRevisao,
+  listarHistorico,
+  montarSimulado,
+  podeGerarSimulado,
+  type SessaoSimulado,
+  type SimuladoRow,
 } from "@/lib/simuladoService";
-import { SimuladoPlayer, RevisePorQuestao } from "@/components/SimuladoPlayer";
+import { ETAPAS_QUESTAO, type EtapaQuestao } from "@/lib/questoesService";
+import { getIdentidade, salvarIdentidade, type Identidade } from "@/lib/publicacoesService";
+import { IdentidadeModal } from "@/components/IdentidadeModal";
+import {
+  RevisePorQuestao,
+  SimuladoPlayer,
+  type ResultadoCorrigido,
+} from "@/components/SimuladoPlayer";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/simulados")({
@@ -37,22 +44,36 @@ export const Route = createFileRoute("/simulados")({
   }),
 });
 
-type TipoSimulado = "AP" | "AD";
+const QTD_OPCOES = [10, 12, 15];
 
 function SimuladosPage() {
+  const [identidade, setIdentidade] = useState<Identidade | null>(null);
+  const [modalAberto, setModalAberto] = useState(false);
   const [disciplinaId, setDisciplinaId] = useState(disciplinas[0]?.id ?? "");
-  const [tipo, setTipo] = useState<TipoSimulado>("AP");
+  const [etapa, setEtapa] = useState<EtapaQuestao>("AP1");
+  const [qtd, setQtd] = useState(12);
   const [gerando, setGerando] = useState(false);
-  const [pode, setPode] = useState<{ pode: boolean; motivo?: string }>({ pode: true });
-  const [simuladoAtivo, setSimuladoAtivo] = useState<SimuladoRealizado | null>(null);
-  const [historico, setHistorico] = useState<SimuladoRealizado[]>([]);
-  const [revisao, setRevisao] = useState<SimuladoRealizado | null>(null);
+  const [perm, setPerm] = useState<{ pode: boolean; motivo?: string }>({ pode: true });
+  const [sessaoAtiva, setSessaoAtiva] = useState<SessaoSimulado | null>(null);
+  const [historico, setHistorico] = useState<SimuladoRow[]>([]);
+  const [revisao, setRevisao] = useState<ResultadoCorrigido | null>(null);
 
   const disciplina = useMemo(() => disciplinas.find((d) => d.id === disciplinaId), [disciplinaId]);
+  const minutos = etapa.startsWith("AD") ? 30 : 60;
 
   const recarregar = useCallback(async () => {
-    const [perm, hist] = await Promise.all([podeGerar(), listarSimulados()]);
-    setPode(perm);
+    const ident = getIdentidade();
+    setIdentidade(ident);
+    if (!ident) {
+      setPerm({ pode: true });
+      setHistorico([]);
+      return;
+    }
+    const [p, hist] = await Promise.all([
+      podeGerarSimulado(ident.autorLocalId),
+      listarHistorico(ident.autorLocalId),
+    ]);
+    setPerm(p);
     setHistorico(hist);
   }, []);
 
@@ -60,18 +81,32 @@ function SimuladosPage() {
     recarregar();
   }, [recarregar]);
 
+  const salvarIdent = (nome: string, polo: string) => {
+    const ident = salvarIdentidade(nome, polo);
+    setIdentidade(ident);
+    setModalAberto(false);
+    toast.success("Identificação salva!");
+    recarregar();
+  };
+
   const gerar = async () => {
-    if (!pode.pode) {
-      toast.error(pode.motivo ?? "Limite semanal atingido");
+    const ident = identidade;
+    if (!ident) {
+      setModalAberto(true);
+      return;
+    }
+    if (!perm.pode) {
+      toast.error(perm.motivo ?? "Limite semanal atingido");
       return;
     }
     setGerando(true);
-    const r = await gerarSimuladoIA({
+    const r = await montarSimulado({
+      autorLocalId: ident.autorLocalId,
       disciplinaId,
       disciplinaNome: disciplina?.nome ?? disciplinaId,
-      conteudoCobrado: disciplina?.guia?.objetivoGeral,
-      tipo,
-      quantidade: 8,
+      tipo: etapa,
+      conteudo: disciplina?.guia?.objetivoGeral,
+      quantidade: qtd,
     });
     setGerando(false);
     if (!r.ok) {
@@ -79,21 +114,40 @@ function SimuladosPage() {
       if (r.bloqueado) recarregar();
       return;
     }
-    if (r.modo === "offline") {
-      toast.info("Simulado gerado do banco de revisão (IA indisponível agora).");
-    } else {
-      toast.success("Simulado gerado! Boa sorte.");
-    }
-    setSimuladoAtivo(r.simulado);
+    if (r.modo === "offline") toast.info("Banco vazio + IA indisponível: revisão das aulas.");
+    else if (r.modo === "banco") toast.success("Simulado montado do banco de questões!");
+    else toast.success("Simulado inédito gerado! Boa sorte.");
+    setSessaoAtiva(r.sessao);
     setRevisao(null);
     recarregar();
   };
 
-  const concluido = (atualizado: SimuladoRealizado) => {
-    setSimuladoAtivo(null);
-    setRevisao(atualizado);
-    toast.success(`Simulado corrigido: ${atualizado.percentual}% de acerto`);
+  const concluido = (r: ResultadoCorrigido) => {
+    setSessaoAtiva(null);
+    setRevisao(r);
+    toast.success(`Corrigido: nota ${r.nota.toFixed(1)} (${r.percentual}%)`);
     recarregar();
+  };
+
+  const abrirRevisao = async (row: SimuladoRow) => {
+    const rev = await carregarRevisao(row);
+    if (!rev) {
+      toast.error("Questões deste simulado não estão mais disponíveis.");
+      return;
+    }
+    const total = rev.questoes.length;
+    const acertos = rev.questoes.filter(
+      (q, i) => rev.respostas[i] != null && rev.respostas[i] === q.resposta_correta,
+    ).length;
+    setRevisao({
+      nota: row.nota ?? 0,
+      percentual: row.percentual ?? 0,
+      acertos,
+      total,
+      questoes: rev.questoes,
+      respostas: rev.respostas,
+    });
+    setSessaoAtiva(null);
   };
 
   return (
@@ -158,12 +212,21 @@ function SimuladosPage() {
         <div className="mb-8">
           <h2 className="text-3xl font-bold">Simulador de Prova</h2>
           <p className="text-[#0A3D52]/60 mt-1">
-            Prove responder uma AP inédita gerada por IA, corrigida na hora. 1 geração por semana.
+            Responda uma prova inédita no formato CEDERJ, corrigida na hora. 1 a cada 7 dias.
           </p>
+          {identidade ? (
+            <p className="text-[10px] font-bold text-[#27AE60] mt-2 uppercase tracking-widest">
+              ✓ {identidade.nome} • {identidade.polo}
+            </p>
+          ) : (
+            <p className="text-[10px] font-bold text-[#D4941E] mt-2 uppercase tracking-widest">
+              Identifique-se (nome + polo) para gerar seu simulado
+            </p>
+          )}
         </div>
 
-        {/* Estado de revisão de um simulado concluído */}
-        {revisao && !simuladoAtivo && (
+        {/* Revisão */}
+        {revisao && !sessaoAtiva && (
           <section className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -177,18 +240,24 @@ function SimuladosPage() {
               </button>
             </div>
             <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 shadow-sm mb-4 text-center">
-              <p className="text-3xl font-black text-[#D4941E]">{revisao.percentual}%</p>
+              <p className="text-3xl font-black font-mono text-[#D4941E]">
+                {revisao.nota.toFixed(1)}
+              </p>
               <p className="text-xs font-bold text-[#0A3D52]/50 uppercase mt-1">
-                {revisao.acertos} de {revisao.total} acertos
+                {revisao.percentual}% de acerto
               </p>
             </div>
             <RevisePorQuestao resultado={revisao} />
           </section>
         )}
 
-        {simuladoAtivo ? (
-          /* == Prova em andamento == */
-          <SimuladoPlayer simulado={simuladoAtivo} onConcluido={concluido} minutos={45} />
+        {sessaoAtiva ? (
+          <SimuladoPlayer
+            sessao={sessaoAtiva}
+            disciplinaNome={disciplina?.codigo}
+            onConcluido={concluido}
+            minutos={minutos}
+          />
         ) : (
           <>
             {/* Configuração */}
@@ -213,23 +282,43 @@ function SimuladosPage() {
 
                 <div>
                   <label className="text-[10px] font-black uppercase text-[#0A3D52]/50 tracking-widest block mb-2">
-                    Tipo de simulado
+                    Etapa • {minutos} min
                   </label>
-                  <div className="flex gap-2">
-                    {(["AP", "AD"] as TipoSimulado[]).map((t) => (
+                  <div className="grid grid-cols-4 gap-2">
+                    {ETAPAS_QUESTAO.map((t) => (
                       <button
                         key={t}
-                        onClick={() => setTipo(t)}
+                        onClick={() => setEtapa(t)}
                         className={cn(
-                          "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all cursor-pointer",
-                          tipo === t
-                            ? t === "AP"
-                              ? "bg-[#E74C3C] text-white border-[#E74C3C]"
-                              : "bg-[#2563EB] text-white border-[#2563EB]"
+                          "py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all cursor-pointer",
+                          etapa === t
+                            ? "bg-[#0A3D52] text-white border-[#0A3D52]"
                             : "bg-[#F5F7FA] text-[#0A3D52]/50 border-[#0A3D52]/10",
                         )}
                       >
-                        {t === "AP" ? "AP (presencial)" : "AD (a distância)"}
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase text-[#0A3D52]/50 tracking-widest block mb-2">
+                    Questões
+                  </label>
+                  <div className="flex gap-2">
+                    {QTD_OPCOES.map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setQtd(n)}
+                        className={cn(
+                          "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all cursor-pointer",
+                          qtd === n
+                            ? "bg-[#D4941E] text-[#0A3D52] border-[#D4941E]"
+                            : "bg-[#F5F7FA] text-[#0A3D52]/50 border-[#0A3D52]/10",
+                        )}
+                      >
+                        {n}
                       </button>
                     ))}
                   </div>
@@ -238,28 +327,30 @@ function SimuladosPage() {
                 <div
                   className={cn(
                     "rounded-xl p-4 border text-center",
-                    pode.pode
+                    perm.pode
                       ? "bg-[#F5F7FA] border-[#0A3D52]/10"
                       : "bg-[#D4941E]/10 border-[#D4941E]/30",
                   )}
                 >
-                  {pode.pode ? (
+                  {perm.pode ? (
                     <p className="text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50">
-                      Disponível: 1 geração nesta semana
+                      {identidade
+                        ? "Disponível: 1 simulado a cada 7 dias"
+                        : "Identifique-se para liberar sua geração semanal"}
                     </p>
                   ) : (
                     <p className="text-[10px] font-black uppercase tracking-widest text-[#D4941E]">
-                      Limite da semana atingido — volte na segunda-feira
+                      {perm.motivo}
                     </p>
                   )}
                 </div>
 
                 <button
                   onClick={gerar}
-                  disabled={gerando || !pode.pode}
+                  disabled={gerando || !perm.pode}
                   className="w-full bg-[#D4941E] text-[#0A3D52] py-3.5 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-[#D4941E]/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {gerando ? "Gerando seu simulado..." : "Gerar Simulado Inédito"}
+                  {gerando ? "Montando seu simulado..." : "Iniciar simulado"}
                 </button>
               </div>
             </section>
@@ -287,22 +378,27 @@ function SimuladosPage() {
                       >
                         <div className="min-w-0">
                           <p className="text-[10px] font-black uppercase text-[#0A3D52]/40">
-                            {d?.codigo ?? s.disciplina_id} •{" "}
+                            {d?.codigo ?? s.disciplina_id} • {s.tipo} •{" "}
                             {new Date(s.criado_em).toLocaleDateString("pt-BR")}
                           </p>
                           <p className="font-bold text-sm truncate">{d?.nome ?? "Simulado"}</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span
-                            className={cn(
-                              "text-sm font-black font-mono",
-                              s.percentual >= 60 ? "text-[#27AE60]" : "text-[#D4941E]",
-                            )}
-                          >
-                            {s.percentual}%
-                          </span>
+                          <div className="text-right">
+                            <p className="text-sm font-black font-mono text-[#0A3D52]">
+                              {(s.nota ?? 0).toFixed(1)}
+                            </p>
+                            <p
+                              className={cn(
+                                "text-[10px] font-black",
+                                (s.percentual ?? 0) >= 60 ? "text-[#27AE60]" : "text-[#D4941E]",
+                              )}
+                            >
+                              {s.percentual ?? 0}%
+                            </p>
+                          </div>
                           <button
-                            onClick={() => setRevisao(s)}
+                            onClick={() => abrirRevisao(s)}
                             className="text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50 hover:text-[#D4941E] cursor-pointer"
                           >
                             Revisar
@@ -317,6 +413,12 @@ function SimuladosPage() {
           </>
         )}
       </main>
+
+      <IdentidadeModal
+        aberto={modalAberto}
+        aoSalvar={salvarIdent}
+        aoFechar={() => setModalAberto(false)}
+      />
 
       {/* Bottom Mobile Nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40">

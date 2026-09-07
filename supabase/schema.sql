@@ -94,7 +94,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['disciplinas', 'eventos', 'checkpoints', 'notas', 'chat_messages', 'podcasts', 'questoes', 'simulados_realizados'] loop
+    foreach t in array array['disciplinas', 'eventos', 'checkpoints', 'notas', 'chat_messages', 'podcasts'] loop
     execute format(
       'drop policy if exists "anon_all_%I" on public.%I;'
       'create policy "anon_all_%I" on public.%I for all to anon using (true) with check (true);',
@@ -102,6 +102,17 @@ begin
     );
   end loop;
 end $$;
+
+-- Função auxiliar global: devolve o autor_local_id enviado via header
+-- 'X-Author-Local-Id' (update/delete "do próprio autor", sem login).
+-- Deve ficar ANTES de qualquer policy que a referencie.
+create or replace function public.auth_uid_or_default() returns text
+  language sql stable as $$
+    select coalesce(
+      current_setting('request.headers', true)::json->>'x-author-local-id',
+      'unknown'
+    );
+  $$;
 
 -- ============================================================
 -- CHAT COMUNITÁRIO (mensagens por sala de disciplina)
@@ -159,16 +170,7 @@ alter table public.publicacoes add column if not exists etapa text default 'Gera
 
 alter table public.publicacoes enable row level security;
 
--- Leitura pública (anon select)
--- Função auxiliar: devolve o autor_local_id enviado via request header custom.
--- O cliente envia o header 'X-Author-Local-Id' em update/delete.
-create or replace function public.auth_uid_or_default() returns text
-  language sql stable as $$
-    select coalesce(
-      current_setting('request.headers', true)::json->>'x-author-local-id',
-      'unknown'
-    );
-  $$;
+-- (função auth_uid_or_default definida na seção RLS acima)
 
 -- Leitura pública (anon select)
 create policy "publicacoes_anon_select" on public.publicacoes
@@ -243,11 +245,13 @@ begin
     execute 'create policy "podcasts_public_read" on storage.objects
       for select using (bucket_id = ''podcasts'')';
   end if;
+  -- remove a policy ampla antiga (permitia update/delete); leitura+inserção apenas
+  execute 'drop policy if exists "podcasts_public_write" on storage.objects';
   if not exists (
-    select 1 from pg_policies where policyname = 'podcasts_public_write'
+    select 1 from pg_policies where policyname = 'podcasts_public_insert'
   ) then
-    execute 'create policy "podcasts_public_write" on storage.objects
-      for all to anon using (bucket_id = ''podcasts'') with check (bucket_id = ''podcasts'')';
+    execute 'create policy "podcasts_public_insert" on storage.objects
+      for insert to anon with check (bucket_id = ''podcasts'')';
   end if;
 end $$;
 
@@ -264,45 +268,91 @@ begin
     execute 'create policy "publicacoes_public_read" on storage.objects
       for select using (bucket_id = ''publicacoes'')';
   end if;
+  -- remove a policy ampla antiga (permitia update/delete); leitura+inserção apenas
+  execute 'drop policy if exists "publicacoes_public_write" on storage.objects';
   if not exists (
-    select 1 from pg_policies where policyname = 'publicacoes_public_write'
+    select 1 from pg_policies where policyname = 'publicacoes_public_insert'
   ) then
-    execute 'create policy "publicacoes_public_write" on storage.objects
-      for all to anon using (bucket_id = ''publicacoes'') with check (bucket_id = ''publicacoes'')';
+    execute 'create policy "publicacoes_public_insert" on storage.objects
+      for insert to anon with check (bucket_id = ''publicacoes'')';
   end if;
 end $$;
 
 -- ============================================================
--- SIMULADOS (gerados por IA, limite 1/semana por aluno)
+-- SIMULADOS (banco de questões + realizados; limite 1/7 dias por autor)
+-- Identidade = autor_local_id (mesmo da Comunidade, sem login).
 -- ============================================================
 create table if not exists public.questoes (
   id text primary key,
   disciplina_id text not null,
   enunciado text not null,
-  alternativas jsonb not null,
-  resposta_correta int not null,
+  alternativas jsonb not null, -- ["texto alt A", "texto alt B", ...]
+  resposta_correta int not null, -- índice 0-3
   explicacao text,
-  tipo text not null,
-  fonte text
-);
-
-create table if not exists public.simulados_realizados (
-  id text primary key,
-  user_id text not null default 'default',
-  disciplina_id text not null,
-  questoes jsonb not null,
-  respostas jsonb,
-  acertos int default 0,
-  total int default 0,
-  percentual int default 0,
+  tipo text not null, -- "AD1" | "AP1" | "AD2" | "AP2"
+  dificuldade text default 'medio', -- facil | medio | dificil
+  fonte text,
   criado_em timestamptz default now()
 );
 
-create index if not exists simulados_user_idx
-  on public.simulados_realizados (user_id, criado_em desc);
+-- Migração: tabelas já existentes ganham as colunas novas
+alter table public.questoes add column if not exists dificuldade text default 'medio';
+alter table public.questoes add column if not exists criado_em timestamptz default now();
+
+create index if not exists questoes_disciplina_tipo_idx
+  on public.questoes (disciplina_id, tipo);
+
+create table if not exists public.simulados_realizados (
+  id text primary key,
+  autor_local_id text not null, -- mesmo id local da Comunidade
+  disciplina_id text not null,
+  tipo text not null, -- "AD1" | "AP1" | "AD2" | "AP2"
+  questoes jsonb not null, -- ids das questões usadas
+  respostas jsonb,
+  nota numeric, -- 0-10
+  percentual numeric,
+  criado_em timestamptz default now()
+);
+
+-- Migração: colunas novas (mantém user_id/acertos/total legados)
+alter table public.simulados_realizados add column if not exists autor_local_id text;
+alter table public.simulados_realizados add column if not exists tipo text;
+alter table public.simulados_realizados add column if not exists nota numeric;
+
+create index if not exists simulados_autor_idx
+  on public.simulados_realizados (autor_local_id, criado_em desc);
 
 alter table public.questoes enable row level security;
 alter table public.simulados_realizados enable row level security;
+
+-- RLS controlado (fora do loop permissivo):
+-- questoes: leitura pública + inserção pública (banco cresce com a IA).
+-- simulados: leitura/inserção públicas; update/delete só do próprio autor.
+do $$
+begin
+  execute 'drop policy if exists "anon_all_questoes" on public.questoes';
+  execute 'drop policy if exists "anon_all_simulados_realizados" on public.simulados_realizados';
+
+  if not exists (select 1 from pg_policies where policyname = 'questoes_anon_select') then
+    execute 'create policy "questoes_anon_select" on public.questoes for select to anon using (true)';
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'questoes_anon_insert') then
+    execute 'create policy "questoes_anon_insert" on public.questoes for insert to anon with check (true)';
+  end if;
+
+  if not exists (select 1 from pg_policies where policyname = 'simulados_anon_select') then
+    execute 'create policy "simulados_anon_select" on public.simulados_realizados for select to anon using (true)';
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'simulados_anon_insert') then
+    execute 'create policy "simulados_anon_insert" on public.simulados_realizados for insert to anon with check (true)';
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'simulados_anon_update_own') then
+    execute 'create policy "simulados_anon_update_own" on public.simulados_realizados for update to anon using (autor_local_id = auth_uid_or_default())';
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'simulados_anon_delete_own') then
+    execute 'create policy "simulados_anon_delete_own" on public.simulados_realizados for delete to anon using (autor_local_id = auth_uid_or_default())';
+  end if;
+end $$;
 
 -- ============================================================
 -- REALTIME: habilita replicação para os clientes assinarem mudanças

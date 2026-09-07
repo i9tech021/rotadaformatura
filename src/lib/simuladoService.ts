@@ -1,40 +1,50 @@
 // src/lib/simuladoService.ts
-// Simulador de provas — geração por IA, controle de 1/semana, correção automática.
-// Padrão: Supabase (tabelas simulados_realizados / questoes) + localStorage fallback.
-import { getSupabase, isSupabaseConfigured } from "./supabase";
+// Simulador de provas — modelo novo:
+// - identidade = autor_local_id da Comunidade (getIdentidade), sem segundo sistema
+// - limite: 1 simulado a cada 7 dias (rolling) por autor
+// - simulados_realizados guarda IDS das questões; correção junta com o banco
+// - espelho localStorage quando Supabase não configurado
+import { getSupabase } from "./supabase";
+import { getIdentidade } from "./publicacoesService";
+import {
+  buscarQuestoesBanco,
+  buscarQuestoesPorIds,
+  gerarQuestoesIA,
+  salvarQuestoesBanco,
+  type EtapaQuestao,
+  type QuestaoBanco,
+  type QuestaoGerada,
+} from "./questoesService";
 import { disciplinas } from "@/data/disciplines";
 
-export interface Questao {
-  id: string;
-  disciplina_id: string;
-  enunciado: string;
-  alternativas: string[]; // ["A) ...", "B) ...", "C) ...", "D) ..."]
-  resposta_correta: number; // índice 0-3
-  explicacao: string;
-  tipo: "AD" | "AP";
-  fonte?: string;
-}
+export type { EtapaQuestao };
+export type { QuestaoBanco };
 
-export interface SimuladoRealizado {
+export interface SimuladoRow {
   id: string;
-  user_id: string;
+  autor_local_id: string;
   disciplina_id: string;
-  questoes: Questao[];
-  respostas: (number | null)[];
-  acertos: number;
-  total: number;
-  percentual: number;
+  tipo: EtapaQuestao;
+  questoes: string[]; // ids
+  respostas: (number | null)[] | null;
+  nota: number | null; // 0-10
+  percentual: number | null; // 0-100
   criado_em: string;
 }
 
-export type GerarResultado =
-  | { ok: true; simulado: SimuladoRealizado; modo: "ia" | "offline" }
+/** Sessão em andamento: linha + questões completas em memória. */
+export interface SessaoSimulado extends SimuladoRow {
+  questoesCompletas: QuestaoBanco[];
+}
+
+export type MontarResultado =
+  | { ok: true; sessao: SessaoSimulado; modo: "banco" | "ia" | "misto" | "offline" }
   | { ok: false; error: string; bloqueado?: boolean };
 
-const LS_KEY = "rdf:simulados";
-const USER_DEFAULT = "anon";
+const LS_KEY = "rdf:simulados-v2";
+const SETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;
 
-function loadLocal(): SimuladoRealizado[] {
+function loadLocal(): SimuladoRow[] {
   try {
     return JSON.parse(localStorage.getItem(LS_KEY) || "[]");
   } catch {
@@ -42,415 +52,304 @@ function loadLocal(): SimuladoRealizado[] {
   }
 }
 
-function saveLocal(lista: SimuladoRealizado[]) {
+function saveLocal(lista: SimuladoRow[]) {
   localStorage.setItem(LS_KEY, JSON.stringify(lista));
 }
 
-function getUserId(): string {
-  try {
-    let id = localStorage.getItem("rdf:student_id");
-    if (!id) {
-      id = `student-${Date.now().toString(36)}`;
-      localStorage.setItem("rdf:student_id", id);
-    }
-    return id;
-  } catch {
-    return USER_DEFAULT;
-  }
+function rowToSimulado(r: {
+  id: string;
+  autor_local_id: string;
+  disciplina_id: string;
+  tipo: string;
+  questoes: unknown;
+  respostas: unknown;
+  nota: unknown;
+  percentual: unknown;
+  criado_em: string;
+}): SimuladoRow {
+  return {
+    id: r.id,
+    autor_local_id: r.autor_local_id,
+    disciplina_id: r.disciplina_id,
+    tipo: (r.tipo as EtapaQuestao) || "AP1",
+    questoes: Array.isArray(r.questoes) ? r.questoes.map(String) : [],
+    respostas: Array.isArray(r.respostas) ? (r.respostas as (number | null)[]) : null,
+    nota: r.nota != null ? Number(r.nota) : null,
+    percentual: r.percentual != null ? Number(r.percentual) : null,
+    criado_em: r.criado_em,
+  };
 }
 
-/** Verifica se o usuário já fez simulado nesta semana (limite de 1). */
-export async function podeGerar(): Promise<{ pode: boolean; motivo?: string }> {
-  const userId = getUserId();
-  const inicioSemana = new Date();
-  inicioSemana.setHours(0, 0, 0, 0);
-  const dia = inicioSemana.getDay(); // 0=domingo
-  const diff = dia === 0 ? 6 : dia - 1; // segundas-feiras
-  inicioSemana.setDate(inicioSemana.getDate() - diff);
+export function formatarDataLibera(iso: string): string {
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Verifica o limite de 1 simulado a cada 7 dias para o autor.
+ * Retorna também a data/hora em que libera de novo.
+ */
+export async function podeGerarSimulado(
+  autorLocalId: string,
+): Promise<{ pode: boolean; motivo?: string; liberaEm?: string }> {
+  const limite = new Date(Date.now() - SETE_DIAS_MS).toISOString();
 
   const sb = getSupabase();
   if (sb) {
     const { data, error } = await sb
       .from("simulados_realizados")
-      .select("id")
-      .eq("user_id", userId)
-      .gte("criado_em", inicioSemana.toISOString());
+      .select("criado_em")
+      .eq("autor_local_id", autorLocalId)
+      .gte("criado_em", limite)
+      .order("criado_em", { ascending: false })
+      .limit(1);
     if (!error && data && data.length > 0) {
+      const ultimo = new Date((data[0] as { criado_em: string }).criado_em).getTime();
+      const libera = new Date(ultimo + SETE_DIAS_MS).toISOString();
       return {
         pode: false,
-        motivo: "Você já realizou 1 simulado esta semana. Novo disponível na segunda-feira.",
+        motivo: `Limite de 1 simulado por semana. Libera em ${formatarDataLibera(libera)}.`,
+        liberaEm: libera,
       };
     }
   }
 
-  const locais = loadLocal().filter(
-    (s) => s.user_id === userId && new Date(s.criado_em) >= inicioSemana,
-  );
+  const locais = loadLocal()
+    .filter((s) => s.autor_local_id === autorLocalId && s.criado_em >= limite)
+    .sort((a, b) => (a.criado_em < b.criado_em ? 1 : -1));
   if (locais.length > 0) {
+    const ultimo = new Date((locais[0] as SimuladoRow).criado_em).getTime();
+    const libera = new Date(ultimo + SETE_DIAS_MS).toISOString();
     return {
       pode: false,
-      motivo: "Você já realizou 1 simulado esta semana. Novo disponível na segunda-feira.",
+      motivo: `Limite de 1 simulado por semana. Libera em ${formatarDataLibera(libera)}.`,
+      liberaEm: libera,
     };
   }
   return { pode: true };
 }
 
-/**
- * Gera um simulado inédito por IA (OpenRouter, mesmo padrão do tutor).
- * O modelo devolve um JSON com questões no formato CEDERJ.
- */
-export async function gerarSimuladoIA(input: {
-  disciplinaId: string;
-  disciplinaNome: string;
-  tipo: "AD" | "AP";
-  quantidade?: number;
-  conteudoCobrado?: string | undefined;
-}): Promise<GerarResultado> {
-  // 1. Limite semanal
-  const { pode, motivo } = await podeGerar();
-  if (!pode) {
-    return { ok: false, error: motivo ?? "Limite semanal atingido", bloqueado: true };
-  }
-  const baseUrl = (import.meta.env["VITE_AI_BASE_URL"] as string) || "https://openrouter.ai/api/v1";
-  const apiKey = import.meta.env["VITE_AI_API_KEY"] as string | undefined;
-  const model =
-    (import.meta.env["VITE_AI_MODEL"] as string) || "nvidia/nemotron-3.5-lightning:free";
-
-  const qtd = Math.min(10, Math.max(4, input.quantidade ?? 8));
-
-  if (!apiKey) {
-    // Sem chave de IA → simulado offline
-    const simulado = await geraOffline(input, qtd);
-    return { ok: true, simulado, modo: "offline" };
-  }
-
-  const prompt = `Você é um professor do CEDERJ. Gere um simulado inédito de ${input.tipo}
-para a disciplina ADMINISTRAÇÃO: "${input.disciplinaNome}"${input.conteudoCobrado ? `\nConteúdo cobrado: ${input.conteudoCobrado}` : ""}.
-
-Crie exatamente ${qtd} questões de múltipla escolha, no formato de prova presencial.
-
-RETORNE APENAS JSON válido, sem markdown, sem texto extra, neste formato EXATO:
-{
-  "questoes": [
-    {
-      "enunciado": "texto da questão",
-      "alternativas": ["A) ...", "B) ...", "C) ...", "D) ..."],
-      "resposta_correta": 0,
-      "explicacao": "passo a passo de por que é essa resposta"
-    }
-  ]
-}
-
-Regras:
-- 4 alternativas por questão, apenas uma correta.
-- Questões práticas, nível de prova real (não triviais).
-- "resposta_correta" é o índice (0-3) da alternativa certa.
-- ${
-    input.tipo === "AP"
-      ? "Provas AP são discursivas na vida real, mas aqui simule como objetivas de múltipla escolha com o conteúdo da AP."
-      : "Questões objetivas típicas de AD."
-  }`;
-
-  let data: { questoes: Omit<Questao, "id" | "disciplina_id" | "tipo" | "fonte">[] };
-  try {
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "X-Title": "Rota da Formatura",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
-        max_tokens: 4000,
-        reasoning: { enabled: false },
-      }),
-    });
-
-    if (!res.ok) {
-      // IA indisponível (429/erro) → fallback offline
-      const simulado = await geraOffline(input, qtd);
-      return { ok: true, simulado, modo: "offline" };
-    }
-
-    const texto = await res.text();
-    const json = extrairJson(texto);
-    if (!json || !Array.isArray(json.questoes) || json.questoes.length === 0) {
-      // Fallback offline
-      const simulado = await geraOffline(input, qtd);
-      return { ok: true, simulado, modo: "offline" };
-    }
-    data = json as typeof data;
-
-    // Sanitiza alternativas e índice
-    const questoes: Questao[] = data.questoes
-      .slice(0, qtd)
-      .map((q, i) => ({
-        id: `q-${Date.now()}-${i}`,
-        disciplina_id: input.disciplinaId,
-        enunciado: String(q.enunciado ?? ""),
-        alternativas: (Array.isArray(q.alternativas) ? q.alternativas : []).map(String).slice(0, 4),
-        resposta_correta: clampIndex(
-          q.resposta_correta,
-          (Array.isArray(q.alternativas) ? q.alternativas : []).length,
-        ),
-        explicacao: String(q.explicacao ?? ""),
-        tipo: input.tipo,
-        fonte: "Simulado IA",
-      }))
-      .filter((q) => q.enunciado && q.alternativas.length >= 2);
-
-    if (questoes.length === 0) {
-      const simulado = await geraOffline(input, qtd);
-      return { ok: true, simulado, modo: "offline" };
-    }
-
-    const simulado = await persistir(questoes, new Array(questoes.length).fill(null));
-    return { ok: true, simulado, modo: "ia" };
-  } catch {
-    // Fallback offline quando a IA falha (rede, rate limit, etc.)
-    const simulado = await geraOffline(input, qtd);
-    return { ok: true, simulado, modo: "offline" };
-  }
-}
-
-/**
- * Gera questões offline a partir das aulas da disciplina (dados locais).
- * Garante que o simulador SEMPRE funcione, mesmo sem IA configurada.
- */
-async function geraOffline(
-  input: {
-    disciplinaId: string;
-    disciplinaNome: string;
-    tipo: "AD" | "AP";
-    quantidade?: number;
-    conteudoCobrado?: string | undefined;
-  },
+/** Gera questões offline das aulas (último recurso — garante funcionamento). */
+function gerarOffline(
+  disciplinaId: string,
+  disciplinaNome: string,
+  tipo: EtapaQuestao,
   qtd: number,
-): Promise<SimuladoRealizado> {
-  // usa as aulas da disciplina como fonte de conteúdo
-  const disc = disciplinas.find((d) => d.id === input.disciplinaId);
+): QuestaoGerada[] {
+  const disc = disciplinas.find((d) => d.id === disciplinaId);
   const aulas = (disc?.aulas ?? []).filter((a) => a.titulo);
+  const geradas: QuestaoGerada[] = [];
+  const usadas = new Set<string>();
 
-  const questoes: Questao[] = [];
-  const usados = new Set<string>();
-
-  aulas.forEach((aula, idx) => {
-    if (questoes.length >= qtd) return;
-    const alternativas: string[] = [];
-    alternativas.push(`A) ${aula.titulo}`);
-    // pega títulos de outras aulas como opções erradas
-    const outras = aulas.filter((a2, i2) => i2 !== idx && a2.titulo).map((a2) => a2.titulo);
-    const erradas: string[] = [];
-    for (const t of outras) {
-      if (erradas.length >= 3) break;
-      if (!usados.has(t)) {
-        erradas.push(t);
-        usados.add(t);
-      }
+  aulas.forEach((aula) => {
+    if (geradas.length >= qtd) return;
+    const alts = [`A) ${aula.titulo}`];
+    const LETRAS = ["B", "C", "D"];
+    for (const outra of aulas) {
+      if (alts.length >= 4) break;
+      if (outra.titulo === aula.titulo || usadas.has(outra.titulo)) continue;
+      const letra = LETRAS[alts.length - 1] ?? "?";
+      alts.push(`${letra}) ${outra.titulo}`);
+      usadas.add(outra.titulo);
     }
-    // garante 4 opções no total
-    while (alternativas.length < 4) {
-      const filler = `Opção ${alternativas.length + 1}`;
-      if (!alternativas.includes(filler)) alternativas.push(filler);
+    while (alts.length < 4) {
+      const letra = ["A", "B", "C", "D"][alts.length] ?? "?";
+      alts.push(`${letra}) Revisar o caderno didático`);
     }
-    if (alternativas.length < 4) return;
-    questoes.push({
-      id: `q-offline-${Date.now()}-${questoes.length}`,
-      disciplina_id: input.disciplinaId,
-      enunciado: `Sobre a Aula ${aula.numero} — qual é o tema abordado nesta aula?`,
-      alternativas,
+    geradas.push({
+      enunciado: `Aula ${aula.numero} — qual é o tema abordado nesta aula?`,
+      alternativas: alts,
       resposta_correta: 0,
-      explicacao: `O tema desta aula é: ${aula.titulo}${aula.paginas ? `. Leitura indicada: ${aula.paginas}.` : ""}`,
-      tipo: input.tipo,
-      fonte: "Revisão de aulas",
+      explicacao: `Tema da aula: ${aula.titulo}.${aula.paginas ? ` Leitura: ${aula.paginas}.` : ""}`,
+      dificuldade: "facil",
     });
   });
 
-  // se a disciplina não tinha aulas, gerar questões genéricas de revisão
-  if (questoes.length === 0) {
-    const temas = [
-      "os conceitos fundamentais",
-      "as definições principais",
-      "os exemplos práticos",
-      "a aplicação na vida real",
-    ];
-    for (let i = 0; i < Math.min(qtd, temas.length); i++) {
-      questoes.push({
-        id: `q-offline-${Date.now()}-${i}`,
-        disciplina_id: input.disciplinaId,
-        enunciado: `Para revisar o conteúdo da disciplina ${input.disciplinaNome}, qual é a melhor estratégia?`,
-        alternativas: [
-          "A) Revisar as anotações das aulas",
-          "B) Resolver exercícios práticos",
-          "C) Ler o caderno didático",
-          "D) Todas as anteriores",
-        ],
-        resposta_correta: 3,
-        explicacao:
-          "A melhor forma de estudar combina leitura, exercícios e revisão das anotações.",
-        tipo: input.tipo,
-        fonte: "Revisão geral",
-      });
+  while (geradas.length < Math.min(qtd, 4)) {
+    geradas.push({
+      enunciado: `Para revisar ${disciplinaNome}, qual é a melhor estratégia?`,
+      alternativas: [
+        "A) Revisar as anotações das aulas",
+        "B) Resolver exercícios práticos",
+        "C) Ler o caderno didático",
+        "D) Todas as anteriores",
+      ],
+      resposta_correta: 3,
+      explicacao: "A melhor forma de estudar combina leitura, exercícios e revisão.",
+      dificuldade: "facil",
+    });
+  }
+  return geradas.slice(0, qtd);
+}
+
+/**
+ * Monta um simulado: banco primeiro, IA complementa, offline como último recurso.
+ * Persiste as questões novas no banco e cria a linha em simulados_realizados.
+ */
+export async function montarSimulado(input: {
+  autorLocalId: string;
+  disciplinaId: string;
+  disciplinaNome: string;
+  tipo: EtapaQuestao;
+  conteudo?: string | undefined;
+  quantidade?: number;
+}): Promise<MontarResultado> {
+  const qtd = Math.min(15, Math.max(10, input.quantidade ?? 12));
+
+  const { pode, motivo } = await podeGerarSimulado(input.autorLocalId);
+  if (!pode) return { ok: false, error: motivo ?? "Limite semanal atingido.", bloqueado: true };
+
+  // 1. Banco primeiro
+  const doBanco = await buscarQuestoesBanco(input.disciplinaId, input.tipo, qtd);
+  let modo: "banco" | "ia" | "misto" | "offline" = "banco";
+  let todas: QuestaoBanco[] = [...doBanco];
+
+  // 2. Complementa com IA se faltar
+  if (todas.length < qtd) {
+    const faltam = qtd - todas.length;
+    const r = await gerarQuestoesIA({
+      disciplinaId: input.disciplinaId,
+      disciplinaNome: input.disciplinaNome,
+      tipo: input.tipo,
+      conteudo: input.conteudo,
+      quantidade: faltam,
+    });
+    if (r.ok && r.questoes && r.questoes.length > 0) {
+      const salvas = await salvarQuestoesBanco(input.disciplinaId, input.tipo, r.questoes);
+      todas = [...todas, ...salvas];
+      modo = doBanco.length > 0 ? "misto" : "ia";
     }
   }
 
-  return persistir(questoes.slice(0, qtd), new Array(Math.min(qtd, questoes.length)).fill(null));
-}
-
-function clampIndex(v: unknown, nAlt: number): number {
-  const n = typeof v === "number" ? v : parseInt(String(v), 10);
-  if (Number.isNaN(n) || n < 0) return 0;
-  return Math.min(n, Math.max(0, nAlt - 1));
-}
-
-function extrairJson(texto: string): { questoes?: unknown[] } | null {
-  const limpo = texto.trim();
-  try {
-    return JSON.parse(limpo);
-  } catch {
-    // tenta isolar o primeiro {...} ou [...] com JSON
-    const m = limpo.match(/\{[\s\S]*\}/);
-    if (m) {
-      try {
-        return JSON.parse(m[0]);
-      } catch {
-        return null;
-      }
-    }
-    return null;
+  // 3. Último recurso: offline (aulas locais)
+  if (todas.length === 0) {
+    const off = gerarOffline(input.disciplinaId, input.disciplinaNome, input.tipo, qtd);
+    const salvas = await salvarQuestoesBanco(
+      input.disciplinaId,
+      input.tipo,
+      off,
+      "Revisão de aulas",
+    );
+    todas = salvas;
+    modo = "offline";
   }
-}
 
-/** Registra simulado no banco + localStorage. Retorna o objeto persistido. */
-async function persistir(
-  questoes: Questao[],
-  respostas: (number | null)[],
-): Promise<SimuladoRealizado> {
-  const simulado: SimuladoRealizado = {
-    id: `sim-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    user_id: getUserId(),
-    disciplina_id: questoes[0]?.disciplina_id ?? "",
-    questoes,
-    respostas,
-    acertos: 0,
-    total: questoes.length,
-    percentual: 0,
+  todas = todas.slice(0, qtd);
+  if (todas.length === 0) {
+    return { ok: false, error: "Não foi possível montar o simulado. Tente de novo." };
+  }
+
+  // 4. Cria a linha do simulado (só ids)
+  const row: SimuladoRow = {
+    id: `sim-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    autor_local_id: input.autorLocalId,
+    disciplina_id: input.disciplinaId,
+    tipo: input.tipo,
+    questoes: todas.map((q) => q.id),
+    respostas: null,
+    nota: null,
+    percentual: null,
     criado_em: new Date().toISOString(),
   };
 
   const sb = getSupabase();
   if (sb) {
-    await sb.from("simulados_realizados").upsert({
-      id: simulado.id,
-      user_id: simulado.user_id,
-      disciplina_id: simulado.disciplina_id,
-      questoes: questoes.map((q) => ({ ...q })),
-      respostas,
-      acertos: 0,
-      total: questoes.length,
-      percentual: 0,
-      criado_em: simulado.criado_em,
-    });
+    const { error } = await sb.from("simulados_realizados").insert([
+      {
+        id: row.id,
+        autor_local_id: row.autor_local_id,
+        disciplina_id: row.disciplina_id,
+        tipo: row.tipo,
+        questoes: row.questoes,
+        criado_em: row.criado_em,
+      },
+    ]);
+    if (error) {
+      // sem banco (tabela ainda não criada?) → segue só no local
+      const local = loadLocal();
+      saveLocal([row, ...local]);
+    }
+  } else {
+    const local = loadLocal();
+    saveLocal([row, ...local]);
   }
 
-  const local = loadLocal();
-  local.unshift(simulado);
-  saveLocal(local);
-  return simulado;
+  return { ok: true, sessao: { ...row, questoesCompletas: todas }, modo };
 }
 
-/** Corrige as respostas e retorna o simulado atualizado. */
+/** Corrige, calcula nota (0-10) e percentual, persiste e retorna tudo + revisão. */
 export async function corrigirSimulado(
   simuladoId: string,
   respostas: (number | null)[],
-): Promise<SimuladoRealizado | null> {
-  // Encontra localmente (ou do banco)
-  let simulado = loadLocal().find((s) => s.id === simuladoId);
-  if (!simulado) {
-    // se Supabase configurado, busca lá
-    const sb = getSupabase();
-    if (sb) {
-      const { data } = await sb
-        .from("simulados_realizados")
-        .select("*")
-        .eq("id", simuladoId)
-        .single();
-      if (data) {
-        simulado = {
-          id: data.id as string,
-          user_id: data.user_id as string,
-          disciplina_id: data.disciplina_id as string,
-          questoes: (data.questoes as Questao[]) ?? [],
-          respostas: (data.respostas as (number | null)[]) ?? [],
-          acertos: (data.acertos as number) ?? 0,
-          total: (data.total as number) ?? 0,
-          percentual: (data.percentual as number) ?? 0,
-          criado_em: data.criado_em as string,
-        };
-      }
-    }
-  }
-  if (!simulado) return null;
-
-  const marcadas = respostas.slice(0, simulado.questoes.length);
-  let acertos = 0;
-  simulado.questoes.forEach((q, i) => {
-    if (marcadas[i] != null && marcadas[i] === q.resposta_correta) acertos++;
-  });
-
-  const total = simulado.questoes.length;
-  const percentual = total ? Math.round((acertos / total) * 100) : 0;
-
-  const atualizado: SimuladoRealizado = {
-    ...simulado,
-    respostas: marcadas,
-    acertos,
-    percentual,
-  };
-
-  // Persiste
-  const locais = loadLocal().map((s) => (s.id === atualizado.id ? atualizado : s));
-  saveLocal(locais);
-
+): Promise<(SimuladoRow & { questoesCompletas: QuestaoBanco[]; acertos: number }) | null> {
+  // carrega a linha
+  let row: SimuladoRow | null = null;
   const sb = getSupabase();
   if (sb) {
+    const { data } = await sb
+      .from("simulados_realizados")
+      .select("*")
+      .eq("id", simuladoId)
+      .single();
+    if (data) row = rowToSimulado(data);
+  }
+  if (!row) row = loadLocal().find((s) => s.id === simuladoId) ?? null;
+  if (!row) return null;
+
+  const completas = await buscarQuestoesPorIds(row.questoes);
+  const marcadas = respostas.slice(0, completas.length);
+  let acertos = 0;
+  completas.forEach((q, i) => {
+    if (marcadas[i] != null && marcadas[i] === q.resposta_correta) acertos++;
+  });
+  const total = completas.length;
+  const percentual = total ? Math.round((acertos / total) * 100) : 0;
+  const nota = total ? Math.round((acertos / total) * 100) / 10 : 0;
+
+  const atualizado: SimuladoRow = { ...row, respostas: marcadas, nota, percentual };
+
+  const locais = loadLocal().map((s) => (s.id === atualizado.id ? atualizado : s));
+  if (!locais.some((s) => s.id === atualizado.id)) locais.unshift(atualizado);
+  saveLocal(locais);
+
+  if (sb) {
+    // update do próprio autor (RLS own) — best effort silencioso
     await sb
       .from("simulados_realizados")
-      .update({ respostas: marcadas, acertos, percentual })
+      .update({ respostas: marcadas, nota, percentual })
       .eq("id", simuladoId);
   }
 
-  return atualizado;
+  return { ...atualizado, questoesCompletas: completas, acertos };
 }
 
-/** Histórico de simulados do usuário. */
-export async function listarSimulados(): Promise<SimuladoRealizado[]> {
-  const userId = getUserId();
+/** Histórico do autor (mais recentes primeiro). */
+export async function listarHistorico(autorLocalId: string): Promise<SimuladoRow[]> {
   const sb = getSupabase();
   if (sb) {
     const { data, error } = await sb
       .from("simulados_realizados")
       .select("*")
-      .eq("user_id", userId)
+      .eq("autor_local_id", autorLocalId)
       .order("criado_em", { ascending: false });
-    if (!error && data && data.length > 0) {
-      return data.map((s) => ({
-        id: s.id as string,
-        user_id: s.user_id as string,
-        disciplina_id: s.disciplina_id as string,
-        questoes: (s.questoes as Questao[]) ?? [],
-        respostas: (s.respostas as (number | null)[]) ?? [],
-        acertos: (s.acertos as number) ?? 0,
-        total: (s.total as number) ?? 0,
-        percentual: (s.percentual as number) ?? 0,
-        criado_em: s.criado_em as string,
-      }));
-    }
+    if (!error && data && data.length > 0) return data.map(rowToSimulado);
   }
-  return loadLocal().filter((s) => s.user_id === userId);
+  return loadLocal()
+    .filter((s) => s.autor_local_id === autorLocalId)
+    .sort((a, b) => (a.criado_em < b.criado_em ? 1 : -1));
 }
 
-export { isSupabaseConfigured };
+/** Revisão detalhada de um simulado do histórico (junta questões do banco). */
+export async function carregarRevisao(
+  row: SimuladoRow,
+): Promise<{ questoes: QuestaoBanco[]; respostas: (number | null)[] } | null> {
+  const completas = await buscarQuestoesPorIds(row.questoes);
+  if (completas.length === 0) return null;
+  return { questoes: completas, respostas: row.respostas ?? [] };
+}
+
+export { getIdentidade };

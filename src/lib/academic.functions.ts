@@ -1,6 +1,6 @@
 // src/lib/academic.functions.ts
 // Tutor de IA: chamada DIRETA ao provedor OpenAI-compatível (OpenRouter) a partir
-// do navegador. Assim funciona também em deploys estáticos (ex.: Lovable), onde
+// do navegador. Assim funciona também em deploys estáticos (ex.: Vercel), onde
 // não há server function disponível. A chave VITE_AI_API_KEY já é exposta ao
 // bundle (prefixo VITE_), então este arquivo roda 100% no cliente.
 import { z } from "zod";

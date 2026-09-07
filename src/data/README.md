@@ -94,7 +94,7 @@ Formato: copiar e colar o texto em TXT ou enviar PDF.
 
 ---
 
-## 🚀 Como usar no Lovable
+## 🚀 Como usar (dados estáticos)
 
 1. Crie os arquivos em `src/data/disciplines.ts`, `src/data/events.ts`, `src/data/studyPlan.ts`
 2. Importe os dados nos componentes:
