@@ -15,14 +15,16 @@ import {
   Settings,
   MessageSquare,
   Bell,
+  BellRing,
   ExternalLink,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
 import { disciplinas } from "@/data/disciplines";
 import { generateCalendarLink } from "@/lib/academic.functions";
+import { getLembretes, toggleLembrete, verificarLembretes } from "@/lib/lembretes";
 const DISCIPLINES = disciplinas;
 import {
   format,
@@ -49,6 +51,42 @@ export const Route = createFileRoute("/calendar")({
 
 function AcademicCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date()); // Sincronizado com tempo real
+  const [lembretes, setLembretes] = useState<Record<string, boolean>>(() => getLembretes());
+
+  // Dispara notificações dos lembretes ativos dentro da janela de alerta (1x/dia)
+  useEffect(() => {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    const devidos = verificarLembretes(CALENDAR_EVENTS);
+    for (const ev of devidos) {
+      try {
+        new Notification(`⏰ ${ev.titulo}`, {
+          body: `Prazo chegando! Confira o conteúdo cobrado na plataforma.`,
+        });
+      } catch {
+        // sem permissão/contexto — ignora
+      }
+    }
+  }, []);
+
+  const alternarLembrete = (eventId: string, titulo: string) => {
+    if (!("Notification" in window)) return;
+    const aplicar = () => {
+      const ativo = toggleLembrete(eventId);
+      setLembretes((prev) => ({ ...prev, [eventId]: ativo }));
+      if (ativo && Notification.permission === "granted") {
+        try {
+          new Notification("Lembrete ativado!", { body: titulo });
+        } catch {
+          // ignora
+        }
+      }
+    };
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then(() => aplicar());
+      return;
+    }
+    aplicar();
+  };
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -80,7 +118,7 @@ function AcademicCalendarPage() {
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-              <AppMobileMenu />
+                <AppMobileMenu />
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-3">
@@ -93,7 +131,7 @@ function AcademicCalendarPage() {
             </div>
           </div>
 
-                    <AppDesktopNav />
+          <AppDesktopNav />
 
           <button className="bg-[#D4941E] text-[#0A3D52] px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider hover:scale-105 transition-all">
             Sincronizar
@@ -216,7 +254,10 @@ function AcademicCalendarPage() {
                       description: `${event.titulo}\n${event.conteudo || ""}\nLocal: ${event.local || "Polo Presencial"}`,
                     });
                     return (
-                      <div key={event.id} className="relative pl-6 border-l-2 border-white/10 group">
+                      <div
+                        key={event.id}
+                        className="relative pl-6 border-l-2 border-white/10 group"
+                      >
                         <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-[#D4941E] group-hover:scale-150 transition-transform" />
                         <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">
                           {format(parseISO(event.dataInicio), "dd 'de' MMMM", { locale: ptBR })}
@@ -240,20 +281,19 @@ function AcademicCalendarPage() {
                             <ExternalLink className="w-2.5 h-2.5" /> Google Calendar
                           </a>
                           <button
-                            onClick={() => {
-                              if ("Notification" in window) {
-                                Notification.requestPermission().then((perm) => {
-                                  if (perm === "granted") {
-                                    new Notification("Lembrete configurado!", {
-                                      body: `${event.tipo} — ${disc?.nome ?? event.disciplinaCodigo}`,
-                                    });
-                                  }
-                                });
-                              }
-                            }}
-                            className="flex items-center gap-1 text-[8px] font-black uppercase text-white/40 hover:text-[#D4941E] transition-colors cursor-pointer"
+                            onClick={() => alternarLembrete(event.id, event.titulo)}
+                            className={`flex items-center gap-1 text-[8px] font-black uppercase transition-colors cursor-pointer ${
+                              lembretes[event.id]
+                                ? "text-[#D4941E]"
+                                : "text-white/40 hover:text-[#D4941E]"
+                            }`}
                           >
-                            <Bell className="w-2.5 h-2.5" /> Lembrete
+                            {lembretes[event.id] ? (
+                              <BellRing className="w-2.5 h-2.5" />
+                            ) : (
+                              <Bell className="w-2.5 h-2.5" />
+                            )}
+                            {lembretes[event.id] ? "Lembrete ativo" : "Lembrete"}
                           </button>
                         </div>
                       </div>
@@ -294,7 +334,6 @@ function AcademicCalendarPage() {
     </div>
   );
 }
-
 
 function MoreVertical({ className }: { className?: string }) {
   return (

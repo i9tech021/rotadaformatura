@@ -41,7 +41,7 @@ const m0 = await montarSimulado({
   tipo: "AP1",
   quantidade: 10,
 });
-console.log("m0 result:", JSON.stringify({ ok: m0.ok, modo: m0.modo, error: m0.error, faltamProvas: m0.faltamProvas }, null, 2));
+console.log("m0 modo:", m0.ok ? m0.modo : m0.error);
 ok(m0.ok === true, "sem provas gera via fallback offline");
 
 // 3. upload rejeita não-PDF
