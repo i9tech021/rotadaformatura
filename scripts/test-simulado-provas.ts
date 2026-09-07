@@ -26,13 +26,14 @@ function ok(cond: boolean, msg: string) {
 }
 
 const AUTOR = "teste-autor-provas";
+const AUTOR2 = "teste-autor-provas-2";
 const DISC = "metodos-deterministicos-i";
 
 // 1. limite: novo autor pode gerar
 const p1 = await podeGerarSimulado(AUTOR);
 ok(p1.pode === true, "autor novo pode gerar");
 
-// 2. montar SEM provas → bloqueado pedindo 3 PDFs
+// 2. montar SEM provas → agora funciona via fallback offline
 const m0 = await montarSimulado({
   autorLocalId: AUTOR,
   disciplinaId: DISC,
@@ -40,7 +41,8 @@ const m0 = await montarSimulado({
   tipo: "AP1",
   quantidade: 10,
 });
-ok(m0.ok === false && m0.faltamProvas === 3, "sem provas bloqueia pedindo 3 PDFs");
+console.log("m0 result:", JSON.stringify({ ok: m0.ok, modo: m0.modo, error: m0.error, faltamProvas: m0.faltamProvas }, null, 2));
+ok(m0.ok === true, "sem provas gera via fallback offline");
 
 // 3. upload rejeita não-PDF
 const txt = new File(["oi"], "nota.txt", { type: "text/plain" });
@@ -94,7 +96,7 @@ store.set("rdf:provas", JSON.stringify(provasSeed));
 
 console.log("chamando IA real (pode levar ~1min)...");
 const m = await montarSimulado({
-  autorLocalId: AUTOR,
+  autorLocalId: AUTOR2,
   disciplinaId: DISC,
   disciplinaNome: "Métodos Determinísticos I",
   tipo: "AP1",

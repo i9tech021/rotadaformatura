@@ -6,7 +6,7 @@
 // - espelho localStorage quando Supabase não configurado
 import { getSupabase } from "./supabase";
 import { getIdentidade } from "./publicacoesService";
-import { listProvas, MIN_PROVAS } from "./provasService";
+import { listProvas } from "./provasService";
 import {
   buscarQuestoesBanco,
   buscarQuestoesPorIds,
@@ -145,7 +145,7 @@ export async function podeGerarSimulado(
   return { pode: true };
 }
 
-/** Gera questões offline das aulas (último recurso — garante funcionamento). */
+/** Gera questões offline realistas baseadas nas aulas e avaliações da disciplina. */
 function gerarOffline(
   disciplinaId: string,
   disciplinaNome: string,
@@ -154,47 +154,174 @@ function gerarOffline(
 ): QuestaoGerada[] {
   const disc = disciplinas.find((d) => d.id === disciplinaId);
   const aulas = (disc?.aulas ?? []).filter((a) => a.titulo);
+  const avaliacoes = disc?.avaliacoes ?? [];
   const geradas: QuestaoGerada[] = [];
   const usadas = new Set<string>();
 
-  aulas.forEach((aula) => {
-    if (geradas.length >= qtd) return;
-    const alts = [`A) ${aula.titulo}`];
-    const LETRAS = ["B", "C", "D"];
-    for (const outra of aulas) {
-      if (alts.length >= 4) break;
-      if (outra.titulo === aula.titulo || usadas.has(outra.titulo)) continue;
-      const letra = LETRAS[alts.length - 1] ?? "?";
-      alts.push(`${letra}) ${outra.titulo}`);
-      usadas.add(outra.titulo);
+  // Helper: gera alternativas distratoras a partir de um título correto
+  function gerarAlternativas(tituloCorreto: string, pool: string[]): string[] {
+    const alts = [`A) ${tituloCorreto}`];
+    const distratores = pool.filter((t) => t !== tituloCorreto && !usadas.has(t));
+    for (const d of distratores.slice(0, 3)) {
+      const letra = ["B", "C", "D"][alts.length - 1] ?? "?";
+      alts.push(`${letra}) ${d}`);
+      usadas.add(d);
     }
     while (alts.length < 4) {
       const letra = ["A", "B", "C", "D"][alts.length] ?? "?";
-      alts.push(`${letra}) Revisar o caderno didático`);
+      alts.push(`${letra}) Conceito não aplicável a ${disciplinaNome}`);
     }
+    return alts;
+  }
+
+  // 1. Questões baseadas nas aulas (para disciplinas com conteúdo)
+  const titulosAulas = aulas.map((a) => a.titulo);
+  for (const aula of aulas) {
+    if (geradas.length >= qtd) break;
+    if (usadas.has(aula.titulo)) continue;
+
+    const alts = gerarAlternativas(aula.titulo, titulosAulas);
     geradas.push({
-      enunciado: `Aula ${aula.numero} — qual é o tema abordado nesta aula?`,
+      enunciado: `Em ${disciplinaNome}, qual conceito é trabalhado na Aula ${aula.numero}?`,
       alternativas: alts,
       resposta_correta: 0,
-      explicacao: `Tema da aula: ${aula.titulo}.${aula.paginas ? ` Leitura: ${aula.paginas}.` : ""}`,
+      explicacao: `Aula ${aula.numero}: ${aula.titulo}.${aula.paginas ? ` Leitura sugerida: ${aula.paginas}.` : ""}`,
       dificuldade: "facil",
     });
-  });
+    usadas.add(aula.titulo);
+  }
 
-  while (geradas.length < Math.min(qtd, 4)) {
+  // 2. Questões baseadas nas atividades das aulas (EP, leitura, etc.)
+  for (const aula of aulas) {
+    if (geradas.length >= qtd) break;
+    for (const ativ of aula.atividades) {
+      if (geradas.length >= qtd) break;
+      const chave = `${aula.numero}-${ativ.tipo}`;
+      if (usadas.has(chave)) continue;
+
+      const tipoLabel =
+        ativ.tipo === "ep" ? "exercício prático" :
+        ativ.tipo === "leitura_caderno" ? "leitura do caderno" :
+        ativ.tipo === "video" ? "videoaula" :
+        ativ.tipo === "revisao" ? "revisão" : "atividade complementar";
+
+      geradas.push({
+        enunciado: `Na Aula ${aula.numero} de ${disciplinaNome}, qual atividade é obrigatória?`,
+        alternativas: [
+          `A) ${ativ.descricao}`,
+          `B) Estudar o capítulo anterior`,
+          `C) Fazer o resumo da aula seguinte`,
+          `D) Resolver simulado online`,
+        ],
+        resposta_correta: 0,
+        explicacao: `Atividade obrigatória: ${ativ.descricao}.${ativ.tipo === "ep" ? " Exercício prático essencial para a AP." : ""}`,
+        dificuldade: "medio",
+      });
+      usadas.add(chave);
+    }
+  }
+
+  // 3. Questões baseadas nas avaliações (conteúdo cobrado)
+  const conteudosCobrados = avaliacoes
+    .filter((a) => a.conteudoCobrado)
+    .map((a) => ({
+      conteudo: a.conteudoCobrado!,
+      tipo: a.tipo,
+    }));
+
+  for (const { conteudo, tipo: tipoAv } of conteudosCobrados) {
+    if (geradas.length >= qtd) break;
+    const chave = `av-${tipoAv}-${conteudo}`;
+    if (usadas.has(chave)) continue;
+
+    const isAD = tipoAv.startsWith("AD");
     geradas.push({
-      enunciado: `Para revisar ${disciplinaNome}, qual é a melhor estratégia?`,
+      enunciado: `Em uma ${tipoAv} de ${disciplinaNome}, o conteúdo cobrado é "${conteudo}". Qual tema deve ser priorizado?`,
       alternativas: [
-        "A) Revisar as anotações das aulas",
-        "B) Resolver exercícios práticos",
-        "C) Ler o caderno didático",
-        "D) Todas as anteriores",
+        `A) Estudar todo o conteúdo desde o início do semestre`,
+        `B) Focar especificamente em ${conteudo}`,
+        `C) Revisar apenas as últimas aulas`,
+        `D) Pular esta etapa e estudar para a próxima`,
+      ],
+      resposta_correta: 1,
+      explicacao: `A ${tipoAv} cobra ${conteudo}.${isAD ? " É avaliação a distância — estude com calma em casa." : " É prova presencial — revise com antecedência."}`,
+      dificuldade: "medio",
+    });
+    usadas.add(chave);
+  }
+
+  // 4. Questões conceituais gerais da disciplina
+  const conceitosGerais: Record<string, string[]> = {
+    "metodos-deterministicos-i": [
+      "método determinístico", "programação linear", "otimização",
+      "modelo matemático", "decisão operacional", "análise de sensibilidade",
+      "problema de transportes", "problema de alocação",
+    ],
+    "historia-pensamento-administrativo-ii": [
+      "escola clássica", "escola das relações humanas", "abordagem sistêmica",
+      "teoria x e y", "administração participativa", "burocracia weberiana",
+      "fayol e princípios da administração", "taylor e estudo de tempos",
+    ],
+    "contabilidade-geral-i": [
+      "partida dobrada", "balanço patrimonial", "demonstração do resultado",
+      "razão e razão auxiliar", "lançamentos contábeis", "balancete de verificação",
+      "método do custo histórico", "inquérito contábil",
+    ],
+    "fundamentos-financas": [
+      "fluxo de caixa", "valor presente", "valor futuro",
+      "taxa de juros", "anuidade", "decisão de investimento",
+      "orçamento empresarial", "capital de giro",
+    ],
+    "economia-brasileira-contemporanea": [
+      "PIB", "inflação", "política monetária",
+      "câmbio", "dívida pública", "desemprego",
+      "setor público", "setor privado",
+    ],
+    "gestao-pessoas-i": [
+      "motivação", "liderança", "comunicação organizacional",
+      "desempenho", "treinamento", "avaliação de desempenho",
+      "clima organizacional", "qualidade de vida",
+    ],
+    "sociedade-e-organizacoes": [
+      "cultura organizacional", "poder e autoridade", "conflitos",
+      "mudança organizacional", "estrutura organizacional",
+      "ética empresarial", "responsabilidade social", "globalização",
+    ],
+  };
+
+  const conceitos = conceitosGerais[disciplinaId] || [];
+  for (const conceito of conceitos) {
+    if (geradas.length >= qtd) break;
+    if (usadas.has(conceito)) continue;
+
+    const outrosConceitos = conceitos.filter((c) => c !== conceito);
+    const alts = gerarAlternativas(conceito, outrosConceitos);
+    geradas.push({
+      enunciado: `Em ${disciplinaNome}, qual conceito se refere a "${conceito}"?`,
+      alternativas: alts,
+      resposta_correta: 0,
+      explicacao: `${conceito.charAt(0).toUpperCase() + conceito.slice(1)} é um conceito fundamental em ${disciplinaNome}.`,
+      dificuldade: "medio",
+    });
+    usadas.add(conceito);
+  }
+
+  // 5. Questões de revisão genéricas (preenchedor)
+  while (geradas.length < qtd) {
+    geradas.push({
+      enunciado: `Para se preparar para uma avaliação de ${disciplinaNome}, qual estratégia é mais eficaz?`,
+      alternativas: [
+        "A) Revisar as anotações das aulas anteriores",
+        "B) Resolver exercícios práticos de provas anteriores",
+        "C) Ler o caderno didático e fazer resumos",
+        "D) Todas as anteriores combinadas",
       ],
       resposta_correta: 3,
-      explicacao: "A melhor forma de estudar combina leitura, exercícios e revisão.",
+      explicacao: "A combinação de revisão, exercícios e leitura é a estratégia mais eficaz para provas.",
       dificuldade: "facil",
     });
   }
+
   return geradas.slice(0, qtd);
 }
 
@@ -217,25 +344,20 @@ export async function montarSimulado(input: {
   const { pode, motivo } = await podeGerarSimulado(input.autorLocalId);
   if (!pode) return { ok: false, error: motivo ?? "Limite semanal atingido.", bloqueado: true };
 
-  // 0. Provas antigas: mínimo 3 para a etapa (base real do simulado)
+  // 0. Provas antigas (opcional — usa como contexto para IA, mas não bloqueia)
   const provas = await listProvas(input.disciplinaId, input.tipo);
   const provasComTexto = provas.filter(
     (p) => p.texto_extraido && p.texto_extraido.trim().length > 100,
   );
-  if (provasComTexto.length < MIN_PROVAS) {
-    return {
-      ok: false,
-      error: `Envie pelo menos ${MIN_PROVAS} provas antigas em PDF de ${input.tipo} para gerar o simulado (tem ${provasComTexto.length}).`,
-      faltamProvas: MIN_PROVAS - provasComTexto.length,
-    };
-  }
 
   // Contexto real: trechos das provas (até ~4k chars cada, máx ~8k total)
-  const contextoProvas = provasComTexto
-    .slice(0, 4)
-    .map((p, i) => `[PROVA ${i + 1} — ${p.titulo}]\n${(p.texto_extraido ?? "").slice(0, 4000)}`)
-    .join("\n\n")
-    .slice(0, 8000);
+  const contextoProvas = provasComTexto.length > 0
+    ? provasComTexto
+        .slice(0, 4)
+        .map((p, i) => `[PROVA ${i + 1} — ${p.titulo}]\n${(p.texto_extraido ?? "").slice(0, 4000)}`)
+        .join("\n\n")
+        .slice(0, 8000)
+    : "";
 
   // 1. Banco primeiro
   const doBanco = await buscarQuestoesBanco(input.disciplinaId, input.tipo, qtd);
@@ -260,8 +382,8 @@ export async function montarSimulado(input: {
     }
   }
 
-  // 3. Completa com revisão das aulas se ainda faltar (garante qtd cheia)
-  if (todas.length > 0 && todas.length < qtd) {
+  // 3. Completa com offline se ainda faltar (garante qtd cheia)
+  if (todas.length < qtd) {
     const off = gerarOffline(
       input.disciplinaId,
       input.disciplinaNome,
@@ -276,19 +398,6 @@ export async function montarSimulado(input: {
     );
     todas = [...todas, ...salvas];
     if (modo === "banco") modo = "misto";
-  }
-
-  // 4. Último recurso: tudo offline (aulas locais)
-  if (todas.length === 0) {
-    const off = gerarOffline(input.disciplinaId, input.disciplinaNome, input.tipo, qtd);
-    const salvas = await salvarQuestoesBanco(
-      input.disciplinaId,
-      input.tipo,
-      off,
-      "Revisão de aulas",
-    );
-    todas = salvas;
-    modo = "offline";
   }
 
   todas = todas.slice(0, qtd);
