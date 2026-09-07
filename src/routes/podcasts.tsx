@@ -1,5 +1,5 @@
 // src/routes/podcasts.tsx
-// Biblioteca de podcasts de áudio — upload + player + filtro por disciplina.
+// Acervo de podcasts de áudio — upload + player + filtro por disciplina.
 // Compartilhável: qualquer pessoa acessa via link (sem login).
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {

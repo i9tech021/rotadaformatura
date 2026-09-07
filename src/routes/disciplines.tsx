@@ -1,5 +1,5 @@
 // src/routes/disciplines.tsx
-// Layout da seção Biblioteca — apenas repassa para as rotas filhas
+// Layout da seção Disciplinas — apenas repassa para as rotas filhas
 // (índice = lista, $id = detalhe da disciplina) via <Outlet />.
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 

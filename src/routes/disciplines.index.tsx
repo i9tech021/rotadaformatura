@@ -14,8 +14,9 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { disciplinas, type Disciplina } from "@/data/disciplines";
+import { getProgressoTodas, type ProgressoDisciplina } from "@/lib/progresso";
 import { SugerirDisciplina } from "@/components/SugerirDisciplina";
 
 const DISCIPLINES = disciplinas;
@@ -24,7 +25,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/disciplines/")({
   component: DisciplinesLibrary,
   head: () => ({
-    title: "Biblioteca de Disciplinas | Rota da Formatura",
+    title: "Disciplinas | Rota da Formatura",
     meta: [
       { name: "description", content: "Explore todas as disciplinas do seu curso no CEDERJ." },
     ],
@@ -34,6 +35,13 @@ export const Route = createFileRoute("/disciplines/")({
 function DisciplinesLibrary() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState("Todos");
+  const [progresso, setProgresso] = useState<Record<string, ProgressoDisciplina>>({});
+
+  useEffect(() => {
+    getProgressoTodas(DISCIPLINES)
+      .then(setProgresso)
+      .catch(() => {});
+  }, []);
 
   const periods = ["Todos", ...new Set(DISCIPLINES.map((d) => d.period || "Aguardando"))];
 
@@ -57,7 +65,7 @@ function DisciplinesLibrary() {
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-              <AppMobileMenu />
+                <AppMobileMenu />
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-3">
@@ -65,12 +73,12 @@ function DisciplinesLibrary() {
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <h1 className="font-bold text-lg uppercase tracking-tight hidden min-[420px]:inline">
-                Biblioteca
+                Disciplinas
               </h1>
             </div>
           </div>
 
-                    <AppDesktopNav />
+          <AppDesktopNav />
 
           <GraduationCap className="w-6 h-6 text-[#D4941E]" />
         </div>
@@ -130,21 +138,26 @@ function DisciplinesLibrary() {
                   {discipline.nome}
                 </h3>
                 <p className="text-[10px] font-black text-[#0A3D52]/40 uppercase tracking-[0.1em] mb-4">
-                  {discipline.id.includes("hpa") ? "60h" : "45h"} •{" "}
-                  {discipline.period || "Aguardando"}
+                  {discipline.ch ?? "45h"} • {discipline.period || "Aguardando"}
                 </p>
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-[9px] font-black uppercase text-[#0A3D52]/60">
                     <span>Conclusão</span>
-                    <span>{discipline.progresso}%</span>
+                    <span>{progresso[discipline.id]?.pct ?? 0}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-[#F5F7FA] rounded-full overflow-hidden">
                     <div
                       className="h-full bg-[#27AE60] transition-all duration-700"
-                      style={{ width: `${discipline.progresso}%` }}
+                      style={{ width: `${progresso[discipline.id]?.pct ?? 0}%` }}
                     />
                   </div>
+                  <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
+                    {progresso[discipline.id]?.aulasFeitas ?? 0}/
+                    {progresso[discipline.id]?.totalAulas ?? discipline.aulas.length} aulas •{" "}
+                    {progresso[discipline.id]?.etapasFeitas ?? 0}/
+                    {progresso[discipline.id]?.totalEtapas ?? 0} provas
+                  </p>
                 </div>
               </div>
 
@@ -173,12 +186,11 @@ function DisciplinesLibrary() {
         <div className="mt-8">
           <SugerirDisciplina />
         </div>
-      <AppBottomNav />
+        <AppBottomNav />
       </main>
     </div>
   );
 }
-
 
 function MoreVertical({ className }: { className?: string }) {
   return (

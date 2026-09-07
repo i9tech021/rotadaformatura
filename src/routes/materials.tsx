@@ -35,7 +35,7 @@ import { format, parseISO } from "date-fns";
 export const Route = createFileRoute("/materials")({
   component: MaterialsManager,
   head: () => ({
-    meta: [{ title: "Biblioteca de Materiais | Rota da Formatura" }],
+    meta: [{ title: "Materiais | Rota da Formatura" }],
   }),
 });
 
@@ -72,7 +72,7 @@ function MaterialsManager() {
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-              <AppMobileMenu />
+                <AppMobileMenu />
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-3">
@@ -85,7 +85,7 @@ function MaterialsManager() {
             </div>
           </div>
 
-                    <AppDesktopNav />
+          <AppDesktopNav />
 
           <button className="bg-[#D4941E] text-[#0A3D52] p-2 rounded-xl hover:scale-105 transition-all">
             <Plus className="w-5 h-5" />
@@ -213,7 +213,6 @@ function MaterialsManager() {
     </div>
   );
 }
-
 
 function MoreVertical({ className }: { className?: string }) {
   return (

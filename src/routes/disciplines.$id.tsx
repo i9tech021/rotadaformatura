@@ -138,7 +138,7 @@ function DisciplinePage() {
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <h1 className="text-2xl font-bold mb-4">Disciplina não encontrada</h1>
         <Link to="/disciplines" className="text-[#D4941E] font-bold uppercase underline">
-          Voltar para Biblioteca
+          Voltar para Disciplinas
         </Link>
       </div>
     );
@@ -167,7 +167,7 @@ function DisciplinePage() {
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-              <AppMobileMenu />
+                <AppMobileMenu />
               </SheetContent>
             </Sheet>
             <Link
@@ -485,7 +485,7 @@ function DisciplinePage() {
             </div>
           </div>
         </div>
-      <AppBottomNav />
+        <AppBottomNav />
       </main>
     </div>
   );
@@ -499,4 +499,3 @@ function EmptyState({ icon: Icon, message }: { icon: typeof LayoutDashboard; mes
     </div>
   );
 }
-

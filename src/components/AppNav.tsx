@@ -28,7 +28,7 @@ export const MENU_ITEMS: NavItem[] = [
   { to: "/", label: "Dashboard", curto: "Início", icon: LayoutDashboard },
   { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
   { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
-  { to: "/disciplines", label: "Biblioteca", curto: "Biblioteca", icon: BookOpen },
+  { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
   { to: "/calculadora", label: "Calculadora", curto: "Calc", icon: Calculator },
   { to: "/calendar", label: "Calendário", curto: "Calendário", icon: CalendarIcon },
@@ -41,7 +41,7 @@ export const DESKTOP_ITEMS: NavItem[] = [
   { to: "/", label: "Dashboard", curto: "Dashboard", icon: LayoutDashboard },
   { to: "/simulados", label: "Simulados", curto: "Simulados", icon: Sparkles },
   { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
-  { to: "/disciplines", label: "Biblioteca", curto: "Biblioteca", icon: BookOpen },
+  { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
   { to: "/calculadora", label: "Calculadora", curto: "Calculadora", icon: Calculator },
   { to: "/calendar", label: "Calendário", curto: "Calendário", icon: CalendarIcon },
 ];
@@ -51,7 +51,7 @@ export const BOTTOM_ITEMS: NavItem[] = [
   { to: "/", label: "Dashboard", curto: "Início", icon: LayoutDashboard },
   { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
   { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
-  { to: "/disciplines", label: "Biblioteca", curto: "Biblioteca", icon: BookOpen },
+  { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
   { to: "/calculadora", label: "Calculadora", curto: "Calc", icon: Calculator },
 ];
 
