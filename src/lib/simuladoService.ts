@@ -6,6 +6,7 @@
 // - espelho localStorage quando Supabase não configurado
 import { getSupabase } from "./supabase";
 import { getIdentidade } from "./publicacoesService";
+import { listProvas, MIN_PROVAS } from "./provasService";
 import {
   buscarQuestoesBanco,
   buscarQuestoesPorIds,
@@ -38,8 +39,13 @@ export interface SessaoSimulado extends SimuladoRow {
 }
 
 export type MontarResultado =
-  | { ok: true; sessao: SessaoSimulado; modo: "banco" | "ia" | "misto" | "offline" }
-  | { ok: false; error: string; bloqueado?: boolean };
+  | {
+      ok: true;
+      sessao: SessaoSimulado;
+      modo: "banco" | "ia" | "misto" | "offline";
+      provasUsadas: number;
+    }
+  | { ok: false; error: string; bloqueado?: boolean; faltamProvas?: number };
 
 const LS_KEY = "rdf:simulados-v2";
 const SETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -203,12 +209,32 @@ export async function montarSimulado(input: {
   const { pode, motivo } = await podeGerarSimulado(input.autorLocalId);
   if (!pode) return { ok: false, error: motivo ?? "Limite semanal atingido.", bloqueado: true };
 
+  // 0. Provas antigas: mínimo 3 para a etapa (base real do simulado)
+  const provas = await listProvas(input.disciplinaId, input.tipo);
+  const provasComTexto = provas.filter(
+    (p) => p.texto_extraido && p.texto_extraido.trim().length > 100,
+  );
+  if (provasComTexto.length < MIN_PROVAS) {
+    return {
+      ok: false,
+      error: `Envie pelo menos ${MIN_PROVAS} provas antigas em PDF de ${input.tipo} para gerar o simulado (tem ${provasComTexto.length}).`,
+      faltamProvas: MIN_PROVAS - provasComTexto.length,
+    };
+  }
+
+  // Contexto real: trechos das provas (até ~4k chars cada, máx ~8k total)
+  const contextoProvas = provasComTexto
+    .slice(0, 4)
+    .map((p, i) => `[PROVA ${i + 1} — ${p.titulo}]\n${(p.texto_extraido ?? "").slice(0, 4000)}`)
+    .join("\n\n")
+    .slice(0, 8000);
+
   // 1. Banco primeiro
   const doBanco = await buscarQuestoesBanco(input.disciplinaId, input.tipo, qtd);
   let modo: "banco" | "ia" | "misto" | "offline" = "banco";
   let todas: QuestaoBanco[] = [...doBanco];
 
-  // 2. Complementa com IA se faltar
+  // 2. Complementa com IA baseada nas provas reais
   if (todas.length < qtd) {
     const faltam = qtd - todas.length;
     const r = await gerarQuestoesIA({
@@ -217,6 +243,7 @@ export async function montarSimulado(input: {
       tipo: input.tipo,
       conteudo: input.conteudo,
       quantidade: faltam,
+      contextoProvas,
     });
     if (r.ok && r.questoes && r.questoes.length > 0) {
       const salvas = await salvarQuestoesBanco(input.disciplinaId, input.tipo, r.questoes);
@@ -225,7 +252,25 @@ export async function montarSimulado(input: {
     }
   }
 
-  // 3. Último recurso: offline (aulas locais)
+  // 3. Completa com revisão das aulas se ainda faltar (garante qtd cheia)
+  if (todas.length > 0 && todas.length < qtd) {
+    const off = gerarOffline(
+      input.disciplinaId,
+      input.disciplinaNome,
+      input.tipo,
+      qtd - todas.length,
+    );
+    const salvas = await salvarQuestoesBanco(
+      input.disciplinaId,
+      input.tipo,
+      off,
+      "Revisão de aulas",
+    );
+    todas = [...todas, ...salvas];
+    if (modo === "banco") modo = "misto";
+  }
+
+  // 4. Último recurso: tudo offline (aulas locais)
   if (todas.length === 0) {
     const off = gerarOffline(input.disciplinaId, input.disciplinaNome, input.tipo, qtd);
     const salvas = await salvarQuestoesBanco(
@@ -278,7 +323,12 @@ export async function montarSimulado(input: {
     saveLocal([row, ...local]);
   }
 
-  return { ok: true, sessao: { ...row, questoesCompletas: todas }, modo };
+  return {
+    ok: true,
+    sessao: { ...row, questoesCompletas: todas },
+    modo,
+    provasUsadas: provasComTexto.length,
+  };
 }
 
 /** Corrige, calcula nota (0-10) e percentual, persiste e retorna tudo + revisão. */

@@ -22,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
@@ -64,6 +65,7 @@ import {
   getProximaEtapa,
   getDiasParaProximaAP,
   getProgressoSemestre,
+  getProgressoTempo,
   formatarDataBrasil,
 } from "@/lib/timeline";
 
@@ -132,6 +134,7 @@ function AcademicDashboard() {
   const proximaEtapa = getProximaEtapa(eventosAcao);
   const diasEtapa = proximaEtapa ? diasPara(proximaEtapa, agora) : null;
   const progressoSemestre = getProgressoSemestre(eventosAcao);
+  const progressoTempo = getProgressoTempo(eventosAcao, agora);
   const totalAPs = eventosAcao.filter((e) => e.tipo?.startsWith("AP")).length;
   const apsConcluidas = Math.round((progressoSemestre / 100) * totalAPs);
 
@@ -299,77 +302,18 @@ function AcademicDashboard() {
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-              <div className="p-6 pt-12 flex flex-col gap-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-                  <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
-                  <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
-                  <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
-                  <MobileNavLink to="/podcasts" icon={Headphones} label="Podcasts" />
-                  <MobileNavLink to="/simulados" icon={Target} label="Simulados" />
-                  <MobileNavLink to="/calculadora" icon={Calculator} label="Calculadora" />
-                  <MobileNavLink to="/publicacoes" icon={Users} label="Comunidade" />
-                  <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
-                  <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
-                </div>
-              </div>
+              <AppMobileMenu />
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
             <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-            <span className="font-bold text-lg tracking-tight uppercase hidden xs:inline">
+            <span className="font-bold text-lg tracking-tight uppercase hidden min-[420px]:inline">
               Rota da Formatura
             </span>
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-6 mr-6">
-          <Link
-            to="/"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/publicacoes"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Comunidade
-          </Link>
-          <Link
-            to="/simulados"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Simulados
-          </Link>
-          <Link
-            to="/calendar"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Calendário
-          </Link>
-          <Link
-            to="/disciplines"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Biblioteca
-          </Link>
-          <Link
-            to="/calculadora"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Calculadora
-          </Link>
-          <Link
-            to="/materials"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Arquivos
-          </Link>
-        </div>
+        <AppDesktopNav />
 
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex flex-col text-right">
@@ -518,6 +462,30 @@ function AcademicDashboard() {
                 style={{ width: `${progressoSemestre}%` }}
               />
             </div>
+          </div>
+
+          {/* Barra de tempo do semestre (anda sozinha, sem depender de conclusão) */}
+          <div className="bg-[#F5F7FA] rounded-2xl border border-[#0A3D52]/10 p-4 mt-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#0A3D52]/40">
+                Semestre decorrido
+              </span>
+              <span className="text-[10px] font-black uppercase text-[#0A3D52]/60">
+                dia {progressoTempo.diasDecorridos}/{progressoTempo.diasTotais} •{" "}
+                {progressoTempo.percentual}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-white rounded-full overflow-hidden border border-[#0A3D52]/5">
+              <div
+                className="h-full bg-[#D4941E] transition-all duration-700"
+                style={{ width: `${progressoTempo.percentual}%` }}
+              />
+            </div>
+            <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase mt-1.5">
+              {progressoTempo.diasRestantes > 0
+                ? `Faltam ${progressoTempo.diasRestantes} dias para o fim do semestre`
+                : "Semestre encerrado"}
+            </p>
           </div>
 
           {/* Rodada AP1 — todas com status calculado */}
@@ -793,54 +761,8 @@ function AcademicDashboard() {
         </div>
       )}
 
-      {/* Bottom Mobile Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40 pb-safe">
-        <Link
-          to="/"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
-        </Link>
-        <Link
-          to="/publicacoes"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <MessageCircle className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Comunidade</span>
-        </Link>
-        <Link
-          to="/calendar"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <CalendarIcon className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Calendário</span>
-        </Link>
-        <Link
-          to="/materials"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <FileText className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Materiais</span>
-        </Link>
-        <Link
-          to="/settings"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <Settings className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Perfil</span>
-        </Link>
-      </div>
+      {/* Bottom Mobile Nav (global) */}
+      <AppBottomNav />
     </div>
   );
 }
@@ -860,27 +782,6 @@ function MoreVertical({ className }: { className?: string }) {
       <circle cx="12" cy="5" r="1" />
       <circle cx="12" cy="19" r="1" />
     </svg>
-  );
-}
-
-function MobileNavLink({
-  to,
-  icon: Icon,
-  label,
-}: {
-  to: string;
-  icon: typeof LayoutDashboard;
-  label: string;
-}) {
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10"
-      activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
-    </Link>
   );
 }
 

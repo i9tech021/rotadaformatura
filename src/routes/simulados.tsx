@@ -16,7 +16,8 @@ import {
   Trophy,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { disciplinas } from "@/data/disciplines";
 import {
@@ -27,6 +28,14 @@ import {
   type SessaoSimulado,
   type SimuladoRow,
 } from "@/lib/simuladoService";
+import {
+  deleteProva,
+  listProvas,
+  MIN_PROVAS,
+  subscribeProvas,
+  uploadProva,
+  type ProvaAntiga,
+} from "@/lib/provasService";
 import { ETAPAS_QUESTAO, type EtapaQuestao } from "@/lib/questoesService";
 import { getIdentidade, salvarIdentidade, type Identidade } from "@/lib/publicacoesService";
 import { IdentidadeModal } from "@/components/IdentidadeModal";
@@ -57,6 +66,9 @@ function SimuladosPage() {
   const [sessaoAtiva, setSessaoAtiva] = useState<SessaoSimulado | null>(null);
   const [historico, setHistorico] = useState<SimuladoRow[]>([]);
   const [revisao, setRevisao] = useState<ResultadoCorrigido | null>(null);
+  const [provas, setProvas] = useState<ProvaAntiga[]>([]);
+  const [subindoProva, setSubindoProva] = useState(false);
+  const provaInputRef = useRef<HTMLInputElement>(null);
 
   const disciplina = useMemo(() => disciplinas.find((d) => d.id === disciplinaId), [disciplinaId]);
   const minutos = etapa.startsWith("AD") ? 30 : 60;
@@ -64,6 +76,8 @@ function SimuladosPage() {
   const recarregar = useCallback(async () => {
     const ident = getIdentidade();
     setIdentidade(ident);
+    const listaProvas = await listProvas(disciplinaId, etapa);
+    setProvas(listaProvas);
     if (!ident) {
       setPerm({ pode: true });
       setHistorico([]);
@@ -75,11 +89,14 @@ function SimuladosPage() {
     ]);
     setPerm(p);
     setHistorico(hist);
-  }, []);
+  }, [disciplinaId, etapa]);
 
   useEffect(() => {
     recarregar();
-  }, [recarregar]);
+    return subscribeProvas(() => {
+      listProvas(disciplinaId, etapa).then(setProvas);
+    });
+  }, [recarregar, disciplinaId, etapa]);
 
   const salvarIdent = (nome: string, polo: string) => {
     const ident = salvarIdentidade(nome, polo);
@@ -116,10 +133,47 @@ function SimuladosPage() {
     }
     if (r.modo === "offline") toast.info("Banco vazio + IA indisponível: revisão das aulas.");
     else if (r.modo === "banco") toast.success("Simulado montado do banco de questões!");
-    else toast.success("Simulado inédito gerado! Boa sorte.");
+    else toast.success(`Simulado inédito gerado a partir de ${r.provasUsadas} provas! Boa sorte.`);
     setSessaoAtiva(r.sessao);
     setRevisao(null);
     recarregar();
+  };
+
+  const enviarProva = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ident = identidade;
+    if (!ident) {
+      setModalAberto(true);
+      return;
+    }
+    setSubindoProva(true);
+    const r = await uploadProva({
+      disciplinaId,
+      tipo: etapa,
+      titulo: file.name.replace(/\.pdf$/i, ""),
+      arquivo: file,
+      autorLocalId: ident.autorLocalId,
+    });
+    setSubindoProva(false);
+    if (provaInputRef.current) provaInputRef.current.value = "";
+    if (!r.ok) {
+      toast.error(r.error);
+      return;
+    }
+    toast.success("Prova antiga enviada! Texto extraído para a IA usar.");
+    listProvas(disciplinaId, etapa).then(setProvas);
+  };
+
+  const removerProva = async (p: ProvaAntiga) => {
+    if (!identidade) return;
+    const r = await deleteProva(p, identidade.autorLocalId);
+    if (!r.ok) {
+      toast.error(r.error);
+      return;
+    }
+    toast.success("Prova removida.");
+    listProvas(disciplinaId, etapa).then(setProvas);
   };
 
   const concluido = (r: ResultadoCorrigido) => {
@@ -162,50 +216,17 @@ function SimuladosPage() {
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-              <div className="p-6 pt-12 flex flex-col gap-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-                  <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
-                  <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
-                  <MobileNavLink to="/podcasts" icon={Target} label="Podcasts" />
-                  <MobileNavLink to="/simulados" icon={Sparkles} label="Simulados" />
-                  <MobileNavLink to="/calculadora" icon={Calculator} label="Calculadora" />
-                  <MobileNavLink to="/disciplines" icon={FileText} label="Disciplinas" />
-                  <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
-                </div>
-              </div>
+              <AppMobileMenu />
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-[#D4941E]" />
-            <span className="font-bold text-lg tracking-tight uppercase hidden xs:inline">
+            <span className="font-bold text-lg tracking-tight uppercase hidden min-[420px]:inline">
               Simulados
             </span>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-6 mr-6">
-          <Link
-            to="/"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/podcasts"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Podcasts
-          </Link>
-          <Link
-            to="/calculadora"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Calculadora
-          </Link>
-        </div>
+        <AppDesktopNav />
       </nav>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
@@ -260,6 +281,77 @@ function SimuladosPage() {
           />
         ) : (
           <>
+            {/* Provas antigas — base real do simulado (mínimo 3) */}
+            <section className="mb-6">
+              <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#D4941E]" /> Provas antigas
+                  </h3>
+                  <span
+                    className={cn(
+                      "text-[10px] font-black uppercase px-2 py-1 rounded-full",
+                      provas.length >= MIN_PROVAS
+                        ? "bg-[#27AE60]/10 text-[#27AE60]"
+                        : "bg-[#D4941E]/15 text-[#D4941E]",
+                    )}
+                  >
+                    {provas.length}/{MIN_PROVAS}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#0A3D52]/50 mb-4 font-medium">
+                  A IA gera o simulado a partir destas provas de {etapa}. Envie pelo menos{" "}
+                  {MIN_PROVAS} PDFs.
+                </p>
+
+                {provas.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {provas.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center gap-3 bg-[#F5F7FA] rounded-xl p-3 border border-[#0A3D52]/5"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-[#E74C3C]/10 flex items-center justify-center shrink-0">
+                          <FileText className="w-4 h-4 text-[#E74C3C]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate">{p.titulo}</p>
+                          <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">
+                            {p.num_paginas > 0 ? `${p.num_paginas} págs • ` : ""}texto extraído ✓
+                          </p>
+                        </div>
+                        {identidade && p.autor_local_id === identidade.autorLocalId && (
+                          <button
+                            onClick={() => removerProva(p)}
+                            className="text-[10px] font-black uppercase text-[#0A3D52]/30 hover:text-[#E74C3C] cursor-pointer shrink-0"
+                          >
+                            Excluir
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => provaInputRef.current?.click()}
+                  disabled={subindoProva}
+                  className="w-full border-2 border-dashed border-[#0A3D52]/20 rounded-xl py-4 text-center hover:border-[#D4941E]/50 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50">
+                    {subindoProva ? "Lendo PDF..." : "＋ Enviar prova antiga em PDF"}
+                  </span>
+                </button>
+                <input
+                  ref={provaInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={enviarProva}
+                />
+              </div>
+            </section>
+
             {/* Configuração */}
             <section className="mb-6">
               <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-6 shadow-sm space-y-4">
@@ -326,8 +418,8 @@ function SimuladosPage() {
 
                 <div
                   className={cn(
-                    "rounded-xl p-4 border text-center",
-                    perm.pode
+                    "rounded-xl p-4 border text-center space-y-1",
+                    perm.pode && provas.length >= MIN_PROVAS
                       ? "bg-[#F5F7FA] border-[#0A3D52]/10"
                       : "bg-[#D4941E]/10 border-[#D4941E]/30",
                   )}
@@ -343,11 +435,16 @@ function SimuladosPage() {
                       {perm.motivo}
                     </p>
                   )}
+                  {provas.length < MIN_PROVAS && (
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#E74C3C]">
+                      Faltam {MIN_PROVAS - provas.length} prova(s) de {etapa} acima
+                    </p>
+                  )}
                 </div>
 
                 <button
                   onClick={gerar}
-                  disabled={gerando || !perm.pode}
+                  disabled={gerando || !perm.pode || provas.length < MIN_PROVAS}
                   className="w-full bg-[#D4941E] text-[#0A3D52] py-3.5 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-[#D4941E]/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {gerando ? "Montando seu simulado..." : "Iniciar simulado"}
@@ -420,50 +517,8 @@ function SimuladosPage() {
         aoFechar={() => setModalAberto(false)}
       />
 
-      {/* Bottom Mobile Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40">
-        <MobileNavLink to="/" icon={LayoutDashboard} label="Início" bottom />
-        <MobileNavLink to="/simulados" icon={Sparkles} label="Simulado" bottom />
-        <MobileNavLink to="/calculadora" icon={Calculator} label="Calc" bottom />
-        <MobileNavLink to="/podcasts" icon={Target} label="Podcasts" bottom />
-        <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" bottom />
-      </div>
+      {/* Bottom Mobile Nav (global) */}
+      <AppBottomNav />
     </div>
-  );
-}
-
-function MobileNavLink({
-  to,
-  icon: Icon,
-  label,
-  bottom,
-}: {
-  to: string;
-  icon: typeof LayoutDashboard;
-  label: string;
-  bottom?: boolean;
-}) {
-  if (bottom) {
-    return (
-      <Link
-        to={to}
-        activeProps={{ className: "text-[#D4941E]" }}
-        inactiveProps={{ className: "text-[#0A3D52]/40" }}
-        className="flex flex-col items-center"
-      >
-        <Icon className="w-5 h-5" />
-        <span className="text-[8px] font-black uppercase mt-0.5 tracking-tighter">{label}</span>
-      </Link>
-    );
-  }
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
-      activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
-    </Link>
   );
 }

@@ -17,6 +17,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { disciplinas } from "@/data/disciplines";
@@ -149,37 +150,18 @@ function PodcastsPage() {
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-              <div className="p-6 pt-12 flex flex-col gap-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-                  <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
-                  <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
-                  <MobileNavLink to="/podcasts" icon={Headphones} label="Podcasts" />
-                  <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
-                  <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
-                  <MobileNavLink to="/community" icon={MessageCircle} label="Comunidade" />
-                  <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
-                </div>
-              </div>
+              <AppMobileMenu />
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
             <Headphones className="w-6 h-6 text-[#D4941E]" />
-            <span className="font-bold text-lg tracking-tight uppercase hidden xs:inline">
+            <span className="font-bold text-lg tracking-tight uppercase hidden min-[420px]:inline">
               Podcasts
             </span>
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-6 mr-6">
-          <NavLinkDesktop to="/" label="Dashboard" />
-          <NavLinkDesktop to="/calendar" label="Calendário" />
-          <NavLinkDesktop to="/disciplines" label="Biblioteca" />
-          <NavLinkDesktop to="/materials" label="Arquivos" />
-        </div>
+        <AppDesktopNav />
 
         <Link
           to="/settings"
@@ -386,86 +368,8 @@ function PodcastsPage() {
         </section>
       </main>
 
-      {/* Bottom Mobile Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40">
-        <Link
-          to="/"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
-        </Link>
-        <Link
-          to="/podcasts"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <Headphones className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Podcasts</span>
-        </Link>
-        <Link
-          to="/calendar"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <CalendarIcon className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Calendário</span>
-        </Link>
-        <Link
-          to="/disciplines"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <Layout className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Disciplinas</span>
-        </Link>
-        <Link
-          to="/settings"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <Settings className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Perfil</span>
-        </Link>
-      </div>
+      {/* Bottom Mobile Nav (global) */}
+      <AppBottomNav />
     </div>
-  );
-}
-
-function MobileNavLink({
-  to,
-  icon: Icon,
-  label,
-}: {
-  to: string;
-  icon: typeof LayoutDashboard;
-  label: string;
-}) {
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
-      activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
-    </Link>
-  );
-}
-
-function NavLinkDesktop({ to, label }: { to: string; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-    >
-      {label}
-    </Link>
   );
 }

@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { disciplinas } from "@/data/disciplines";
@@ -207,56 +208,17 @@ function PublicacoesPage() {
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-              <div className="p-6 pt-12 flex flex-col gap-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-                  <span className="font-bold text-lg tracking-tight uppercase">Menu Acadêmico</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
-                  <MobileNavLink to="/publicacoes" icon={Users} label="Comunidade" />
-                  <MobileNavLink to="/simulados" icon={Sparkles} label="Simulados" />
-                  <MobileNavLink to="/calculadora" icon={Sparkles} label="Calculadora" />
-                  <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
-                  <MobileNavLink to="/disciplines" icon={FileText} label="Disciplinas" />
-                  <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
-                </div>
-              </div>
+              <AppMobileMenu />
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
             <Users className="w-6 h-6 text-[#D4941E]" />
-            <span className="font-bold text-lg tracking-tight uppercase hidden xs:inline">
+            <span className="font-bold text-lg tracking-tight uppercase hidden min-[420px]:inline">
               Comunidade
             </span>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-6 mr-6">
-          <Link
-            to="/"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/simulados"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Simulados
-          </Link>
-          <Link
-            to="/calculadora"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Calculadora
-          </Link>
-          <Link
-            to="/podcasts"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Podcasts
-          </Link>
-        </div>
+        <AppDesktopNav />
       </nav>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
@@ -529,50 +491,8 @@ function PublicacoesPage() {
         aoFechar={() => setModalAberto(false)}
       />
 
-      {/* Bottom Mobile Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40">
-        <MobileNavLink to="/" icon={LayoutDashboard} label="Início" bottom />
-        <MobileNavLink to="/publicacoes" icon={Users} label="Comunidade" bottom />
-        <MobileNavLink to="/simulados" icon={Sparkles} label="Simulado" bottom />
-        <MobileNavLink to="/calculadora" icon={Sparkles} label="Calc" bottom />
-        <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" bottom />
-      </div>
+      {/* Bottom Mobile Nav (global) */}
+      <AppBottomNav />
     </div>
-  );
-}
-
-function MobileNavLink({
-  to,
-  icon: Icon,
-  label,
-  bottom,
-}: {
-  to: string;
-  icon: typeof LayoutDashboard;
-  label: string;
-  bottom?: boolean;
-}) {
-  if (bottom) {
-    return (
-      <Link
-        to={to}
-        activeProps={{ className: "text-[#D4941E]" }}
-        inactiveProps={{ className: "text-[#0A3D52]/40" }}
-        className="flex flex-col items-center"
-      >
-        <Icon className="w-5 h-5" />
-        <span className="text-[8px] font-black uppercase mt-0.5 tracking-tighter">{label}</span>
-      </Link>
-    );
-  }
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
-      activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
-    </Link>
   );
 }

@@ -279,6 +279,65 @@ begin
 end $$;
 
 -- ============================================================
+-- PROVAS ANTIGAS (base real dos simulados: mínimo 3 PDFs por
+-- disciplina + etapa; texto extraído no upload para a IA usar)
+-- ============================================================
+create table if not exists public.provas_antigas (
+  id text primary key,
+  disciplina_id text not null,
+  tipo text not null, -- "AD1" | "AP1" | "AD2" | "AP2"
+  titulo text not null,
+  url text not null,
+  texto_extraido text,
+  num_paginas int default 0,
+  autor_local_id text,
+  criado_em timestamptz default now()
+);
+
+create index if not exists provas_disciplina_tipo_idx
+  on public.provas_antigas (disciplina_id, tipo);
+
+-- Migração: coluna de autor em tabelas já existentes
+alter table public.provas_antigas add column if not exists autor_local_id text;
+
+alter table public.provas_antigas enable row level security;
+
+do $$
+begin
+  if not exists (select 1 from pg_policies where policyname = 'provas_anon_select') then
+    execute 'create policy "provas_anon_select" on public.provas_antigas for select to anon using (true)';
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'provas_anon_insert') then
+    execute 'create policy "provas_anon_insert" on public.provas_antigas for insert to anon with check (true)';
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'provas_anon_delete_own') then
+    execute 'create policy "provas_anon_delete_own" on public.provas_antigas for delete to anon using (autor_local_id = auth_uid_or_default() or autor_local_id is null)';
+  end if;
+end $$;
+
+-- Bucket de Storage para as provas em PDF (leitura pública + inserção)
+insert into storage.buckets (id, name, public)
+  values ('provas', 'provas', true)
+  on conflict (id) do nothing;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies where policyname = 'provas_public_read'
+  ) then
+    execute 'create policy "provas_public_read" on storage.objects
+      for select using (bucket_id = ''provas'')';
+  end if;
+  execute 'drop policy if exists "provas_public_write" on storage.objects';
+  if not exists (
+    select 1 from pg_policies where policyname = 'provas_public_insert'
+  ) then
+    execute 'create policy "provas_public_insert" on storage.objects
+      for insert to anon with check (bucket_id = ''provas'')';
+  end if;
+end $$;
+
+-- ============================================================
 -- SIMULADOS (banco de questões + realizados; limite 1/7 dias por autor)
 -- Identidade = autor_local_id (mesmo da Comunidade, sem login).
 -- ============================================================
@@ -365,6 +424,8 @@ alter table public.notas replica identity full;
 alter table public.chat_messages replica identity full;
 alter table public.publicacoes replica identity full;
 alter table public.simulados_realizados replica identity full;
+alter table public.provas_antigas replica identity full;
+alter table public.questoes replica identity full;
 
 do $$
 begin
@@ -430,5 +491,19 @@ begin
       and schemaname = 'public' and tablename = 'denuncias'
   ) then
     alter publication supabase_realtime add table public.denuncias;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'provas_antigas'
+  ) then
+    alter publication supabase_realtime add table public.provas_antigas;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'questoes'
+  ) then
+    alter publication supabase_realtime add table public.questoes;
   end if;
 end $$;

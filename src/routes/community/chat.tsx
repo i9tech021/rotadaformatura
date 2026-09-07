@@ -13,14 +13,15 @@ import {
   Users,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { AppBottomNav, AppMobileMenu } from "@/components/AppNav";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   getChatRooms,
   loadMessages,
   sendMessage,
   subscribeMessages,
-  type ChatMessage,
 } from "@/lib/chatService";
+import type { ChatMessage } from "@/data/chat";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { isSupabaseConfigured } from "@/lib/seed";
@@ -113,7 +114,7 @@ function CommunityChat() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#F5F7FA] text-[#0A3D52]">
+    <div className="flex flex-col h-screen bg-[#F5F7FA] text-[#0A3D52] pb-[70px] md:pb-0">
       <nav className="bg-[#0A3D52] text-white px-4 py-3 shadow-md z-40 shrink-0">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -127,38 +128,7 @@ function CommunityChat() {
                 side="left"
                 className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0"
               >
-                <div className="p-6 pt-12 flex flex-col gap-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-                    <span className="font-bold text-lg tracking-tight uppercase">
-                      Menu Acadêmico
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
-                    <MobileNavLink
-                      to="/calendar"
-                      icon={CalendarIcon}
-                      label="Calendário"
-                    />
-                    <MobileNavLink
-                      to="/disciplines"
-                      icon={BookOpen}
-                      label="Disciplinas"
-                    />
-                    <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
-                    <MobileNavLink
-                      to="/community"
-                      icon={MessageSquare}
-                      label="Comunidade"
-                    />
-                    <MobileNavLink
-                      to="/settings"
-                      icon={Settings}
-                      label="Configurações"
-                    />
-                  </div>
-                </div>
+              <AppMobileMenu />
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-3">
@@ -332,27 +302,8 @@ function CommunityChat() {
           </div>
         </div>
       </div>
+      <AppBottomNav />
     </div>
   );
 }
 
-function MobileNavLink({
-  to,
-  icon: Icon,
-  label,
-}: {
-  to: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-}) {
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
-      activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
-    </Link>
-  );
-}

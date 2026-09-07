@@ -56,6 +56,44 @@ export function getProgressoSemestre(eventos: EventoAcademico[]): number {
   return Math.round((concluidos / total) * 100);
 }
 
+export interface ProgressoTempo {
+  percentual: number;
+  diasDecorridos: number;
+  diasTotais: number;
+  diasRestantes: number;
+}
+
+/**
+ * Progresso do semestre pelo TEMPO decorrido (independe de conclusão).
+ * Limites = primeiro ao último evento do cronograma. Anda sozinho todo dia.
+ */
+export function getProgressoTempo(
+  eventos: EventoAcademico[],
+  agora: Date = new Date(),
+): ProgressoTempo {
+  const datas: number[] = [];
+  for (const e of eventos) {
+    if (e.dataInicio) datas.push(new Date(e.dataInicio).getTime());
+    const fim = (e as { dataFim?: string }).dataFim;
+    if (fim) datas.push(new Date(fim).getTime());
+  }
+  if (datas.length === 0) {
+    return { percentual: 0, diasDecorridos: 0, diasTotais: 1, diasRestantes: 1 };
+  }
+  const inicio = Math.min(...datas);
+  const fim = Math.max(...datas);
+  const total = Math.max(1, fim - inicio);
+  const decorrido = Math.min(Math.max(agora.getTime() - inicio, 0), total);
+  const diasTotais = Math.max(1, Math.round(total / 86400000));
+  const diasDecorridos = Math.round(decorrido / 86400000);
+  return {
+    percentual: Math.round((decorrido / total) * 100),
+    diasDecorridos,
+    diasTotais,
+    diasRestantes: Math.max(0, diasTotais - diasDecorridos),
+  };
+}
+
 /** Formata data em "dd 'de' MMMM" em português (ex: "12 de setembro"). */
 export function formatarDataBrasil(data: string | Date): string {
   return format(new Date(data), "dd 'de' MMMM", { locale: ptBR });

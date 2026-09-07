@@ -2,6 +2,7 @@
 // Calculadora dedicada de AP/AD — média CEDERJ + calculadora reversa.
 // Link próprio: /calculadora (compartilhável, sem login).
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AppBottomNav, AppDesktopNav } from "@/components/AppNav";
 import {
   ArrowLeft,
   Calculator,
@@ -115,25 +116,12 @@ function CalculadoraPage() {
           </Link>
           <div className="flex items-center gap-2">
             <Calculator className="w-6 h-6 text-[#D4941E]" />
-            <span className="font-bold text-lg tracking-tight uppercase hidden xs:inline">
+            <span className="font-bold text-lg tracking-tight uppercase hidden min-[420px]:inline">
               Calculadora
             </span>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-6 mr-6">
-          <Link
-            to="/"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/podcasts"
-            className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-          >
-            Podcasts
-          </Link>
-        </div>
+        <AppDesktopNav />
       </nav>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
@@ -348,45 +336,8 @@ function CalculadoraPage() {
         </section>
       </main>
 
-      {/* Bottom Mobile Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40">
-        <Link
-          to="/"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Início</span>
-        </Link>
-        <Link
-          to="/podcasts"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <TrendingUp className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Podcasts</span>
-        </Link>
-        <Link
-          to="/calculadora"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <Calculator className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Calculadora</span>
-        </Link>
-        <Link
-          to="/calendar"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <RefreshCcw className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Calendário</span>
-        </Link>
-      </div>
+      {/* Bottom Mobile Nav (global) */}
+      <AppBottomNav />
     </div>
   );
 }

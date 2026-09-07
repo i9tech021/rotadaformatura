@@ -16,6 +16,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useState } from "react";
 import { MOCK_FEED, type FeedPost } from "@/data/feed";
 import { cn } from "@/lib/utils";
@@ -70,60 +71,20 @@ function CommunityFeed() {
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
-                <div className="p-6 pt-12 flex flex-col gap-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <GraduationCap className="w-8 h-8 text-[#D4941E]" />
-                    <span className="font-bold text-lg tracking-tight uppercase">
-                      Menu Acadêmico
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <MobileNavLink to="/" icon={LayoutDashboard} label="Dashboard" />
-                    <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
-                    <MobileNavLink to="/disciplines" icon={BookOpen} label="Disciplinas" />
-                    <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
-                    <MobileNavLink to="/community" icon={MessageSquare} label="Comunidade" />
-                    <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
-                  </div>
-                </div>
+                <AppMobileMenu />
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-3">
               <Link to="/" className="hover:bg-white/10 p-2 rounded-full transition-colors">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
-              <h1 className="font-bold text-lg uppercase tracking-tight hidden xs:inline">
+              <h1 className="font-bold text-lg uppercase tracking-tight hidden min-[420px]:inline">
                 Feed da Formatura
               </h1>
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-6 mr-6">
-            <Link
-              to="/"
-              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/community"
-              className="text-xs font-black uppercase tracking-widest text-[#D4941E]"
-            >
-              Comunidade
-            </Link>
-            <Link
-              to="/disciplines"
-              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-            >
-              Biblioteca
-            </Link>
-            <Link
-              to="/materials"
-              className="text-xs font-black uppercase tracking-widest hover:text-[#D4941E] transition-colors"
-            >
-              Arquivos
-            </Link>
-          </div>
+          <AppDesktopNav />
 
           <button className="bg-[#D4941E] text-[#0A3D52] p-2 rounded-xl hover:scale-105 transition-all">
             <Plus className="w-5 h-5" />
@@ -204,58 +165,8 @@ function CommunityFeed() {
         </div>
       </main>
 
-      {/* Bottom Mobile Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#0A3D52]/10 flex justify-around p-3 md:hidden z-40 pb-safe">
-        <Link
-          to="/"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Dashboard</span>
-        </Link>
-        <Link
-          to="/calendar"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <CalendarIcon className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Calendário</span>
-        </Link>
-        <Link
-          to="/community"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <MessageSquare className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Comunidade</span>
-        </Link>
-        <Link
-          to="/settings"
-          activeProps={{ className: "text-[#D4941E]" }}
-          inactiveProps={{ className: "text-[#0A3D52]/40" }}
-          className="flex flex-col items-center"
-        >
-          <Settings className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">Perfil</span>
-        </Link>
-      </div>
+      {/* Bottom Mobile Nav (global) */}
+      <AppBottomNav />
     </div>
-  );
-}
-
-function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 text-white"
-      activeProps={{ className: "bg-white/10 border-white/20 text-[#D4941E]" }}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
-    </Link>
   );
 }
