@@ -5,6 +5,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Calculator,
   Calendar as CalendarIcon,
+  ClipboardCheck,
   FileText,
   GraduationCap,
   LayoutDashboard,
@@ -235,7 +236,10 @@ function SimuladosPage() {
         <div className="mb-8">
           <h2 className="text-3xl font-bold">Simulador de Prova</h2>
           <p className="text-[#0A3D52]/60 mt-1">
-            Responda uma prova inédita no formato CEDERJ, corrigida na hora. 1 a cada 7 dias.
+            Questões reais extraídas de provas antigas do CEDERJ, selecionadas por IA para maximizar sua preparação.
+          </p>
+          <p className="text-[#0A3D52]/40 mt-2 text-sm">
+            Cada simulado tem 10 questões — 70% peso alto (teoria), 30% peso baixo (cálculo). Correção instantânea + revisão detalhada. Limite: 1 a cada 7 dias.
           </p>
           {identidade ? (
             <p className="text-[10px] font-bold text-[#27AE60] mt-2 uppercase tracking-widest">
@@ -461,7 +465,7 @@ function SimuladosPage() {
               </h3>
               {historico.length === 0 ? (
                 <div className="bg-white rounded-3xl border border-dashed border-[#0A3D52]/10 p-10 text-center">
-                  <Target className="w-10 h-10 mx-auto mb-3 text-[#0A3D52]/20" />
+                  <ClipboardCheck className="w-10 h-10 mx-auto mb-3 text-[#0A3D52]/20" />
                   <p className="font-black text-xs uppercase tracking-widest text-[#0A3D52]/40">
                     Nenhum simulado feito ainda
                   </p>
