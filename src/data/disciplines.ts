@@ -965,13 +965,224 @@ export const economiaBrasileiraContemporanea: Disciplina = {
   nome: "Economia Brasileira Contemporânea",
   codigo: "EBC",
   icone: "📈",
-  cor: "#0EA5E9", // sky-500 (cor provisória)
-  coordenador: "Aguardando dados",
-  totalAulas: 0,
+  cor: "#0EA5E9", // sky-500
+  coordenador: "Prof. Thierry Molnar Prates",
+  totalAulas: 14,
   period: "5º período",
   ch: "45h",
   progresso: 0,
-  aulas: [],
+  aulas: [
+    {
+      id: "ebc-a1",
+      numero: 1,
+      titulo: "Milagre econômico: afinal, do que se trata?",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 1", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a2",
+      numero: 2,
+      titulo: "O milagre econômico brasileiro",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 2", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a3",
+      numero: 3,
+      titulo: "A crise do milagre econômico brasileiro",
+      semanaEstudo: 2,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 3", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a4",
+      numero: 4,
+      titulo: "A política econômica para a crise pós-milagre: II PND",
+      semanaEstudo: 3,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 4", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a5",
+      numero: 5,
+      titulo: "A política econômica do governo Figueiredo (III PND) e a transição política",
+      semanaEstudo: 4,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 5", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a6",
+      numero: 6,
+      titulo: "A Nova República e o Plano Cruzado",
+      semanaEstudo: 5,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 6", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a7",
+      numero: 7,
+      titulo: "O fracasso do Plano Cruzado e as tentativas do Plano Bresser e do Plano Verão",
+      semanaEstudo: 6,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 7", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a8",
+      numero: 8,
+      titulo: "Plano Collor: surpresas e fracassos",
+      semanaEstudo: 7,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 8", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a9",
+      numero: 9,
+      titulo: "O Plano Real e o instrumental neoliberal: medidas e resultados iniciais",
+      semanaEstudo: 8,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 9", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a10",
+      numero: 10,
+      titulo: "Considerações sobre a inflação num contexto de economia estabilizada",
+      semanaEstudo: 9,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 10", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a11",
+      numero: 11,
+      titulo: "Os efeitos colaterais das eficazes medidas do Plano Real",
+      semanaEstudo: 10,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 11", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a12",
+      numero: 12,
+      titulo: "A economia brasileira sob a influência da sua dinâmica demográfica",
+      semanaEstudo: 11,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 12", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a13",
+      numero: 13,
+      titulo: "O primeiro governo Lula (2003-2006): vitória do medo ou da esperança?",
+      semanaEstudo: 12,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 13", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+    {
+      id: "ebc-a14",
+      numero: 14,
+      titulo: "A economia brasileira de 1964 a 2006",
+      semanaEstudo: 13,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 14", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades do material didático",
+          obrigatoria: true,
+        },
+      ],
+      concluida: false,
+    },
+  ],
   avaliacoes: [
     {
       id: "ebc-ad1",
@@ -1014,6 +1225,7 @@ export const economiaBrasileiraContemporanea: Disciplina = {
     {
       id: "ebc-qo",
       tipo: "QUESTIONARIO",
+      dataInicio: "2026-11-01",
       dataFim: "2026-11-08",
       conteudoCobrado: "Questionário Opcional",
       entregue: false,
@@ -1029,11 +1241,23 @@ export const economiaBrasileiraContemporanea: Disciplina = {
       entregue: false,
     },
   ],
-  formulaNota: { n1: "Aguardando", n2: "Aguardando", aprovacao: "Aguardando", ap3: "Aguardando" },
+  formulaNota: {
+    n1: "N1 = (AD1 × 0,20) + (AP1 × 0,80)",
+    n2: "N2 = (AD2 × 0,20) + (AP2 × 0,80)",
+    aprovacao: "(N1 + N2) / 2 ≥ 6,0 — aprovação direta",
+    ap3: "N3 = (maior(N1, N2) + AP3) / 2 — aprovação se N3 ≥ 5,0",
+  },
   guia: {
-    objetivoGeral: "Aguardando dados do AVA",
-    metodoEstudo: "Aguardando",
-    observacoes: ["Enviar cronograma, guia e caderno didático"],
+    objetivoGeral:
+      "Proporcionar ao aluno uma visão crítica da evolução da Economia Brasileira no período compreendido entre segunda metade da década de 1960 e meados da primeira década do século XXI, com ênfase nos planos econômicos e nos efeitos da maior inserção da economia brasileira no contexto da economia mundial.",
+    metodoEstudo:
+      "As aulas foram desenhadas para que você possa conhecer os detalhes dos caminhos da política econômica brasileira. Em cada aula você encontrará definição do tema, metas, objetivos, atividades e bibliografia. Recomenda-se seguir rigorosamente o cronograma, estudar as aulas na sequência e não acumular leituras. Faça as atividades e reflita sobre as respostas esperadas. Use os tutores presenciais e a distância para tirar dúvidas.",
+    observacoes: [
+      "As ADs são feitas na plataforma, com apenas uma tentativa. Fique atento aos prazos.",
+      "Revisão de notas das APs pode ser solicitada até 72 horas após o lançamento das notas.",
+      "A AP3 é de recuperação e substitui a menor nota entre N1 e N2 (aprovação com N3 ≥ 5,0).",
+      "Aula 15 (Do primeiro governo Lula aos dias atuais, semana 15 de 02/11 a 08/11) é leitura complementar e não cai em prova.",
+    ],
   },
 };
 
