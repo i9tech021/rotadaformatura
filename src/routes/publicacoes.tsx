@@ -28,12 +28,15 @@ import {
   publicarPodcast,
   salvarIdentidade,
   subscribePublicacoes,
+  ETAPAS,
+  type EtapaPublicacao,
   type Identidade,
   type Publicacao,
   type TipoPublicacao,
 } from "@/lib/publicacoesService";
 import { PublicacaoCard } from "@/components/PublicacaoCard";
 import { IdentidadeModal } from "@/components/IdentidadeModal";
+import { SugerirDisciplina } from "@/components/SugerirDisciplina";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/publicacoes")({
@@ -48,6 +51,7 @@ function PublicacoesPage() {
   const [carregando, setCarregando] = useState(true);
   const [filtroDisciplina, setFiltroDisciplina] = useState<string | null>(null);
   const [filtroTipo, setFiltroTipo] = useState<TipoPublicacao | "todos">("todos");
+  const [filtroEtapa, setFiltroEtapa] = useState<EtapaPublicacao | "todas">("todas");
 
   const [identidade, setIdentidade] = useState<Identidade | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
@@ -60,6 +64,7 @@ function PublicacoesPage() {
   const [descricaoForm, setDescricaoForm] = useState("");
   const [conteudoForm, setConteudoForm] = useState("");
   const [arquivoForm, setArquivoForm] = useState<File | null>(null);
+  const [etapaForm, setEtapaForm] = useState<EtapaPublicacao>("Geral");
   const [publicando, setPublicando] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,8 +91,9 @@ function PublicacoesPage() {
     let lista = publicacoes;
     if (filtroDisciplina) lista = lista.filter((p) => p.disciplina_id === filtroDisciplina);
     if (filtroTipo !== "todos") lista = lista.filter((p) => p.tipo === filtroTipo);
+    if (filtroEtapa !== "todas") lista = lista.filter((p) => (p.etapa ?? "Geral") === filtroEtapa);
     return lista;
-  }, [publicacoes, filtroDisciplina, filtroTipo]);
+  }, [publicacoes, filtroDisciplina, filtroTipo, filtroEtapa]);
 
   const abrirForm = () => {
     if (!identidade) {
@@ -151,6 +157,7 @@ function PublicacoesPage() {
       titulo: tituloForm.trim(),
       descricao: descricaoForm.trim(),
       ident: identidade,
+      etapa: etapaForm,
     };
 
     let r: { ok: boolean; error?: string } = { ok: false };
@@ -169,6 +176,7 @@ function PublicacoesPage() {
     setDescricaoForm("");
     setConteudoForm("");
     setArquivoForm(null);
+    setEtapaForm("Geral");
     recarregar();
   };
 
@@ -301,18 +309,32 @@ function PublicacoesPage() {
                   ))}
                 </div>
 
-                {/* Disciplina */}
-                <select
-                  value={disciplinaForm}
-                  onChange={(e) => setDisciplinaForm(e.target.value)}
-                  className="w-full bg-[#F5F7FA] rounded-xl px-3 py-2.5 text-sm font-bold text-[#0A3D52] focus:ring-2 focus:ring-[#D4941E] outline-none cursor-pointer"
-                >
-                  {disciplinas.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.nome} ({d.codigo})
-                    </option>
-                  ))}
-                </select>
+                {/* Disciplina + Etapa */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <select
+                    value={disciplinaForm}
+                    onChange={(e) => setDisciplinaForm(e.target.value)}
+                    className="w-full bg-[#F5F7FA] rounded-xl px-3 py-2.5 text-sm font-bold text-[#0A3D52] focus:ring-2 focus:ring-[#D4941E] outline-none cursor-pointer"
+                  >
+                    {disciplinas.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.nome} ({d.codigo})
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={etapaForm}
+                    onChange={(e) => setEtapaForm(e.target.value as EtapaPublicacao)}
+                    className="w-full bg-[#F5F7FA] rounded-xl px-3 py-2.5 text-sm font-bold text-[#0A3D52] focus:ring-2 focus:ring-[#D4941E] outline-none cursor-pointer"
+                    aria-label="Etapa"
+                  >
+                    {ETAPAS.map((et) => (
+                      <option key={et} value={et}>
+                        {et === "Geral" ? "Etapa: Geral" : `Etapa: ${et}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <input
                   value={tituloForm}
@@ -394,16 +416,17 @@ function PublicacoesPage() {
 
         {/* Filtros */}
         {(disciplinasComPub.length > 0 || publicacoes.length > 0) && (
-          <section className="mb-6">
+          <section className="mb-6 space-y-2">
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               <button
                 onClick={() => {
                   setFiltroDisciplina(null);
                   setFiltroTipo("todos");
+                  setFiltroEtapa("todas");
                 }}
                 className={cn(
                   "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shrink-0 border cursor-pointer",
-                  !filtroDisciplina && filtroTipo === "todos"
+                  !filtroDisciplina && filtroTipo === "todos" && filtroEtapa === "todas"
                     ? "bg-[#0A3D52] text-white border-[#0A3D52]"
                     : "bg-white text-[#0A3D52]/50 border-[#0A3D52]/10",
                 )}
@@ -422,6 +445,22 @@ function PublicacoesPage() {
                   )}
                 >
                   {d.codigo}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {(["todas", ...ETAPAS] as const).map((et) => (
+                <button
+                  key={et}
+                  onClick={() => setFiltroEtapa(et)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border cursor-pointer",
+                    filtroEtapa === et
+                      ? "bg-[#D4941E] text-[#0A3D52] border-[#D4941E]"
+                      : "bg-white text-[#0A3D52]/50 border-[#0A3D52]/10",
+                  )}
+                >
+                  {et === "todas" ? "Todas etapas" : et}
                 </button>
               ))}
             </div>
@@ -476,6 +515,11 @@ function PublicacoesPage() {
               })}
             </div>
           )}
+        </section>
+
+        {/* Sugerir disciplina (discreto, no fim) */}
+        <section className="mt-8">
+          <SugerirDisciplina />
         </section>
       </main>
 

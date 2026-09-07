@@ -2,6 +2,7 @@
 // Simulador de provas — geração por IA, controle de 1/semana, correção automática.
 // Padrão: Supabase (tabelas simulados_realizados / questoes) + localStorage fallback.
 import { getSupabase, isSupabaseConfigured } from "./supabase";
+import { disciplinas } from "@/data/disciplines";
 
 export interface Questao {
   id: string;
@@ -27,7 +28,7 @@ export interface SimuladoRealizado {
 }
 
 export type GerarResultado =
-  | { ok: true; simulado: SimuladoRealizado; modo: "ia" }
+  | { ok: true; simulado: SimuladoRealizado; modo: "ia" | "offline" }
   | { ok: false; error: string; bloqueado?: boolean };
 
 const LS_KEY = "rdf:simulados";
@@ -115,14 +116,13 @@ export async function gerarSimuladoIA(input: {
   const model =
     (import.meta.env["VITE_AI_MODEL"] as string) || "nvidia/nemotron-3.5-lightning:free";
 
-  if (!apiKey) {
-    return {
-      ok: false,
-      error: "IA não configurada para gerar simulados. Defina VITE_AI_API_KEY.",
-    };
-  }
-
   const qtd = Math.min(10, Math.max(4, input.quantidade ?? 8));
+
+  if (!apiKey) {
+    // Sem chave de IA → simulado offline
+    const simulado = await geraOffline(input, qtd);
+    return { ok: true, simulado, modo: "offline" };
+  }
 
   const prompt = `Você é um professor do CEDERJ. Gere um simulado inédito de ${input.tipo}
 para a disciplina ADMINISTRAÇÃO: "${input.disciplinaNome}"${input.conteudoCobrado ? `\nConteúdo cobrado: ${input.conteudoCobrado}` : ""}.
@@ -165,19 +165,22 @@ Regras:
         messages: [{ role: "user", content: prompt }],
         temperature: 0.7,
         max_tokens: 4000,
+        reasoning: { enabled: false },
       }),
     });
 
     if (!res.ok) {
-      if (res.status === 429)
-        return { ok: false, error: "Limite da IA atingido. Tente em instantes." };
-      return { ok: false, error: `Falha na geração (erro ${res.status}).` };
+      // IA indisponível (429/erro) → fallback offline
+      const simulado = await geraOffline(input, qtd);
+      return { ok: true, simulado, modo: "offline" };
     }
 
     const texto = await res.text();
     const json = extrairJson(texto);
     if (!json || !Array.isArray(json.questoes) || json.questoes.length === 0) {
-      return { ok: false, error: "A IA não retornou questões válidas. Tente de novo." };
+      // Fallback offline
+      const simulado = await geraOffline(input, qtd);
+      return { ok: true, simulado, modo: "offline" };
     }
     data = json as typeof data;
 
@@ -199,14 +202,102 @@ Regras:
       }))
       .filter((q) => q.enunciado && q.alternativas.length >= 2);
 
-    if (questoes.length === 0)
-      return { ok: false, error: "A IA não retornou questões válidas. Tente de novo." };
+    if (questoes.length === 0) {
+      const simulado = await geraOffline(input, qtd);
+      return { ok: true, simulado, modo: "offline" };
+    }
 
     const simulado = await persistir(questoes, new Array(questoes.length).fill(null));
     return { ok: true, simulado, modo: "ia" };
   } catch {
-    return { ok: false, error: "Erro de conexão com a IA. Tente de novo." };
+    // Fallback offline quando a IA falha (rede, rate limit, etc.)
+    const simulado = await geraOffline(input, qtd);
+    return { ok: true, simulado, modo: "offline" };
   }
+}
+
+/**
+ * Gera questões offline a partir das aulas da disciplina (dados locais).
+ * Garante que o simulador SEMPRE funcione, mesmo sem IA configurada.
+ */
+async function geraOffline(
+  input: {
+    disciplinaId: string;
+    disciplinaNome: string;
+    tipo: "AD" | "AP";
+    quantidade?: number;
+    conteudoCobrado?: string | undefined;
+  },
+  qtd: number,
+): Promise<SimuladoRealizado> {
+  // usa as aulas da disciplina como fonte de conteúdo
+  const disc = disciplinas.find((d) => d.id === input.disciplinaId);
+  const aulas = (disc?.aulas ?? []).filter((a) => a.titulo);
+
+  const questoes: Questao[] = [];
+  const usados = new Set<string>();
+
+  aulas.forEach((aula, idx) => {
+    if (questoes.length >= qtd) return;
+    const alternativas: string[] = [];
+    alternativas.push(`A) ${aula.titulo}`);
+    // pega títulos de outras aulas como opções erradas
+    const outras = aulas.filter((a2, i2) => i2 !== idx && a2.titulo).map((a2) => a2.titulo);
+    const erradas: string[] = [];
+    for (const t of outras) {
+      if (erradas.length >= 3) break;
+      if (!usados.has(t)) {
+        erradas.push(t);
+        usados.add(t);
+      }
+    }
+    // garante 4 opções no total
+    while (alternativas.length < 4) {
+      const filler = `Opção ${alternativas.length + 1}`;
+      if (!alternativas.includes(filler)) alternativas.push(filler);
+    }
+    if (alternativas.length < 4) return;
+    questoes.push({
+      id: `q-offline-${Date.now()}-${questoes.length}`,
+      disciplina_id: input.disciplinaId,
+      enunciado: `Sobre a Aula ${aula.numero} — qual é o tema abordado nesta aula?`,
+      alternativas,
+      resposta_correta: 0,
+      explicacao: `O tema desta aula é: ${aula.titulo}${aula.paginas ? `. Leitura indicada: ${aula.paginas}.` : ""}`,
+      tipo: input.tipo,
+      fonte: "Revisão de aulas",
+    });
+  });
+
+  // se a disciplina não tinha aulas, gerar questões genéricas de revisão
+  if (questoes.length === 0) {
+    const temas = [
+      "os conceitos fundamentais",
+      "as definições principais",
+      "os exemplos práticos",
+      "a aplicação na vida real",
+    ];
+    for (let i = 0; i < Math.min(qtd, temas.length); i++) {
+      questoes.push({
+        id: `q-offline-${Date.now()}-${i}`,
+        disciplina_id: input.disciplinaId,
+        enunciado: `Para revisar o conteúdo da disciplina ${input.disciplinaNome}, qual é a melhor estratégia?`,
+        alternativas: [
+          "A) Revisar as anotações das aulas",
+          "B) Resolver exercícios práticos",
+          "C) Ler o caderno didático",
+          "D) Todas as anteriores",
+        ],
+        resposta_correta: 3,
+        explicacao:
+          "A melhor forma de estudar combina leitura, exercícios e revisão das anotações.",
+        tipo: input.tipo,
+        fonte: "Revisão geral",
+      });
+    }
+  }
+
+  return persistir(questoes.slice(0, qtd), new Array(Math.min(qtd, questoes.length)).fill(null));
 }
 
 function clampIndex(v: unknown, nAlt: number): number {

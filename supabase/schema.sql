@@ -144,6 +144,7 @@ create table if not exists public.publicacoes (
   autor_nome text not null,
   autor_polo text not null,
   autor_local_id text not null, -- gerado no navegador
+  etapa text default 'Geral', -- "Geral" | "AD1" | "AP1" | "AD2" | "AP2"
   tags text[] default '{}',
   criado_em timestamptz default now(),
   updated_at timestamptz default now()
@@ -151,6 +152,10 @@ create table if not exists public.publicacoes (
 
 create index if not exists publicacoes_disciplina_idx on public.publicacoes (disciplina_id);
 create index if not exists publicacoes_tipo_idx on public.publicacoes (tipo);
+create index if not exists publicacoes_etapa_idx on public.publicacoes (etapa);
+
+-- Migração: tabelas publicacoes já existentes ganham a coluna etapa
+alter table public.publicacoes add column if not exists etapa text default 'Geral';
 
 alter table public.publicacoes enable row level security;
 

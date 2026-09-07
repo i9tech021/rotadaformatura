@@ -7,7 +7,6 @@ import {
   Clock,
   Download,
   FileText,
-  Headphones,
   History,
   Info,
   Layout,
@@ -28,6 +27,7 @@ const disciplines = disciplinas;
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
 import { StudyAssistant } from "@/components/StudyAssistant";
 import { GradesCalculator } from "@/components/GradesCalculator";
+import { DisciplinaMateriais } from "@/components/DisciplinaMateriais";
 import { loadCheckpoints, saveCheckpoint, subscribeCheckpoints } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO } from "date-fns";
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/disciplines/$id")({
   }),
 });
 
-type TabType = "guia" | "cronograma" | "notas" | "podcasts" | "resumos" | "provas" | "simulados";
+type TabType = "guia" | "cronograma" | "notas" | "materiais" | "provas" | "simulados";
 
 function DisciplinePage() {
   const { id } = useParams({ from: "/disciplines/$id" });
@@ -96,29 +96,31 @@ function DisciplinePage() {
         `${e.tipo}: ${format(parseISO(e.dataInicio), "dd/MM", { locale: ptBR })}${e.horario ? ` às ${e.horario}` : ""}`,
     );
 
-  const contextoDisciplina = [
-    `Disciplina: ${discipline.nome} (${discipline.codigo})`,
-    discipline.guia?.objetivoGeral ? `Objetivo geral: ${discipline.guia.objetivoGeral}` : "",
-    discipline.guia?.metodoEstudo
-      ? `Método de estudo sugerido: ${discipline.guia.metodoEstudo}`
-      : "",
-    discipline.formulaNota?.aprovacao
-      ? `Critério de aprovação: ${discipline.formulaNota.aprovacao}`
-      : "",
-    "",
-    `Progresso do aluno: ${feitas}/${totalAulas} aulas concluídas (checkpoints).`,
-    "",
-    "Roteiro de aulas (cronograma oficial):",
-    ...discipline.aulas.map(
-      (a) =>
-        `Aula ${a.numero} — ${a.titulo}${a.paginas ? ` (${a.paginas})` : ""} [Semana ${a.semanaEstudo}]${concluidas[a.id] ? " ✓ concluída" : ""}`,
-    ),
-    "",
-    "Próximas avaliações/entregas desta disciplina:",
-    ...proximosEventosChat.map((e) => `- ${e}`),
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const contextoDisciplina = !discipline
+    ? ""
+    : [
+        `Disciplina: ${discipline.nome} (${discipline.codigo})`,
+        discipline.guia?.objetivoGeral ? `Objetivo geral: ${discipline.guia.objetivoGeral}` : "",
+        discipline.guia?.metodoEstudo
+          ? `Método de estudo sugerido: ${discipline.guia.metodoEstudo}`
+          : "",
+        discipline.formulaNota?.aprovacao
+          ? `Critério de aprovação: ${discipline.formulaNota.aprovacao}`
+          : "",
+        "",
+        `Progresso do aluno: ${feitas}/${totalAulas} aulas concluídas (checkpoints).`,
+        "",
+        "Roteiro de aulas (cronograma oficial):",
+        ...discipline.aulas.map(
+          (a) =>
+            `Aula ${a.numero} — ${a.titulo}${a.paginas ? ` (${a.paginas})` : ""} [Semana ${a.semanaEstudo}]${concluidas[a.id] ? " ✓ concluída" : ""}`,
+        ),
+        "",
+        "Próximas avaliações/entregas desta disciplina:",
+        ...proximosEventosChat.map((e) => `- ${e}`),
+      ]
+        .filter(Boolean)
+        .join("\n");
 
   if (!discipline) {
     return (
@@ -131,12 +133,11 @@ function DisciplinePage() {
     );
   }
 
-  const tabs: { id: TabType; label: string; icon: any }[] = [
+  const tabs: { id: TabType; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "guia", label: "Guia", icon: Info },
     { id: "cronograma", label: "Cronograma", icon: Layout },
     { id: "notas", label: "Notas", icon: Calculator },
-    { id: "podcasts", label: "Podcasts", icon: Headphones },
-    { id: "resumos", label: "Resumos", icon: FileText },
+    { id: "materiais", label: "Materiais", icon: FileText },
     { id: "provas", label: "Provas Antigas", icon: History },
     { id: "simulados", label: "Simulados", icon: Star },
   ];
@@ -167,7 +168,7 @@ function DisciplinePage() {
                     <MobileNavLink to="/calendar" icon={CalendarIcon} label="Calendário" />
                     <MobileNavLink to="/disciplines" icon={Layout} label="Disciplinas" />
                     <MobileNavLink to="/materials" icon={FileText} label="Materiais" />
-                    <MobileNavLink to="/community" icon={MessageSquare} label="Comunidade" />
+                    <MobileNavLink to="/publicacoes" icon={MessageSquare} label="Comunidade" />
                     <MobileNavLink to="/settings" icon={Settings} label="Configurações" />
                   </div>
                 </div>
@@ -375,22 +376,7 @@ function DisciplinePage() {
                 </div>
               )}
 
-              {activeTab === "podcasts" && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-black uppercase tracking-tight mb-6">
-                    Podcasts & Áudios
-                  </h3>
-                  <EmptyState icon={Headphones} message="Nenhum podcast disponível" />
-                </div>
-              )}
-
-              {activeTab === "resumos" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="col-span-full">
-                    <EmptyState icon={FileText} message="Sem resumos cadastrados" />
-                  </div>
-                </div>
-              )}
+              {activeTab === "materiais" && <DisciplinaMateriais disciplinaId={discipline.id} />}
 
               {activeTab === "provas" && (
                 <div className="space-y-4">
@@ -508,7 +494,7 @@ function DisciplinePage() {
   );
 }
 
-function EmptyState({ icon: Icon, message }: { icon: any; message: string }) {
+function EmptyState({ icon: Icon, message }: { icon: typeof LayoutDashboard; message: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-[#0A3D52]/20">
       <Icon className="w-12 h-12 mb-4" />
@@ -517,7 +503,7 @@ function EmptyState({ icon: Icon, message }: { icon: any; message: string }) {
   );
 }
 
-function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+function MobileNavLink({ to, icon: Icon, label }: { to: string; icon: typeof LayoutDashboard; label: string }) {
   return (
     <Link
       to={to}

@@ -3,6 +3,7 @@ import {
   BookOpen,
   Calendar as CalendarIcon,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock,
   GraduationCap,
@@ -468,127 +469,6 @@ function AcademicDashboard() {
           </div>
         </div>
 
-        {/* Missões do Dia */}
-        {tarefasHoje.length > 0 && (
-          <section className="mb-10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] flex items-center gap-2">
-                <ListChecks className="w-4 h-4" /> Missões do Dia
-              </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase text-[#0A3D52]/40">
-                  {missaoFeitas}/{missaoTotal}
-                </span>
-                <div className="w-16 h-1.5 bg-[#0A3D52]/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#D4941E] rounded-full transition-all duration-500"
-                    style={{ width: `${missaoPct}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {tarefasHoje.map((t) => {
-                const concluida = !!missaoConcluida[t.id];
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => toggleMissao(t.id)}
-                    className={cn(
-                      "w-full text-left bg-white p-4 rounded-2xl border shadow-sm flex items-center gap-4 transition-all hover:shadow-md cursor-pointer",
-                      concluida
-                        ? "border-[#27AE60]/30 bg-[#27AE60]/5"
-                        : "border-[#0A3D52]/10 hover:border-[#D4941E]/30",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white transition-all",
-                        concluida && "bg-[#27AE60]",
-                      )}
-                      style={!concluida ? { background: t.disciplinaCor } : undefined}
-                    >
-                      {concluida ? (
-                        <CheckCircle2 className="w-5 h-5" />
-                      ) : t.tipo === "podcast" ? (
-                        <Headphones className="w-4 h-4" />
-                      ) : t.tipo === "video" ? (
-                        <Play className="w-4 h-4" />
-                      ) : t.tipo === "simulado" ? (
-                        <Target className="w-4 h-4" />
-                      ) : t.tipo === "ad" || t.tipo === "ap" ? (
-                        <FileText className="w-4 h-4" />
-                      ) : (
-                        <BookOpen className="w-4 h-4" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span
-                          className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
-                          style={{ color: t.disciplinaCor, background: `${t.disciplinaCor}10` }}
-                        >
-                          {t.disciplinaCodigo}
-                        </span>
-                        <span className="text-[9px] font-bold text-[#0A3D52]/30 uppercase">
-                          {t.duracaoMinutos}min
-                        </span>
-                      </div>
-                      <h4
-                        className={cn(
-                          "font-bold text-sm leading-tight truncate",
-                          concluida && "line-through text-[#0A3D52]/40",
-                        )}
-                      >
-                        {t.titulo}
-                      </h4>
-                      <p className="text-[10px] text-[#0A3D52]/40 font-medium truncate mt-0.5">
-                        {t.descricao}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* URGÊNCIA: HOJE / URGENTE */}
-        <UrgenciaSection
-          titulo="Hoje / Urgente"
-          icone={<Target className="w-4 h-4" />}
-          eventos={secoes.hojeUrgente}
-          agora={agora}
-          vazio="Nada vencendo ou vencido no momento."
-        />
-
-        {/* URGÊNCIA: PRÓXIMO (7 dias) */}
-        <UrgenciaSection
-          titulo="Próximo (7 dias)"
-          icone={<Clock className="w-4 h-4" />}
-          eventos={secoes.proximo}
-          agora={agora}
-          vazio="Nenhuma entrega ou prova nos próximos 7 dias."
-        />
-
-        {/* URGÊNCIA: DEPOIS (média prazo) */}
-        <UrgenciaSection
-          titulo="Depois (média prazo)"
-          icone={<CalendarIcon className="w-4 h-4" />}
-          eventos={secoes.depois}
-          agora={agora}
-          vazio="Nada agendado além de 7 dias."
-        />
-
-        {/* URGÊNCIA: DEPOIS (média prazo) */}
-        <UrgenciaSection
-          titulo="Depois (média prazo)"
-          icone={<CalendarIcon className="w-4 h-4" />}
-          eventos={secoes.depois}
-          agora={agora}
-          vazio="Nada agendado além de 7 dias."
-        />
-
         {/* PRÓXIMA ETAPA - AD2 iniciando */}
         <section className="mb-10">
           <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
@@ -687,6 +567,117 @@ function AcademicDashboard() {
             </div>
           </div>
         </section>
+
+        {/* Missões do Dia (colapsável — secundário) */}
+        {tarefasHoje.length > 0 && (
+          <SecaoColapsavel
+            titulo="Missões do Dia"
+            icone={<ListChecks className="w-4 h-4" />}
+            resumo={`${missaoFeitas}/${missaoTotal} • ${missaoPct}%`}
+          >
+            <div className="space-y-2">
+              {tarefasHoje.map((t) => {
+                const concluida = !!missaoConcluida[t.id];
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => toggleMissao(t.id)}
+                    className={cn(
+                      "w-full text-left bg-white p-4 rounded-2xl border shadow-sm flex items-center gap-4 transition-all hover:shadow-md cursor-pointer",
+                      concluida
+                        ? "border-[#27AE60]/30 bg-[#27AE60]/5"
+                        : "border-[#0A3D52]/10 hover:border-[#D4941E]/30",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white transition-all",
+                        concluida && "bg-[#27AE60]",
+                      )}
+                      style={!concluida ? { background: t.disciplinaCor } : undefined}
+                    >
+                      {concluida ? (
+                        <CheckCircle2 className="w-5 h-5" />
+                      ) : t.tipo === "podcast" ? (
+                        <Headphones className="w-4 h-4" />
+                      ) : t.tipo === "video" ? (
+                        <Play className="w-4 h-4" />
+                      ) : t.tipo === "simulado" ? (
+                        <Target className="w-4 h-4" />
+                      ) : t.tipo === "ad" || t.tipo === "ap" ? (
+                        <FileText className="w-4 h-4" />
+                      ) : (
+                        <BookOpen className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span
+                          className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
+                          style={{ color: t.disciplinaCor, background: `${t.disciplinaCor}10` }}
+                        >
+                          {t.disciplinaCodigo}
+                        </span>
+                        <span className="text-[9px] font-bold text-[#0A3D52]/30 uppercase">
+                          {t.duracaoMinutos}min
+                        </span>
+                      </div>
+                      <h4
+                        className={cn(
+                          "font-bold text-sm leading-tight truncate",
+                          concluida && "line-through text-[#0A3D52]/40",
+                        )}
+                      >
+                        {t.titulo}
+                      </h4>
+                      <p className="text-[10px] text-[#0A3D52]/40 font-medium truncate mt-0.5">
+                        {t.descricao}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </SecaoColapsavel>
+        )}
+
+        {/* URGÊNCIA: HOJE / URGENTE */}
+        <UrgenciaSection
+          titulo="Hoje / Urgente"
+          icone={<Target className="w-4 h-4" />}
+          eventos={secoes.hojeUrgente}
+          agora={agora}
+          vazio="Nada vencendo ou vencido no momento."
+        />
+
+        {/* URGÊNCIA: PRÓXIMO (7 dias) */}
+        <UrgenciaSection
+          titulo="Próximo (7 dias)"
+          icone={<Clock className="w-4 h-4" />}
+          eventos={secoes.proximo}
+          agora={agora}
+          vazio="Nenhuma entrega ou prova nos próximos 7 dias."
+        />
+
+        {/* URGÊNCIA: DEPOIS (média prazo, colapsável) */}
+        <SecaoColapsavel
+          titulo={`Depois (média prazo) • ${secoes.depois.length}`}
+          icone={<CalendarIcon className="w-4 h-4" />}
+        >
+          {secoes.depois.length > 0 ? (
+            <div className="space-y-3">
+              {secoes.depois.map((e) => (
+                <UrgenciaCard key={e.id} e={e} agora={agora} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-[#F5F7FA] p-6 rounded-3xl border border-dashed border-[#0A3D52]/10 text-center">
+              <p className="text-sm font-bold text-[#0A3D52]/40 uppercase tracking-widest">
+                Nada agendado além de 7 dias.
+              </p>
+            </div>
+          )}
+        </SecaoColapsavel>
 
         {/* Disciplinas Grid */}
         <section>
@@ -987,6 +978,49 @@ function UrgenciaSection({
           <p className="text-sm font-bold text-[#0A3D52]/40 uppercase tracking-widest">{vazio}</p>
         </div>
       )}
+    </section>
+  );
+}
+
+// ============================================================
+// Seção colapsável — esconde conteúdo secundário para enxugar o dashboard
+// ============================================================
+function SecaoColapsavel({
+  titulo,
+  icone,
+  resumo,
+  padraoAberto = false,
+  children,
+}: {
+  titulo: string;
+  icone: ReactNode;
+  resumo?: string;
+  padraoAberto?: boolean;
+  children: ReactNode;
+}) {
+  const [aberto, setAberto] = useState(padraoAberto);
+  return (
+    <section className="mb-10">
+      <button
+        onClick={() => setAberto((v) => !v)}
+        className="w-full flex items-center justify-between mb-4 cursor-pointer group"
+      >
+        <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] flex items-center gap-2">
+          {icone} {titulo}
+        </h3>
+        <span className="flex items-center gap-2">
+          {resumo && (
+            <span className="text-[10px] font-black uppercase text-[#0A3D52]/40">{resumo}</span>
+          )}
+          <ChevronDown
+            className={cn(
+              "w-4 h-4 text-[#0A3D52]/40 transition-transform group-hover:text-[#D4941E]",
+              aberto && "rotate-180",
+            )}
+          />
+        </span>
+      </button>
+      {aberto && children}
     </section>
   );
 }

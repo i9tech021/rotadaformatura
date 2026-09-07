@@ -6,6 +6,10 @@ import { getSupabase, isSupabaseConfigured } from "./supabase";
 
 export type TipoPublicacao = "podcast" | "pdf" | "nota";
 
+export type EtapaPublicacao = "Geral" | "AD1" | "AP1" | "AD2" | "AP2";
+
+export const ETAPAS: EtapaPublicacao[] = ["Geral", "AD1", "AP1", "AD2", "AP2"];
+
 export interface Publicacao {
   id: string;
   tipo: TipoPublicacao;
@@ -17,6 +21,7 @@ export interface Publicacao {
   autor_nome: string;
   autor_polo: string;
   autor_local_id: string;
+  etapa: EtapaPublicacao;
   tags: string[];
   criado_em: string;
 }
@@ -94,6 +99,7 @@ function rowToPub(r: {
   autor_nome: string;
   autor_polo: string;
   autor_local_id: string;
+  etapa?: string | null;
   tags?: string[] | null;
   criado_em: string;
 }): Publicacao {
@@ -108,6 +114,9 @@ function rowToPub(r: {
     autor_nome: r.autor_nome || "Anônimo",
     autor_polo: r.autor_polo || "",
     autor_local_id: r.autor_local_id || "",
+    etapa: ETAPAS.includes((r.etapa as EtapaPublicacao) || "Geral")
+      ? (r.etapa as EtapaPublicacao) || "Geral"
+      : "Geral",
     tags: Array.isArray(r.tags) ? r.tags : [],
     criado_em: r.criado_em,
   };
@@ -153,6 +162,7 @@ export interface PublicarBase {
   titulo: string;
   descricao: string;
   ident: Identidade;
+  etapa?: EtapaPublicacao;
 }
 
 /** Publica um podcast (áudio). */
@@ -177,6 +187,7 @@ export async function publicarPodcast(
     autor_nome: base.ident.nome,
     autor_polo: base.ident.polo,
     autor_local_id: base.ident.autorLocalId,
+    etapa: base.etapa ?? "Geral",
     tags: ["podcast"],
     criado_em: new Date().toISOString(),
   };
@@ -214,6 +225,7 @@ export async function publicarPdf(
     autor_nome: base.ident.nome,
     autor_polo: base.ident.polo,
     autor_local_id: base.ident.autorLocalId,
+    etapa: base.etapa ?? "Geral",
     tags: ["pdf"],
     criado_em: new Date().toISOString(),
   };
@@ -248,6 +260,7 @@ export async function publicarNota(
     autor_nome: base.ident.nome,
     autor_polo: base.ident.polo,
     autor_local_id: base.ident.autorLocalId,
+    etapa: base.etapa ?? "Geral",
     tags: ["nota"],
     criado_em: new Date().toISOString(),
   };

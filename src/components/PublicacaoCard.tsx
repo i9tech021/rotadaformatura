@@ -56,6 +56,11 @@ export function PublicacaoCard({
           >
             {publicacao.tipo === "podcast" ? "Podcast" : publicacao.tipo === "pdf" ? "PDF" : "Nota"}
           </span>
+          {publicacao.etapa && publicacao.etapa !== "Geral" && (
+            <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#D4941E]/15 text-[#D4941E]">
+              {publicacao.etapa}
+            </span>
+          )}
         </div>
         <h4 className="font-bold text-sm leading-tight mt-1">{assunto}</h4>
         {publicacao.descricao && publicacao.tipo !== "podcast" && (

@@ -79,7 +79,11 @@ function SimuladosPage() {
       if (r.bloqueado) recarregar();
       return;
     }
-    toast.success("Simulado gerado! Boa sorte.");
+    if (r.modo === "offline") {
+      toast.info("Simulado gerado do banco de revisão (IA indisponível agora).");
+    } else {
+      toast.success("Simulado gerado! Boa sorte.");
+    }
     setSimuladoAtivo(r.simulado);
     setRevisao(null);
     recarregar();

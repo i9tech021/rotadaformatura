@@ -20,6 +20,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SimuladosRouteImport } from './routes/simulados'
 import { Route as CommunityIndexRouteImport } from './routes/community/index'
 import { Route as CommunityChatRouteImport } from './routes/community/chat'
+import { Route as DisciplinesIndexRouteImport } from './routes/disciplines.index'
 import { Route as DisciplinesIdRouteImport } from './routes/disciplines.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -77,6 +78,11 @@ const CommunityChatRoute = CommunityChatRouteImport.update({
   path: '/community/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DisciplinesIndexRoute = DisciplinesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DisciplinesRoute,
+} as any)
 const DisciplinesIdRoute = DisciplinesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -96,12 +102,12 @@ export interface FileRoutesByFullPath {
   '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
   '/community/': typeof CommunityIndexRoute
+  '/disciplines/': typeof DisciplinesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
-  '/disciplines': typeof DisciplinesRouteWithChildren
   '/materials': typeof MaterialsRoute
   '/podcasts': typeof PodcastsRoute
   '/publicacoes': typeof PublicacoesRoute
@@ -110,6 +116,7 @@ export interface FileRoutesByTo {
   '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
   '/community': typeof CommunityIndexRoute
+  '/disciplines': typeof DisciplinesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +132,7 @@ export interface FileRoutesById {
   '/community/chat': typeof CommunityChatRoute
   '/disciplines/$id': typeof DisciplinesIdRoute
   '/community/': typeof CommunityIndexRoute
+  '/disciplines/': typeof DisciplinesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,12 +149,12 @@ export interface FileRouteTypes {
     | '/community/chat'
     | '/disciplines/$id'
     | '/community/'
+    | '/disciplines/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/calculadora'
     | '/calendar'
-    | '/disciplines'
     | '/materials'
     | '/podcasts'
     | '/publicacoes'
@@ -155,6 +163,7 @@ export interface FileRouteTypes {
     | '/community/chat'
     | '/disciplines/$id'
     | '/community'
+    | '/disciplines'
   id:
     | '__root__'
     | '/'
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/community/chat'
     | '/disciplines/$id'
     | '/community/'
+    | '/disciplines/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -264,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommunityChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/disciplines/': {
+      id: '/disciplines/'
+      path: '/'
+      fullPath: '/disciplines/'
+      preLoaderRoute: typeof DisciplinesIndexRouteImport
+      parentRoute: typeof DisciplinesRoute
+    }
     '/disciplines/$id': {
       id: '/disciplines/$id'
       path: '/$id'
@@ -276,10 +293,12 @@ declare module '@tanstack/react-router' {
 
 interface DisciplinesRouteChildren {
   DisciplinesIdRoute: typeof DisciplinesIdRoute
+  DisciplinesIndexRoute: typeof DisciplinesIndexRoute
 }
 
 const DisciplinesRouteChildren: DisciplinesRouteChildren = {
   DisciplinesIdRoute: DisciplinesIdRoute,
+  DisciplinesIndexRoute: DisciplinesIndexRoute,
 }
 
 const DisciplinesRouteWithChildren = DisciplinesRoute._addFileChildren(
