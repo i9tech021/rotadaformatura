@@ -1,18 +1,17 @@
-<!-- LOVABLE:BEGIN -->
+<!-- DEPLOY:BEGIN -->
 > [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
+> Deploy é feito na [Vercel](https://vercel.com) a partir do branch `main`
+> deste repo. Evite reescrever histórico publicado — sem force push, rebase,
+> amend ou squash de commits já enviados.
 >
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
+> Todo push na `main` reimplanta sozinho; mantenha o branch em estado
+> funcional (build ok).
+<!-- DEPLOY:END -->
 
 # Rota da Formatura — Guia para Assistentes (AGENTS.md)
 
 App de planejamento acadêmico para alunos do **CEDERJ / Administração / 2026-2**.
-Gerado no Lovable e conectado a este repo. Leia isto antes de mexer no código.
+Deploy na Vercel a partir deste repo. Leia isto antes de mexer no código.
 
 ## Stack (resumo)
 - **TanStack Start** (full-stack: roteamento file-based + SSR via Nitro) + React 19 + TS.
@@ -24,7 +23,7 @@ Gerado no Lovable e conectado a este repo. Leia isto antes de mexer no código.
   estão set; senão cai no dado estático (fallback). `seed.ts` semeia disciplinas/eventos/checkpoints.
 - **IA (Tutor):** `src/components/StudyAssistant.tsx` + `src/lib/academic.functions.ts`
   (server function `askAcademicAI`). Usa a **OpenRouter** (OpenAI-compatible) — `VITE_AI_BASE_URL`
-  aponta para `https://openrouter.ai/api/v1`, funciona no deploy do Lovable. Modelo em
+  aponta para `https://openrouter.ai/api/v1`, funciona no deploy da Vercel (100% cliente). Modelo em
   `VITE_AI_MODEL` (free padrão: `nvidia/nemotron-3.5-lightning:free`). Chave `VITE_AI_API_KEY`
   é lida SÓ dentro da server function (nunca referencie em componentes de tela).
   Free models podem dar 429 (limite do pool) — o app mostra "tente novamente em instantes".
@@ -64,10 +63,9 @@ Se o semestre mudar, edite `events.ts`.
 - Podcasts/Resumos: empty states. Simulados: botão placeholder. Materiais: upload/exclusão simulados.
 - Missões do dia não persistem conclusão entre sessões.
 
-## Regras de Git / Lovable (OBRIGATÓRIO)
-- O repo está conectado ao Lovable; `main` é a fonte de verdade (sync bidirecional).
+## Regras de Git / Deploy (OBRIGATÓRIO)
+- `main` é a fonte de verdade; todo push reimplanta na Vercel.
 - ❌ Nunca `push --force`, `rebase`, `amend` ou `squash` de commits já enviados.
-- ⚠️ Não edite o mesmo arquivo no Lovable e localmente ao mesmo tempo (conflito).
 - ✅ Fluxo: `git pull` → editar → `git add/commit/push`. Mantenha `main` buildando.
 
 ## Ao implementar melhorias

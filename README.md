@@ -4,9 +4,8 @@ Planner acadêmico para alunos do **CEDERJ** (curso de Administração, semestre
 Organiza disciplinas, cronograma de avaliações, missões diárias (podcast/vídeo/leitura),
 checklists de aulas, calendário e uma comunidade com salas de chat por disciplina.
 
-Projeto gerado no [Lovable](https://lovable.dev) e conectado a este repositório GitHub.
-O repositório é a fonte de verdade: tudo que entra no branch `main` (pelo Lovable ou por
-edição local) sincroniza nos dois sentidos. Ver seção **Regras de sincronização**.
+O repositório é a fonte de verdade: todo push no branch `main` reimplanta
+sozinho na Vercel. Ver seção **Regras de Git**.
 
 ---
 
@@ -26,7 +25,7 @@ edição local) sincroniza nos dois sentidos. Ver seção **Regras de sincroniza
 | Query | `@tanstack/react-query` |
 | Ícones | `lucide-react` |
 | Gerenciador | **bun** (usado no deploy/local); `npm` também funciona |
-| Config Lovable | `@lovable.dev/vite-tanstack-config` |
+| Config build | `@lovable.dev/vite-tanstack-config` (preset Vite + TanStack Start + Nitro — não remover) |
 
 > Observação: há um aviso de runtime sobre o plugin `vite-tsconfig-paths` (já resolvido
 > nativamente no Vite 8 via `resolve.tsconfigPaths`). Não é bloqueante.
@@ -59,10 +58,10 @@ src/
   routes/            # rotas file-based (veja tabela abaixo)
     __root.tsx       # layout raiz, providers (React Query), 404/erro
     index.tsx        # Dashboard
-    disciplines.tsx          # Biblioteca de disciplinas (lista)
+    disciplines.tsx          # Disciplinas (lista)
     disciplines.$id.tsx      # Detalhe de uma disciplina (tabs)
     calendar.tsx     # Calendário acadêmico mensal
-    materials.tsx    # Biblioteca de materiais (upload/exclusão simulados)
+    materials.tsx    # Materiais (upload/exclusão simulados)
     community/index.tsx      # Comunidade (salas)
     community/chat.tsx       # Chat da sala (mock, só sessão)
     settings.tsx     # Perfil + notificações (persiste via localStorage)
@@ -70,7 +69,7 @@ src/
     ui/              # biblioteca de componentes (shadcn/Radix)
     academic/AcademicChecklist.tsx   # checklist de aulas por disciplina
   data/              # camada de dados mockada (veja abaixo)
-  lib/               # utils, funções server, error reporting Lovable
+  lib/               # utils, funções server, error reporting
   hooks/             # useLocalStorage, use-mobile
   styles.css         # tema (tokens oklch) + Tailwind v4
   router.tsx, start.ts, server.ts
@@ -83,7 +82,7 @@ src/
 | Rota | Arquivo | Descrição |
 | --- | --- | --- |
 | `/` | `index.tsx` | Dashboard: saudação, resumo de disciplinas, próxima avaliação (countdown), missões do dia, grade de disciplinas |
-| `/disciplines` | `disciplines.tsx` | Biblioteca: busca/filtro por período, cards de disciplina |
+| `/disciplines` | `disciplines.tsx` | Disciplinas: busca/filtro por período, cards de disciplina |
 | `/disciplines/$id` | `disciplines.$id.tsx` | Detalhe: header com progresso, alerta de próxima prova, tabs (Guia, Cronograma, Podcasts, Resumos, Provas Antigas, Simulados), sidebar com "chance de aprovação", datas importantes e critérios de nota |
 | `/calendar` | `calendar.tsx` | Calendário mensal navegável com eventos de `events.ts` |
 | `/materials` | `materials.tsx` | Lista de materiais com busca/filtro (upload e exclusão são simulados) |
@@ -169,27 +168,25 @@ Estas datas vêm de `events.ts` e alimentam o countdown do dashboard e os alerta
 
 ---
 
-## Regras de sincronização (Lovable ⇄ Git)
+## Regras de Git
 
-Este repo está **conectado ao Lovable**. Regras obrigatórias para não quebrar o histórico:
-
-- ✅ Edição no Lovable → commit automático no `main` → `git pull` traz pra cá.
-- ✅ Edição local → `git add` + `commit` + `push` → aparece no Lovable.
+- ✅ Edição local → `git add` + `commit` + `push` na `main` → reimplanta na Vercel.
 - ❌ **Nunca** `git push --force`, `rebase`, `amend` ou `squash` de commits já enviados.
-- ⚠️ Não edite o mesmo arquivo nos dois lados ao mesmo tempo (risco de conflito).
-- ⚠️ Mantenha o `main` em estado funcional (build ok) — o Lovable reflete o que está no branch.
+- ⚠️ Mantenha o `main` em estado funcional (build ok).
 
 Fluxo seguro recomendado: **`git pull` → editar → `git add / commit / push`**.
 
 ---
 
-## Deploy
+## Deploy (Vercel)
 
-- **Pelo Lovable**: publica em `*.lovable.app` e aceita domínio próprio (plano pago).
-  Como o repo é a fonte de verdade, qualquer push (Lovable ou local) reimplanta sozinho.
-- **Alternativo (Netlify/Vercel)**: o TanStack Start roda com Nitro; basta apontar pro
-  mesmo repo/branch `main`. Dois deploys acompanhando `main` ficam consistentes.
+- Conecte o repo na Vercel (Add New Project → importar `main`).
+- Defina as Environment Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+  `VITE_AI_API_KEY`, `VITE_AI_BASE_URL`, `VITE_AI_MODEL`.
+- Build: `bun run build` (ou `npm run build`). A Vercel detecta o TanStack Start
+  sozinha — sem `vercel.json`, sem mudar `vite.config.ts`.
+- Todo push na `main` reimplanta automaticamente.
 
 ---
 
-*Curso: Administração · Instituição: UFRRJ/CEDERJ · Semestre: 2026-2 · Gerado com Lovable.*
+*Curso: Administração · Instituição: UFRRJ/CEDERJ · Semestre: 2026-2.*

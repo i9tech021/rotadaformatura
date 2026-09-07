@@ -1,7 +1,7 @@
 # Rota da Formatura — Deploy & Configuração
 
 App de planejamento acadêmico CEDERJ/Administração 2026-2 (TanStack Start + React + Supabase + IA).
-Este guia conecta o projeto ao **Lovable** com IA funcionando e dados em **tempo real** no Supabase.
+Este guia prepara o deploy na **Vercel** com IA funcionando e dados em **tempo real** no Supabase.
 
 ## 1. Supabase (banco + realtime)
 
@@ -20,10 +20,10 @@ Este guia conecta o projeto ao **Lovable** com IA funcionando e dados em **tempo
    (outros testados: `google/gemma-4-26b-a4b-it:free`, `nvidia/nemotron-3-ultra-550b-a55b:free`).
    Modelos free podem dar `429` (limite do pool) — o app avisa "tente novamente em instantes".
 
-## 3. Variáveis de ambiente (Lovable)
+## 3. Variáveis de ambiente (Vercel)
 
-No Lovable: **Project → Settings → Environment Variables** do projeto conectado a este repo.
-Defina (prefixo `VITE_` é obrigatório para chegar ao cliente):
+Na Vercel: **Project → Settings → Environment Variables**. Defina
+(prefixo `VITE_` é obrigatório para chegar ao cliente):
 
 | Var | Valor |
 |-----|-------|
@@ -46,14 +46,16 @@ Já está ligado no `schema.sql` (`supabase_realtime` + `replica identity full`)
 urgência e o detalhe de disciplina re-assinam `eventos`, `checkpoints` e `disciplinas` e
 atualizam sozinhos a cada insert/update/delete no banco.
 
-## 6. Deploy no link
+## 6. Deploy na Vercel
 
-O Lovable faz o build a partir deste repo. Para o app aparecer no link público pode ser
-necessário **upgrade do plano** (política da plataforma). A IA roda 100% no cliente, então
-funciona mesmo em deploy estático — não depende de server functions.
+1. Vercel → Add New Project → importe este repo (branch `main`).
+2. Framework Preset: a Vercel detecta o TanStack Start sozinha. Build Command:
+   `bun run build` (ou `npm run build`). Sem `vercel.json`, sem mexer em `vite.config.ts`.
+3. Cadastre as variáveis da seção 3 e faça o deploy.
+4. Todo push na `main` reimplanta automaticamente.
 
-> **Marca d'água "Made with Lovable":** é da plataforma (planos free). Não existe no código;
-> some com upgrade de plano ou toggle nas configurações do Lovable.
+> A IA roda 100% no cliente, então funciona mesmo em deploy estático — não depende
+> de server functions. Mas `VITE_*` é embutida no build: mudou variável, precisa rebuildar.
 
 ## Scripts locais
 
