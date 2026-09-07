@@ -60,6 +60,12 @@ import { getEventosAcao, prazoDe, diasPara, type EventoAcademico } from "../data
 import { getEventosAcao as fetchEventosAcao, subscribeEventos } from "@/lib/eventsService";
 import { getDisciplinas, subscribeDisciplinas } from "@/lib/disciplinasService";
 import { countConcluidas, subscribeCheckpointsAll } from "@/lib/checkpoints";
+import {
+  getRanking,
+  listarPolosRanking,
+  publicarNotaRanking,
+  type RankingAutor,
+} from "@/lib/ranking";
 import { seedDatabase, isSupabaseConfigured } from "@/lib/seed";
 import {
   getStatusEvento,
@@ -114,6 +120,7 @@ function AcademicDashboard() {
   // Progresso REAL por disciplina = aulas concluídas / total (não hardcoded).
   // Recalcula ao vivo quando qualquer checkpoint muda (realtime).
   const [progressoMap, setProgressoMap] = useState<Record<string, number>>({});
+  const [rankingRefresh, setRankingRefresh] = useState(0);
   const recalcProgresso = useCallback(async (lista: typeof DISCIPLINAS_STATICAS) => {
     const map: Record<string, number> = {};
     await Promise.all(
@@ -731,11 +738,14 @@ function AcademicDashboard() {
           </div>
         </section>
 
-        {/* Ranking dos Alunos */}
-        <RankingAlunos />
+        {/* Ranking de Notas */}
+        <RankingAlunos disciplinas={dados} refreshKey={rankingRefresh} />
 
         {/* Publicar Nota */}
-        <PublicarNotaSecao disciplinas={dados} />
+        <PublicarNotaSecao
+          disciplinas={dados}
+          onPublicado={() => setRankingRefresh((k) => k + 1)}
+        />
       </main>
 
       {/* Floating Action Button (IA Chat) */}
@@ -942,76 +952,54 @@ function SecaoColapsavel({
 }
 
 // ============================================================
-// RANKING DOS ALUNOS
+// RANKING DE NOTAS (simulados corrigidos + notas publicadas)
 // ============================================================
-function RankingAlunos() {
-  const [rankings, setRankings] = useState<
-    {
-      autor_local_id: string;
-      autor_nome: string;
-      autor_polo: string;
-      melhor_nota: number;
-      media: number;
-      total: number;
-    }[]
-  >([]);
+function RankingAlunos({
+  disciplinas,
+  refreshKey,
+}: {
+  disciplinas: { id: string; nome: string; codigo?: string }[];
+  refreshKey: number;
+}) {
+  const [rankings, setRankings] = useState<RankingAutor[]>([]);
   const [filtro, setFiltro] = useState<"global" | "disciplina" | "polo">("global");
+  const [disciplinaId, setDisciplinaId] = useState("");
+  const [polo, setPolo] = useState("");
+  const [polos, setPolos] = useState<string[]>([]);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    async function carregar() {
-      try {
-        const res = await fetch(
-          "https://pboacygsibfjivrdejcp.supabase.co/rest/v1/simulados_realizados?select=autor_local_id,autor_nome,autor_polo,nota,disciplina_id&nota=not.is.null",
-          {
-            headers: {
-              apikey: "sb_publishable_7r3Rp7pgda5Jxdc7rlYWAw_CLjbrpG0",
-              Authorization: "Bearer sb_publishable_7r3Rp7pgda5Jxdc7rlYWAw_CLjbrpG0",
-            },
-          },
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        // Agrupa por autor
-        const porAutor = new Map<string, { nome: string; polo: string; notas: number[] }>();
-        for (const r of data) {
-          const key = r.autor_local_id;
-          if (!porAutor.has(key)) {
-            porAutor.set(key, {
-              nome: r.autor_nome || "Anônimo",
-              polo: r.autor_polo || "",
-              notas: [],
-            });
-          }
-          porAutor.get(key)!.notas.push(Number(r.nota));
-        }
-        const ranking = Array.from(porAutor.entries())
-          .map(([id, { nome, polo, notas }]) => ({
-            autor_local_id: id,
-            autor_nome: nome,
-            autor_polo: polo,
-            melhor_nota: Math.max(...notas),
-            media: notas.reduce((a, b) => a + b, 0) / notas.length,
-            total: notas.length,
-          }))
-          .sort((a, b) => b.melhor_nota - a.melhor_nota)
-          .slice(0, 10);
-        setRankings(ranking);
-      } catch {
-        // silencioso
-      }
-    }
-    carregar();
-  }, []);
+    listarPolosRanking()
+      .then(setPolos)
+      .catch(() => {});
+  }, [refreshKey]);
 
-  if (rankings.length === 0) return null;
+  useEffect(() => {
+    let vivo = true;
+    setCarregando(true);
+    getRanking({
+      disciplinaId: filtro === "disciplina" && disciplinaId ? disciplinaId : undefined,
+      polo: filtro === "polo" && polo ? polo : undefined,
+    })
+      .then((r) => {
+        if (vivo) setRankings(r);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (vivo) setCarregando(false);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [filtro, disciplinaId, polo, refreshKey]);
 
   return (
     <section className="mb-10">
       <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-        <Trophy className="w-4 h-4 text-[#D4941E]" /> Ranking dos Alunos
+        <Trophy className="w-4 h-4 text-[#D4941E]" /> Ranking de Notas
       </h3>
       <div className="bg-white rounded-2xl border border-[#0A3D52]/10 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-[#0A3D52]/5 flex gap-2">
+        <div className="p-4 border-b border-[#0A3D52]/5 flex gap-2 flex-wrap">
           {(["global", "disciplina", "polo"] as const).map((f) => (
             <button
               key={f}
@@ -1026,35 +1014,73 @@ function RankingAlunos() {
               {f === "global" ? "Global" : f === "disciplina" ? "Por Disciplina" : "Por Polo"}
             </button>
           ))}
+          {filtro === "disciplina" && (
+            <select
+              value={disciplinaId}
+              onChange={(e) => setDisciplinaId(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-[#F5F7FA] text-[#0A3D52] outline-none cursor-pointer"
+            >
+              <option value="">Todas</option>
+              {disciplinas.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.codigo ?? d.nome}
+                </option>
+              ))}
+            </select>
+          )}
+          {filtro === "polo" && (
+            <select
+              value={polo}
+              onChange={(e) => setPolo(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-[#F5F7FA] text-[#0A3D52] outline-none cursor-pointer"
+            >
+              <option value="">Todos</option>
+              {polos.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-        <div className="divide-y divide-[#0A3D52]/5">
-          {rankings.map((r, i) => (
-            <div key={r.autor_local_id} className="flex items-center gap-3 px-4 py-3">
-              <span
-                className={cn(
-                  "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0",
-                  i === 0
-                    ? "bg-[#D4941E]/15 text-[#D4941E]"
-                    : i === 1
-                      ? "bg-[#0A3D52]/10 text-[#0A3D52]"
-                      : "bg-[#F5F7FA] text-[#0A3D52]/40",
-                )}
-              >
-                {i + 1}º
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-sm truncate">{r.autor_nome}</p>
-                <p className="text-[10px] text-[#0A3D52]/40 font-medium">{r.autor_polo}</p>
+        {carregando ? (
+          <p className="px-4 py-6 text-center text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/30">
+            Carregando ranking...
+          </p>
+        ) : rankings.length === 0 ? (
+          <p className="px-4 py-6 text-center text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/30">
+            Nenhuma nota publicada ainda — seja o primeiro!
+          </p>
+        ) : (
+          <div className="divide-y divide-[#0A3D52]/5">
+            {rankings.map((r, i) => (
+              <div key={r.autor_local_id} className="flex items-center gap-3 px-4 py-3">
+                <span
+                  className={cn(
+                    "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0",
+                    i === 0
+                      ? "bg-[#D4941E]/15 text-[#D4941E]"
+                      : i === 1
+                        ? "bg-[#0A3D52]/10 text-[#0A3D52]"
+                        : "bg-[#F5F7FA] text-[#0A3D52]/40",
+                  )}
+                >
+                  {i + 1}º
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-sm truncate">{r.autor_nome}</p>
+                  <p className="text-[10px] text-[#0A3D52]/40 font-medium">{r.autor_polo}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-black text-sm font-mono">{r.melhor_nota.toFixed(1)}</p>
+                  <p className="text-[10px] text-[#0A3D52]/40">
+                    média {r.media.toFixed(1)} • {r.total} nota{r.total > 1 ? "s" : ""}
+                  </p>
+                </div>
               </div>
-              <div className="text-right shrink-0">
-                <p className="font-black text-sm font-mono">{r.melhor_nota.toFixed(1)}</p>
-                <p className="text-[10px] text-[#0A3D52]/40">
-                  {r.total} simulado{r.total > 1 ? "s" : ""}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -1065,8 +1091,10 @@ function RankingAlunos() {
 // ============================================================
 function PublicarNotaSecao({
   disciplinas,
+  onPublicado,
 }: {
   disciplinas: { id: string; nome: string; codigo?: string }[];
+  onPublicado: () => void;
 }) {
   const [aberto, setAberto] = useState(false);
   const [disciplinaId, setDisciplinaId] = useState(disciplinas[0]?.id ?? "");
@@ -1080,36 +1108,14 @@ function PublicarNotaSecao({
 
     setEnviando(true);
     try {
-      // Pega identidade do localStorage
-      const identRaw = localStorage.getItem("rdf:identidade");
-      const ident = identRaw ? JSON.parse(identRaw) : null;
-
-      const id = `nota-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      const res = await fetch("https://pboacygsibfjivrdejcp.supabase.co/rest/v1/notas", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: "sb_publishable_7r3Rp7pgda5Jxdc7rlYWAw_CLjbrpG0",
-          Authorization: "Bearer sb_publishable_7r3Rp7pgda5Jxdc7rlYWAw_CLjbrpG0",
-        },
-        body: JSON.stringify({
-          id,
-          student_id: ident?.autor_local_id ?? "unknown",
-          disciplina_id: disciplinaId,
-          avaliacao_tipo: tipo,
-          nota: notaNum,
-          autor_local_id: ident?.autor_local_id ?? "unknown",
-          autor_nome: ident?.nome ?? "Anônimo",
-          autor_polo: ident?.polo ?? "",
-        }),
-      });
-
-      if (res.ok) {
+      const r = await publicarNotaRanking({ disciplinaId, tipo, nota: notaNum });
+      if (r.ok) {
         toast.success("Nota publicada com sucesso!");
         setAberto(false);
         setNota("");
+        onPublicado();
       } else {
-        toast.error("Erro ao publicar nota.");
+        toast.error(r.error || "Erro ao publicar nota.");
       }
     } catch {
       toast.error("Erro ao publicar nota.");

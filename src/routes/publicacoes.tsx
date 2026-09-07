@@ -39,6 +39,7 @@ import {
 import { PublicacaoCard } from "@/components/PublicacaoCard";
 import { IdentidadeModal } from "@/components/IdentidadeModal";
 import { SugerirDisciplina } from "@/components/SugerirDisciplina";
+import { track } from "@/lib/metricas";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/publicacoes")({
@@ -182,6 +183,11 @@ function PublicacoesPage() {
       return;
     }
     toast.success("Publicado na comunidade!");
+    track("publicacao_criada", {
+      tipo: tipoForm,
+      disciplinaId: disciplinaForm,
+      etapa: etapaForm,
+    });
     setFormAberto(false);
     setTituloForm("");
     setDescricaoForm("");

@@ -15,13 +15,9 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppMobileMenu } from "@/components/AppNav";
 import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  getChatRooms,
-  loadMessages,
-  sendMessage,
-  subscribeMessages,
-} from "@/lib/chatService";
+import { getChatRooms, loadMessages, sendMessage, subscribeMessages } from "@/lib/chatService";
 import type { ChatMessage } from "@/data/chat";
+import { getIdentidade } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { isSupabaseConfigured } from "@/lib/seed";
@@ -29,6 +25,9 @@ import { disciplinas } from "@/data/disciplines";
 
 export const Route = createFileRoute("/community/chat")({
   component: CommunityChat,
+  validateSearch: (search: Record<string, unknown>) => ({
+    room: typeof search["room"] === "string" ? (search["room"] as string) : undefined,
+  }),
   head: () => ({
     title: "Salas de Aula Virtuais | Comunidade CEDERJ",
     meta: [
@@ -43,12 +42,13 @@ export const Route = createFileRoute("/community/chat")({
 const rooms = getChatRooms();
 
 function CommunityChat() {
-  const [selectedRoomId, setSelectedRoomId] = useState(disciplinas[0]?.id || "");
+  const { room } = Route.useSearch();
+  const [selectedRoomId, setSelectedRoomId] = useState(room || disciplinas[0]?.id || "");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [userName, setUserName] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("rdf:user_name") || "";
+      return localStorage.getItem("rdf:user_name") || getIdentidade()?.nome || "";
     }
     return "";
   });
@@ -56,8 +56,8 @@ function CommunityChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const subRef = useRef<(() => void) | null>(null);
 
-  const selectedRoom = rooms.find((r) => r.id === selectedRoomId) ||
-    disciplinas.find((d) => d.id === selectedRoomId);
+  const selectedRoom =
+    rooms.find((r) => r.id === selectedRoomId) || disciplinas.find((d) => d.id === selectedRoomId);
 
   const loadAndSubscribe = useCallback(async (roomId: string) => {
     if (subRef.current) {
@@ -75,6 +75,10 @@ function CommunityChat() {
     });
     subRef.current = unsub;
   }, []);
+
+  useEffect(() => {
+    if (room) setSelectedRoomId(room);
+  }, [room]);
 
   useEffect(() => {
     if (selectedRoomId) {
@@ -124,11 +128,8 @@ function CommunityChat() {
                   <Menu className="w-6 h-6 text-[#D4941E]" />
                 </button>
               </SheetTrigger>
-              <SheetContent
-                side="left"
-                className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0"
-              >
-              <AppMobileMenu />
+              <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
+                <AppMobileMenu />
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-3">
@@ -177,15 +178,11 @@ function CommunityChat() {
                     {d.icone}
                   </span>
                   <div>
-                    <h4 className="font-bold text-xs truncate max-w-[180px]">
-                      {d.nome}
-                    </h4>
+                    <h4 className="font-bold text-xs truncate max-w-[180px]">{d.nome}</h4>
                     <p
                       className={cn(
                         "text-[8px] font-black uppercase tracking-tighter mt-0.5",
-                        selectedRoomId === d.id
-                          ? "text-white/60"
-                          : "text-[#0A3D52]/40",
+                        selectedRoomId === d.id ? "text-white/60" : "text-[#0A3D52]/40",
                       )}
                     >
                       {d.codigo}
@@ -212,16 +209,11 @@ function CommunityChat() {
             </select>
           </div>
 
-          <div
-            ref={scrollRef}
-            className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F5F7FA]/30"
-          >
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F5F7FA]/30">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
                 <MessageSquare className="w-16 h-16 mb-4" />
-                <p className="font-black uppercase tracking-widest text-sm">
-                  Comece uma conversa!
-                </p>
+                <p className="font-black uppercase tracking-widest text-sm">Comece uma conversa!</p>
               </div>
             ) : (
               messages.map((msg) => (
@@ -229,9 +221,7 @@ function CommunityChat() {
                   key={msg.id}
                   className={cn(
                     "flex flex-col max-w-[80%]",
-                    msg.userId === "anon"
-                      ? "ml-auto items-end"
-                      : "items-start",
+                    msg.userId === "anon" ? "ml-auto items-end" : "items-start",
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1 px-2">
@@ -306,4 +296,3 @@ function CommunityChat() {
     </div>
   );
 }
-

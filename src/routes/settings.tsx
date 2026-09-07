@@ -22,6 +22,7 @@ import {
   CheckCheck,
   Loader2,
   Key,
+  BarChart3,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
@@ -307,6 +308,23 @@ function SettingsPage() {
             </div>
           </section>
         </div>
+
+        {/* Métricas de uso (admin) */}
+        <Link
+          to="/metricas"
+          className="bg-[#0A3D52] text-white rounded-3xl shadow-sm overflow-hidden flex items-center gap-4 p-6 hover:bg-[#0A3D52]/95 transition-colors"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-[#D4941E]/20 flex items-center justify-center shrink-0">
+            <BarChart3 className="w-6 h-6 text-[#D4941E]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-black text-xs uppercase tracking-[0.2em]">Métricas de uso</h2>
+            <p className="text-[11px] text-white/60 font-medium">
+              O que acontece no app por baixo dos panos (área do admin)
+            </p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-[#D4941E] shrink-0" />
+        </Link>
 
         {/* Discipline Progress Editor */}
         <section className="bg-white rounded-3xl border border-[#0A3D52]/10 shadow-sm overflow-hidden">

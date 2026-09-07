@@ -15,6 +15,7 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as DisciplinesRouteImport } from './routes/disciplines'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MaterialsRouteImport } from './routes/materials'
+import { Route as MetricasRouteImport } from './routes/metricas'
 import { Route as PodcastsRouteImport } from './routes/podcasts'
 import { Route as PublicacoesRouteImport } from './routes/publicacoes'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -52,6 +53,11 @@ const LoginRoute = LoginRouteImport.update({
 const MaterialsRoute = MaterialsRouteImport.update({
   id: '/materials',
   path: '/materials',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetricasRoute = MetricasRouteImport.update({
+  id: '/metricas',
+  path: '/metricas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PodcastsRoute = PodcastsRouteImport.update({
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/login': typeof LoginRoute
   '/materials': typeof MaterialsRoute
+  '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
   '/publicacoes': typeof PublicacoesRoute
   '/settings': typeof SettingsRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/login': typeof LoginRoute
   '/materials': typeof MaterialsRoute
+  '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
   '/publicacoes': typeof PublicacoesRoute
   '/settings': typeof SettingsRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/disciplines': typeof DisciplinesRouteWithChildren
   '/login': typeof LoginRoute
   '/materials': typeof MaterialsRoute
+  '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
   '/publicacoes': typeof PublicacoesRoute
   '/settings': typeof SettingsRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/disciplines'
     | '/login'
     | '/materials'
+    | '/metricas'
     | '/podcasts'
     | '/publicacoes'
     | '/settings'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/login'
     | '/materials'
+    | '/metricas'
     | '/podcasts'
     | '/publicacoes'
     | '/settings'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/disciplines'
     | '/login'
     | '/materials'
+    | '/metricas'
     | '/podcasts'
     | '/publicacoes'
     | '/settings'
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   DisciplinesRoute: typeof DisciplinesRouteWithChildren
   LoginRoute: typeof LoginRoute
   MaterialsRoute: typeof MaterialsRoute
+  MetricasRoute: typeof MetricasRoute
   PodcastsRoute: typeof PodcastsRoute
   PublicacoesRoute: typeof PublicacoesRoute
   SettingsRoute: typeof SettingsRoute
@@ -250,6 +263,13 @@ declare module '@tanstack/react-router' {
       path: '/materials'
       fullPath: '/materials'
       preLoaderRoute: typeof MaterialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/metricas': {
+      id: '/metricas'
+      path: '/metricas'
+      fullPath: '/metricas'
+      preLoaderRoute: typeof MetricasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/podcasts': {
@@ -332,6 +352,7 @@ const rootRouteChildren: RootRouteChildren = {
   DisciplinesRoute: DisciplinesRouteWithChildren,
   LoginRoute: LoginRoute,
   MaterialsRoute: MaterialsRoute,
+  MetricasRoute: MetricasRoute,
   PodcastsRoute: PodcastsRoute,
   PublicacoesRoute: PublicacoesRoute,
   SettingsRoute: SettingsRoute,

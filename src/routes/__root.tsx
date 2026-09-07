@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import { temIdentidade } from "@/lib/auth";
+import { track } from "@/lib/metricas";
 
 import appCss from "../styles.css?url";
 
@@ -132,6 +133,12 @@ function RootComponent() {
     }
     setChecked(true);
   }, [matches]);
+
+  // Telemetria: pageview a cada troca de rota (fire-and-forget)
+  const pathname = matches[matches.length - 1]?.pathname ?? "/";
+  useEffect(() => {
+    track("pageview", { rota: pathname });
+  }, [pathname]);
 
   // Aguarda verificação antes de renderizar
   const isLoginPage = matches.some((m) => m.pathname === "/login");

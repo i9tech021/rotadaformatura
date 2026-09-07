@@ -115,3 +115,32 @@ export function subscribeMessages(
     sb.removeChannel(channel);
   };
 }
+
+/** Assina TODAS as salas (sem filtro) — usado no hub da comunidade para previews ao vivo. */
+export function subscribeAllMessages(
+  onMessage: (msg: ChatMessage & { salaId: string }) => void,
+): () => void {
+  const sb = getSupabase();
+  if (!sb) return () => {};
+  const channel = sb
+    .channel("rdf-chat-all")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "chat_messages" },
+      (payload) => {
+        const r = payload.new as Record<string, unknown>;
+        onMessage({
+          id: r["id"] as string,
+          userId: (r["user_id"] as string) || "anon",
+          userName: (r["user_name"] as string) || "Estudante",
+          content: r["content"] as string,
+          createdAt: (r["created_at"] as string) || new Date().toISOString(),
+          salaId: (r["sala_id"] as string) || "",
+        });
+      },
+    )
+    .subscribe();
+  return () => {
+    sb.removeChannel(channel);
+  };
+}

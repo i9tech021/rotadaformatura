@@ -5,6 +5,7 @@
 // - simulados_realizados guarda IDS das questões; correção junta com o banco
 // - espelho localStorage quando Supabase não configurado
 import { getSupabase } from "./supabase";
+import { track } from "./metricas";
 import { getIdentidade } from "./publicacoesService";
 import { listProvas } from "./provasService";
 import {
@@ -200,10 +201,15 @@ function gerarOffline(
       if (usadas.has(chave)) continue;
 
       const tipoLabel =
-        ativ.tipo === "ep" ? "exercício prático" :
-        ativ.tipo === "leitura_caderno" ? "leitura do caderno" :
-        ativ.tipo === "video" ? "videoaula" :
-        ativ.tipo === "revisao" ? "revisão" : "atividade complementar";
+        ativ.tipo === "ep"
+          ? "exercício prático"
+          : ativ.tipo === "leitura_caderno"
+            ? "leitura do caderno"
+            : ativ.tipo === "video"
+              ? "videoaula"
+              : ativ.tipo === "revisao"
+                ? "revisão"
+                : "atividade complementar";
 
       geradas.push({
         enunciado: `Na Aula ${aula.numero} de ${disciplinaNome}, qual atividade é obrigatória?`,
@@ -253,39 +259,74 @@ function gerarOffline(
   // 4. Questões conceituais gerais da disciplina
   const conceitosGerais: Record<string, string[]> = {
     "metodos-deterministicos-i": [
-      "método determinístico", "programação linear", "otimização",
-      "modelo matemático", "decisão operacional", "análise de sensibilidade",
-      "problema de transportes", "problema de alocação",
+      "método determinístico",
+      "programação linear",
+      "otimização",
+      "modelo matemático",
+      "decisão operacional",
+      "análise de sensibilidade",
+      "problema de transportes",
+      "problema de alocação",
     ],
     "historia-pensamento-administrativo-ii": [
-      "escola clássica", "escola das relações humanas", "abordagem sistêmica",
-      "teoria x e y", "administração participativa", "burocracia weberiana",
-      "fayol e princípios da administração", "taylor e estudo de tempos",
+      "escola clássica",
+      "escola das relações humanas",
+      "abordagem sistêmica",
+      "teoria x e y",
+      "administração participativa",
+      "burocracia weberiana",
+      "fayol e princípios da administração",
+      "taylor e estudo de tempos",
     ],
     "contabilidade-geral-i": [
-      "partida dobrada", "balanço patrimonial", "demonstração do resultado",
-      "razão e razão auxiliar", "lançamentos contábeis", "balancete de verificação",
-      "método do custo histórico", "inquérito contábil",
+      "partida dobrada",
+      "balanço patrimonial",
+      "demonstração do resultado",
+      "razão e razão auxiliar",
+      "lançamentos contábeis",
+      "balancete de verificação",
+      "método do custo histórico",
+      "inquérito contábil",
     ],
     "fundamentos-financas": [
-      "fluxo de caixa", "valor presente", "valor futuro",
-      "taxa de juros", "anuidade", "decisão de investimento",
-      "orçamento empresarial", "capital de giro",
+      "fluxo de caixa",
+      "valor presente",
+      "valor futuro",
+      "taxa de juros",
+      "anuidade",
+      "decisão de investimento",
+      "orçamento empresarial",
+      "capital de giro",
     ],
     "economia-brasileira-contemporanea": [
-      "PIB", "inflação", "política monetária",
-      "câmbio", "dívida pública", "desemprego",
-      "setor público", "setor privado",
+      "PIB",
+      "inflação",
+      "política monetária",
+      "câmbio",
+      "dívida pública",
+      "desemprego",
+      "setor público",
+      "setor privado",
     ],
     "gestao-pessoas-i": [
-      "motivação", "liderança", "comunicação organizacional",
-      "desempenho", "treinamento", "avaliação de desempenho",
-      "clima organizacional", "qualidade de vida",
+      "motivação",
+      "liderança",
+      "comunicação organizacional",
+      "desempenho",
+      "treinamento",
+      "avaliação de desempenho",
+      "clima organizacional",
+      "qualidade de vida",
     ],
     "sociedade-e-organizacoes": [
-      "cultura organizacional", "poder e autoridade", "conflitos",
-      "mudança organizacional", "estrutura organizacional",
-      "ética empresarial", "responsabilidade social", "globalização",
+      "cultura organizacional",
+      "poder e autoridade",
+      "conflitos",
+      "mudança organizacional",
+      "estrutura organizacional",
+      "ética empresarial",
+      "responsabilidade social",
+      "globalização",
     ],
   };
 
@@ -317,7 +358,8 @@ function gerarOffline(
         "D) Todas as anteriores combinadas",
       ],
       resposta_correta: 3,
-      explicacao: "A combinação de revisão, exercícios e leitura é a estratégia mais eficaz para provas.",
+      explicacao:
+        "A combinação de revisão, exercícios e leitura é a estratégia mais eficaz para provas.",
       dificuldade: "facil",
     });
   }
@@ -351,13 +393,16 @@ export async function montarSimulado(input: {
   );
 
   // Contexto real: trechos das provas (até ~4k chars cada, máx ~8k total)
-  const contextoProvas = provasComTexto.length > 0
-    ? provasComTexto
-        .slice(0, 4)
-        .map((p, i) => `[PROVA ${i + 1} — ${p.titulo}]\n${(p.texto_extraido ?? "").slice(0, 4000)}`)
-        .join("\n\n")
-        .slice(0, 8000)
-    : "";
+  const contextoProvas =
+    provasComTexto.length > 0
+      ? provasComTexto
+          .slice(0, 4)
+          .map(
+            (p, i) => `[PROVA ${i + 1} — ${p.titulo}]\n${(p.texto_extraido ?? "").slice(0, 4000)}`,
+          )
+          .join("\n\n")
+          .slice(0, 8000)
+      : "";
 
   // 1. Banco primeiro
   const doBanco = await buscarQuestoesBanco(input.disciplinaId, input.tipo, qtd);
@@ -444,6 +489,12 @@ export async function montarSimulado(input: {
     saveLocal([row, ...local]);
   }
 
+  track("simulado_gerado", {
+    disciplinaId: input.disciplinaId,
+    tipo: input.tipo,
+    modo,
+    qtd: todas.length,
+  });
   return {
     ok: true,
     sessao: { ...row, questoesCompletas: todas },
@@ -495,6 +546,12 @@ export async function corrigirSimulado(
       .eq("id", simuladoId);
   }
 
+  track("simulado_corrigido", {
+    disciplinaId: row.disciplina_id,
+    tipo: row.tipo,
+    nota,
+    percentual,
+  });
   return { ...atualizado, questoesCompletas: completas, acertos };
 }
 

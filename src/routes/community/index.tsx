@@ -1,62 +1,117 @@
+// src/routes/community/index.tsx
+// Hub da comunidade: Conversas (salas realtime por disciplina) + Materiais
+// (publicações da turma em realtime). Tudo ao vivo via Supabase Realtime.
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
   GraduationCap,
   Menu,
-  LayoutDashboard,
-  Calendar as CalendarIcon,
-  BookOpen,
-  FileText,
-  Settings,
   MessageSquare,
-  Heart,
-  Share2,
-  Trophy,
+  FileText,
   Send,
-  Plus,
+  ChevronRight,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
-import { useState } from "react";
-import { MOCK_FEED, type FeedPost } from "@/data/feed";
+import { useCallback, useEffect, useState } from "react";
+import { disciplinas } from "@/data/disciplines";
+import { getChatRooms, loadMessages, subscribeAllMessages } from "@/lib/chatService";
+import type { ChatMessage } from "@/data/chat";
+import {
+  denunciarPublicacao,
+  excluirPublicacao,
+  getIdentidade,
+  listPublicacoes,
+  subscribePublicacoes,
+  type Publicacao,
+  type TipoPublicacao,
+} from "@/lib/publicacoesService";
+import { PublicacaoCard } from "@/components/PublicacaoCard";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/community/")({
-  component: CommunityFeed,
+  component: CommunityHub,
   head: () => ({
-    title: "Feed da Formatura | Comunidade CEDERJ",
+    title: "Comunidade | Rota da Formatura",
     meta: [
       {
         name: "description",
-        content: "Conecte-se com outros alunos do CEDERJ, compartilhe conquistas e tire dúvidas.",
+        content: "Converse em tempo real e troque materiais com a turma do CEDERJ.",
       },
     ],
   }),
 });
 
-function CommunityFeed() {
-  const [posts, setPosts] = useState<FeedPost[]>(MOCK_FEED);
-  const [newPostContent, setNewPostContent] = useState("");
+type Aba = "conversas" | "materiais";
 
-  const handlePost = () => {
-    if (!newPostContent.trim()) return;
+function CommunityHub() {
+  const [aba, setAba] = useState<Aba>("conversas");
+  const [ultimas, setUltimas] = useState<Record<string, ChatMessage>>({});
+  const [online, setOnline] = useState(false);
 
-    const newPost: FeedPost = {
-      id: `post-${Date.now()}`,
-      userId: "me",
-      userName: "Você",
-      content: newPostContent,
-      type: "post",
-      likes: 0,
-      comments: 0,
-      createdAt: new Date().toISOString(),
+  const [publicacoes, setPublicacoes] = useState<Publicacao[]>([]);
+  const [filtroTipo, setFiltroTipo] = useState<TipoPublicacao | "todos">("todos");
+  const identidade = getIdentidade();
+
+  const recarregarMateriais = useCallback(async () => {
+    const lista = await listPublicacoes();
+    setPublicacoes(lista);
+  }, []);
+
+  // Previews das salas + realtime global
+  useEffect(() => {
+    let vivo = true;
+    Promise.all(
+      disciplinas.map(async (d) => {
+        const msgs = await loadMessages(d.id).catch(() => []);
+        return [d.id, msgs[msgs.length - 1]] as const;
+      }),
+    ).then((pares) => {
+      if (!vivo) return;
+      const map: Record<string, ChatMessage> = {};
+      for (const [id, msg] of pares) if (msg) map[id] = msg;
+      setUltimas(map);
+    });
+    const unsub = subscribeAllMessages((msg) => {
+      setOnline(true);
+      if (!msg.salaId) return;
+      setUltimas((prev) => ({ ...prev, [msg.salaId]: msg }));
+    });
+    return () => {
+      vivo = false;
+      unsub();
     };
+  }, []);
 
-    setPosts([newPost, ...posts]);
-    setNewPostContent("");
+  // Materiais em realtime
+  useEffect(() => {
+    recarregarMateriais();
+    return subscribePublicacoes(recarregarMateriais);
+  }, [recarregarMateriais]);
+
+  const handleExcluir = async (p: Publicacao) => {
+    const r = await excluirPublicacao(p);
+    if (!r.ok) {
+      toast.error(r.error || "Não foi possível excluir.");
+      return;
+    }
+    toast.success("Publicação excluída.");
+    recarregarMateriais();
   };
+
+  const handleDenunciar = async (p: Publicacao) => {
+    const r = await denunciarPublicacao(p.id);
+    if (r.ok) toast.success("Denúncia registrada. Obrigado!");
+  };
+
+  const filtradas =
+    filtroTipo === "todos" ? publicacoes : publicacoes.filter((p) => p.tipo === filtroTipo);
+  const rooms = getChatRooms();
+  const salaNome = (id: string) =>
+    disciplinas.find((d) => d.id === id)?.nome ?? rooms.find((r) => r.id === id)?.name ?? id;
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] text-[#0A3D52] pb-20">
@@ -79,93 +134,144 @@ function CommunityFeed() {
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <h1 className="font-bold text-lg uppercase tracking-tight hidden min-[420px]:inline">
-                Feed da Formatura
+                Comunidade
               </h1>
+              {online && (
+                <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[#27AE60]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#27AE60] animate-pulse" />
+                  Ao vivo
+                </span>
+              )}
             </div>
           </div>
-
           <AppDesktopNav />
-
-          <button className="bg-[#D4941E] text-[#0A3D52] p-2 rounded-xl hover:scale-105 transition-all">
-            <Plus className="w-5 h-5" />
-          </button>
         </div>
       </nav>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        {/* Create Post */}
-        <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-4 shadow-sm">
-          <textarea
-            placeholder="O que está acontecendo na sua jornada acadêmica?"
-            className="w-full bg-[#F5F7FA] border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-[#D4941E] resize-none min-h-[100px]"
-            value={newPostContent}
-            onChange={(e) => setNewPostContent(e.target.value)}
-          />
-          <div className="flex justify-end mt-3">
+        {/* Abas */}
+        <div className="grid grid-cols-2 gap-2 bg-white rounded-2xl border border-[#0A3D52]/10 p-2 shadow-sm">
+          {(
+            [
+              { v: "conversas", l: "Conversas", icon: MessageSquare },
+              { v: "materiais", l: "Materiais", icon: FileText },
+            ] as const
+          ).map((t) => (
             <button
-              onClick={handlePost}
-              className="bg-[#0A3D52] text-white px-6 py-2 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 hover:bg-[#0A3D52]/90 transition-all shadow-md"
+              key={t.v}
+              onClick={() => setAba(t.v)}
+              className={cn(
+                "flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all cursor-pointer",
+                aba === t.v
+                  ? "bg-[#0A3D52] text-white shadow"
+                  : "text-[#0A3D52]/50 hover:bg-[#F5F7FA]",
+              )}
             >
-              <Send className="w-4 h-4" /> Postar
+              <t.icon className="w-4 h-4" /> {t.l}
             </button>
-          </div>
-        </div>
-
-        {/* Feed List */}
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <div
-              key={post.id}
-              className="bg-white rounded-2xl border border-[#0A3D52]/10 p-6 shadow-sm group hover:border-[#D4941E]/30 transition-all"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#D4941E] flex items-center justify-center font-bold text-[#0A3D52] text-sm">
-                    {post.userName.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sm leading-tight flex items-center gap-2">
-                      {post.userName}
-                      {post.type === "achievement" && (
-                        <Trophy className="w-3.5 h-3.5 text-[#D4941E]" />
-                      )}
-                    </h4>
-                    <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter mt-0.5">
-                      {formatDistanceToNow(new Date(post.createdAt), {
-                        addSuffix: true,
-                        locale: ptBR,
-                      })}
-                    </p>
-                  </div>
-                </div>
-                {post.type === "question" && (
-                  <span className="bg-[#E74C3C]/10 text-[#E74C3C] text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border border-[#E74C3C]/20">
-                    Dúvida
-                  </span>
-                )}
-              </div>
-
-              <p className="text-sm text-[#0A3D52]/80 leading-relaxed mb-6 font-medium">
-                {post.content}
-              </p>
-
-              <div className="flex items-center gap-6 pt-4 border-t border-[#0A3D52]/5">
-                <button className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#0A3D52]/40 hover:text-[#E74C3C] transition-colors">
-                  <Heart className="w-4 h-4" /> {post.likes}
-                </button>
-                <button className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#0A3D52]/40 hover:text-[#0A3D52] transition-colors">
-                  <MessageSquare className="w-4 h-4" /> {post.comments}
-                </button>
-                <button className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#0A3D52]/40 hover:text-[#0A3D52] transition-colors">
-                  <Share2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
           ))}
         </div>
+
+        {aba === "conversas" ? (
+          <div className="space-y-3">
+            {disciplinas.map((d) => {
+              const ultima = ultimas[d.id];
+              return (
+                <Link
+                  key={d.id}
+                  to="/community/chat"
+                  search={{ room: d.id }}
+                  className="flex items-center gap-3 bg-white rounded-2xl border border-[#0A3D52]/10 p-4 shadow-sm hover:border-[#D4941E]/40 hover:shadow-md transition-all"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-[#0A3D52]/5 flex items-center justify-center text-xl shrink-0">
+                    {d.icone}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-bold text-sm truncate">{d.nome}</h4>
+                    <p className="text-xs text-[#0A3D52]/50 truncate font-medium">
+                      {ultima ? (
+                        <>
+                          <span className="font-bold">{ultima.userName}:</span> {ultima.content}
+                        </>
+                      ) : (
+                        "Toque para conversar com a turma"
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {ultima && (
+                      <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
+                        {formatDistanceToNow(new Date(ultima.createdAt), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </p>
+                    )}
+                    <ChevronRight className="w-4 h-4 text-[#D4941E] ml-auto mt-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {(
+                [
+                  { v: "todos", l: "Tudo" },
+                  { v: "podcast", l: "🎧 Podcasts" },
+                  { v: "pdf", l: "📄 PDFs" },
+                  { v: "nota", l: "📝 Notas" },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.v}
+                  onClick={() => setFiltroTipo(t.v)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border cursor-pointer",
+                    filtroTipo === t.v
+                      ? "bg-[#0A3D52] text-white border-[#0A3D52]"
+                      : "bg-white text-[#0A3D52]/50 border-[#0A3D52]/10",
+                  )}
+                >
+                  {t.l}
+                </button>
+              ))}
+            </div>
+
+            {filtradas.length === 0 ? (
+              <div className="bg-white p-8 rounded-3xl border border-dashed border-[#0A3D52]/10 text-center">
+                <FileText className="w-10 h-10 mx-auto mb-3 text-[#0A3D52]/20" />
+                <p className="font-bold text-xs uppercase tracking-widest text-[#0A3D52]/40">
+                  Nenhum material ainda
+                </p>
+                <Link
+                  to="/publicacoes"
+                  className="inline-flex items-center gap-2 mt-4 bg-[#D4941E] text-[#0A3D52] px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em]"
+                >
+                  <Send className="w-3.5 h-3.5" /> Publicar material
+                </Link>
+              </div>
+            ) : (
+              filtradas.map((p) => {
+                const disc = disciplinas.find((d) => d.id === p.disciplina_id);
+                return (
+                  <PublicacaoCard
+                    key={p.id}
+                    publicacao={p}
+                    disciplinaCor={disc?.cor ?? "#0A3D52"}
+                    disciplinaNome={disc?.nome ?? salaNome(p.disciplina_id)}
+                    ehAutor={!!identidade && p.autor_local_id === identidade.autorLocalId}
+                    aoExcluir={handleExcluir}
+                    aoDenunciar={handleDenunciar}
+                  />
+                );
+              })
+            )}
+          </div>
+        )}
       </main>
 
-      {/* Bottom Mobile Nav (global) */}
       <AppBottomNav />
     </div>
   );

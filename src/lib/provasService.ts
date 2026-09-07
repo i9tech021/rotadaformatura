@@ -3,6 +3,7 @@
 // Texto extraído no upload (pdf.js) e salvo no banco para a IA usar.
 import * as pdfjsLib from "pdfjs-dist";
 import { getSupabase } from "./supabase";
+import { track } from "./metricas";
 import type { EtapaQuestao } from "./questoesService";
 
 let workerOk = false;
@@ -187,6 +188,7 @@ export async function uploadProva(input: {
     } else {
       saveLocal([prova, ...loadLocal()]);
     }
+    track("prova_enviada", { disciplinaId: input.disciplinaId, tipo: input.tipo });
     return { ok: true, prova };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Erro ao processar o PDF." };
