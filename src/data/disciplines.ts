@@ -1604,21 +1604,248 @@ export const sociedadeEOrganizacoes: Disciplina = {
   nome: "Sociedade e Organizações",
   codigo: "SO",
   icone: "🌐",
-  cor: "#9333EA", // purple-600 (cor provisória)
-  coordenador: "Aguardando dados",
-  totalAulas: 0,
+  cor: "#9333EA", // purple-600
+  coordenador: "Profa. Deise Luce de Sousa Marques",
+  totalAulas: 14,
   period: "5º período",
   ch: "45h",
   progresso: 0,
-  aulas: [],
+  aulas: [
+    {
+      id: "so-a1",
+      numero: 1,
+      titulo: "A Sociologia das Organizações",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 1", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "so-a2",
+      numero: 2,
+      titulo: "O homem e o trabalho",
+      semanaEstudo: 1,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 2", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "so-a3",
+      numero: 3,
+      titulo: "Concepção contemporânea do trabalho",
+      semanaEstudo: 2,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 3", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "so-a4",
+      numero: 4,
+      titulo: "O mercado de trabalho e a globalização",
+      semanaEstudo: 2,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 4", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "so-a5",
+      numero: 5,
+      titulo: "O ambiente organizacional",
+      semanaEstudo: 3,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 5", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "so-a6",
+      numero: 6,
+      titulo: "O sentido do trabalho",
+      semanaEstudo: 3,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 6", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "so-a7",
+      numero: 7,
+      titulo: "Comportamento e motivação no trabalho",
+      semanaEstudo: 4,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 7", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 1"],
+      concluida: false,
+    },
+    {
+      id: "so-a8",
+      numero: 8,
+      titulo: "Produtividade e satisfação com o trabalho",
+      semanaEstudo: 4,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 8", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "so-a9",
+      numero: 9,
+      titulo: "Fome, racismo e apartação social",
+      semanaEstudo: 5,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 9", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "so-a10",
+      numero: 10,
+      titulo: "Políticas públicas e neoliberalismo",
+      semanaEstudo: 5,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 10", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "so-a11",
+      numero: 11,
+      titulo: "Políticas públicas de inovação e desenvolvimento",
+      semanaEstudo: 6,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 11", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "so-a12",
+      numero: 12,
+      titulo: "O homem e a sociedade contemporânea",
+      semanaEstudo: 6,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 12", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "so-a13",
+      numero: 13,
+      titulo: "Desenvolvimento Organizacional e Sociedade Pós-moderna",
+      semanaEstudo: 7,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 13", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+    {
+      id: "so-a14",
+      numero: 14,
+      titulo: "Metacompetência na era do conhecimento",
+      semanaEstudo: 7,
+      atividades: [
+        { tipo: "leitura_caderno", descricao: "Ler aula 14", obrigatoria: true },
+        {
+          tipo: "atividade_complementar",
+          descricao: "Fazer atividades ao final da leitura",
+          obrigatoria: true,
+        },
+      ],
+      materiaisComplementares: ["Caderno didático — Volume 2"],
+      concluida: false,
+    },
+  ],
   avaliacoes: [
     {
       id: "so-ad1",
       tipo: "AD1",
       dataInicio: "2026-08-17",
       dataFim: "2026-08-23",
+      horario: "23:59",
       conteudoCobrado: "Aulas 1 a 7",
       entregue: false,
+      observacoes: "Questionário online com 1 hora de duração. Disponível na plataforma até 23:59",
     },
     {
       id: "so-ap1",
@@ -1637,14 +1864,28 @@ export const sociedadeEOrganizacoes: Disciplina = {
       conteudoCobrado: "Todas as aulas (1 a 14)",
       peso: 10,
       entregue: false,
-      observacoes: "AD2 e AP2: não informado no cronograma",
+      observacoes: "Recuperação. Disciplina com avaliação única (AD1 + AP1); sem AD2/AP2",
     },
   ],
-  formulaNota: { n1: "Aguardando", n2: "Aguardando", aprovacao: "Aguardando", ap3: "Aguardando" },
+  formulaNota: {
+    n1: "N1 = (AD1 × 0,20) + (AP1 × 0,80)",
+    n2: "Disciplina com avaliação única (sem AD2/AP2)",
+    aprovacao: "N1 ≥ 6,0 — aprovação direta",
+    ap3: "Média entre a maior nota e a AP3 — aprovação se ≥ 5,0",
+  },
   guia: {
-    objetivoGeral: "Aguardando dados do AVA",
-    metodoEstudo: "Aguardando",
-    observacoes: ["AD2 e AP2: não informado no cronograma"],
+    objetivoGeral:
+      "Levar aos estudantes os conhecimentos fundamentais relativos à organização e administração do Trabalho, através da compreensão do funcionamento da burocracia pública e/ou privada e do exercício do poder na sociedade e nas organizações em particular.",
+    metodoEstudo:
+      "A disciplina está organizada em dois módulos, divididos em 14 aulas. O Módulo I (aulas 1 a 6) aborda as teorias sociológicas sobre a organização do trabalho. O Módulo II (aulas 7 a 14) trata das teorias sobre os principais componentes das dinâmicas das sociedades industrializadas, com destaque para a brasileira. Cada aula apresenta objetivos, temas, referências e atividades. Recomenda-se fazer as atividades ao final da leitura para avaliar a compreensão. Você tem total autonomia para definir seu ritmo, mas é importante seguir o cronograma e não acumular leituras. Conte com os tutores presenciais e a distância para tirar dúvidas. Aproveite os fóruns para discutir os temas com os colegas.",
+    observacoes: [
+      "Tutora a distância: Patricia Barcellos.",
+      "AD1: questionário online com 1 hora de duração (aulas 1 a 7), disponível de 17/08 a 23/08 até 23:59.",
+      "AP1 (12/09, 09:30–12:00) cobra TODO o conteúdo: aulas 1 a 14.",
+      "AP3 (21/11, 11:00–13:00) é de recuperação, com todo o conteúdo (aulas 1 a 14).",
+      "Revisão de notas das APs deve ser fundamentada (indicar as questões e descrever a discordância) em até 72h após o lançamento das notas.",
+      "Bibliografia básica: Castro (2003), Dias (2008, 2004), Lakatos (Sociologia da Administração).",
+    ],
   },
 };
 
