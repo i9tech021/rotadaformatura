@@ -14,7 +14,6 @@ import {
   Menu,
   MessageSquare,
   Play,
-  Pause,
   Settings,
   Star,
   Trophy,
@@ -24,23 +23,10 @@ import {
   Zap,
   BookOpen,
   Headphones,
-  Timer,
-  Flame,
-  TrendingUp,
-  Brain,
-  Upload,
-  Trash2,
-  Share2,
-  SkipForward,
-  SkipBack,
-  X,
-  Loader2,
-  Copy,
-  Check,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { disciplinas, type Disciplina } from "@/data/disciplines";
 const disciplines = disciplinas;
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
@@ -50,8 +36,6 @@ import { DisciplinaMateriais } from "@/components/DisciplinaMateriais";
 import { loadCheckpoints, saveCheckpoint, subscribeCheckpoints } from "@/lib/checkpoints";
 import { getSemanaAtual, getProgressoEsperado } from "@/lib/progresso";
 import { track } from "@/lib/metricas";
-import { listPodcasts, uploadPodcast, deletePodcast, subscribePodcasts, formatarDuracao, type Podcast } from "@/lib/podcastService";
-import { playAudio, pauseAudio, seekAudio, setPlaybackRate, skipForward, skipBackward, subscribeAudio, getAudioState } from "@/lib/audioContext";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -63,7 +47,7 @@ export const Route = createFileRoute("/disciplines/$id")({
   }),
 });
 
-type TabType = "guia" | "cronograma" | "notas" | "materiais" | "provas" | "simulados" | "podcasts";
+type TabType = "guia" | "cronograma" | "notas" | "materiais" | "provas" | "simulados";
 
 function DisciplinePage() {
   const { id } = useParams({ from: "/disciplines/$id" });
@@ -208,7 +192,6 @@ function DisciplinePage() {
     { id: "materiais", label: "Materiais", icon: FileText },
     { id: "provas", label: "Provas Antigas", icon: History },
     { id: "simulados", label: "Simulados", icon: Star },
-    { id: "podcasts", label: "Podcasts", icon: Headphones },
   ];
 
   return (
@@ -572,10 +555,6 @@ function DisciplinePage() {
               {activeTab === "simulados" && (
                 <SimuladoTab discipline={discipline} modoAP={modoAP} nextExam={nextExam} />
               )}
-
-              {activeTab === "podcasts" && (
-                <DisciplinaPodcasts disciplinaId={discipline.id} disciplinaCor={discipline.cor} disciplinaNome={discipline.nome} />
-              )}
             </div>
 
             {/* Bloco 3: Assistente de Estudos (IA) */}
@@ -697,13 +676,14 @@ function DisciplinePage() {
                   <Zap className="w-4 h-4 text-[#D4941E]" />
                   <span className="text-xs font-bold">Iniciar Simulado</span>
                 </Link>
-                <button
-                  onClick={() => setActiveTab("podcasts")}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors w-full text-left cursor-pointer"
+                <Link
+                  to="/disciplines/$id/podcast"
+                  params={{ id: discipline.id }}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
                 >
                   <Headphones className="w-4 h-4 text-[#D4941E]" />
                   <span className="text-xs font-bold">Podcasts da Disciplina</span>
-                </button>
+                </Link>
                 <Link
                   to="/materials"
                   className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
@@ -814,321 +794,6 @@ function EmptyState({ icon: Icon, message }: { icon: typeof LayoutDashboard; mes
     <div className="flex flex-col items-center justify-center py-20 text-[#0A3D52]/20">
       <Icon className="w-12 h-12 mb-4" />
       <p className="font-bold text-xs uppercase tracking-widest">{message}</p>
-    </div>
-  );
-}
-
-// ============================================================
-// DisciplinaPodcasts — upload + player inline usando audio global
-// ============================================================
-function DisciplinaPodcasts({
-  disciplinaId,
-  disciplinaCor,
-  disciplinaNome,
-}: {
-  disciplinaId: string;
-  disciplinaCor: string;
-  disciplinaNome: string;
-}) {
-  const [podcasts, setPodcasts] = useState<Podcast[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const [showUpload, setShowUpload] = useState(false);
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [audioState, setAudioState] = useState(getAudioState());
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    return subscribeAudio(() => setAudioState(getAudioState()));
-  }, []);
-
-  const recarregar = useCallback(async () => {
-    const lista = await listPodcasts(disciplinaId);
-    setPodcasts(lista);
-    setCarregando(false);
-  }, [disciplinaId]);
-
-  useEffect(() => {
-    recarregar();
-    return subscribePodcasts(recarregar);
-  }, [recarregar]);
-
-  const handleUpload = async () => {
-    const file = fileRef.current?.files?.[0];
-    if (!file || !titulo.trim()) {
-      toast.error("Selecione um arquivo e preencha o titulo.");
-      return;
-    }
-    setUploading(true);
-    setUploadProgress(10);
-    try {
-      const result = await uploadPodcast(file, {
-        disciplinaId,
-        titulo: titulo.trim(),
-        descricao: descricao.trim(),
-      });
-      setUploadProgress(90);
-      if (result.ok) {
-        toast.success("Podcast publicado!");
-        setTitulo("");
-        setDescricao("");
-        setShowUpload(false);
-        if (fileRef.current) fileRef.current.value = "";
-        recarregar();
-      } else {
-        toast.error(result.error || "Falha no upload.");
-      }
-    } catch {
-      toast.error("Erro no upload.");
-    }
-    setUploadProgress(0);
-    setUploading(false);
-  };
-
-  const handleDelete = async (podcast: Podcast) => {
-    if (!confirm("Excluir este podcast?")) return;
-    const r = await deletePodcast(podcast);
-    if (r.ok) { toast.success("Excluido."); recarregar(); }
-    else toast.error(r.error || "Falha ao excluir.");
-  };
-
-  const shareUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/disciplines/${disciplinaId}`
-    : "";
-
-  const copyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    toast.success("Link copiado!");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const isPlayingThis = (url: string) => audioState.playing && audioState.currentUrl === url;
-  const playbackRates = [1, 1.25, 1.5, 2];
-  const currentRateIdx = playbackRates.indexOf(audioState.playbackRate);
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-          <Headphones className="w-5 h-5 text-[#D4941E]" /> Podcasts
-          {podcasts.length > 0 && (
-            <span className="text-[10px] font-black text-[#D4941E] bg-[#D4941E]/10 px-2 py-0.5 rounded-full">
-              {podcasts.length}
-            </span>
-          )}
-        </h3>
-        <div className="flex gap-2">
-          <button
-            onClick={copyLink}
-            className="inline-flex items-center gap-1.5 text-[#0A3D52]/50 hover:text-[#0A3D52] text-[10px] font-black uppercase tracking-widest cursor-pointer"
-          >
-            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? "Copiado!" : "Link"}
-          </button>
-          <button
-            onClick={() => setShowUpload(!showUpload)}
-            className="inline-flex items-center gap-1.5 text-[#D4941E] hover:underline text-[10px] font-black uppercase tracking-widest cursor-pointer"
-          >
-            <Upload className="w-3.5 h-3.5" /> Enviar
-          </button>
-        </div>
-      </div>
-
-      {showUpload && (
-        <div className="bg-[#F5F7FA] rounded-2xl border border-[#0A3D52]/10 p-4 space-y-3">
-          <input
-            type="text"
-            placeholder="Titulo do episodio"
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-            className="w-full bg-white border border-[#0A3D52]/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4941E] outline-none"
-          />
-          <textarea
-            placeholder="Descricao (opcional)"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            rows={2}
-            className="w-full bg-white border border-[#0A3D52]/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#D4941E] outline-none resize-none"
-          />
-          <div className="flex items-center gap-2">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f && !titulo) setTitulo(f.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "));
-              }}
-            />
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="flex-1 bg-white border border-[#0A3D52]/10 rounded-xl px-4 py-2.5 text-sm text-left text-[#0A3D52]/50 hover:border-[#D4941E]/30 transition-colors cursor-pointer"
-            >
-              {fileRef.current?.files?.[0]?.name || "Selecionar arquivo..."}
-            </button>
-          </div>
-          <p className="text-[9px] text-[#0A3D52]/40">MP3, M4A, WAV, OGG. Ate 200MB.</p>
-          {uploading && (
-            <div className="w-full h-2 bg-white rounded-full overflow-hidden">
-              <div className="h-full bg-[#D4941E] rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
-            </div>
-          )}
-          <button
-            onClick={handleUpload}
-            disabled={uploading || !titulo.trim()}
-            className={cn(
-              "w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all",
-              uploading || !titulo.trim()
-                ? "bg-[#0A3D52]/10 text-[#0A3D52]/30 cursor-not-allowed"
-                : "bg-[#D4941E] text-[#0A3D52] hover:scale-[1.02] cursor-pointer",
-            )}
-          >
-            {uploading ? "Enviando..." : "Publicar"}
-          </button>
-        </div>
-      )}
-
-      {carregando ? (
-        <div className="space-y-3">
-          {[1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-2xl border border-[#0A3D52]/10 p-4 animate-pulse">
-              <div className="h-4 bg-[#0A3D52]/10 rounded w-2/3 mb-2" />
-              <div className="h-10 bg-[#0A3D52]/10 rounded-xl" />
-            </div>
-          ))}
-        </div>
-      ) : podcasts.length === 0 ? (
-        <div className="text-center py-10 bg-[#F5F7FA] rounded-2xl border border-dashed border-[#0A3D52]/10">
-          <Headphones className="w-10 h-10 text-[#0A3D52]/10 mx-auto mb-3" />
-          <p className="font-bold text-[#0A3D52]/40 uppercase tracking-widest text-xs mb-2">
-            Nenhum podcast ainda
-          </p>
-          <button
-            onClick={() => setShowUpload(true)}
-            className="text-[#D4941E] font-black text-[10px] uppercase tracking-wider cursor-pointer"
-          >
-            Enviar primeiro podcast
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {podcasts.map((podcast) => {
-            const active = isPlayingThis(podcast.url);
-            return (
-              <div
-                key={podcast.id}
-                className={cn(
-                  "bg-white rounded-2xl border p-4 transition-all",
-                  active ? "border-[#D4941E]/30 shadow-md" : "border-[#0A3D52]/10",
-                )}
-              >
-                <div className="flex items-start gap-3 mb-2">
-                  <button
-                    onClick={() => active ? pauseAudio() : playAudio(podcast.url)}
-                    className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-white shadow-sm active:scale-95 transition-all cursor-pointer"
-                    style={{ background: disciplinaCor }}
-                  >
-                    {active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-sm leading-tight truncate">{podcast.titulo}</h4>
-                    {podcast.descricao && (
-                      <p className="text-[10px] text-[#0A3D52]/50 line-clamp-1">{podcast.descricao}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1">
-                      {podcast.duracao_seg && (
-                        <span className="text-[9px] font-bold text-[#0A3D52]/40 font-mono">
-                          {formatarDuracao(podcast.duracao_seg)}
-                        </span>
-                      )}
-                      <span className="text-[9px] text-[#0A3D52]/30">
-                        {new Date(podcast.criado_em).toLocaleDateString("pt-BR")}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(podcast)}
-                    className="text-[#0A3D52]/20 hover:text-[#E74C3C] p-1 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {active ? (
-                  <div className="bg-[#F5F7FA] rounded-xl p-3 space-y-2">
-                    <AudioProgressBar podcastUrl={podcast.url} cor={disciplinaCor} />
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => skipBackward(15)} className="w-7 h-7 rounded-lg bg-white border border-[#0A3D52]/5 flex items-center justify-center text-[#0A3D52]/50 cursor-pointer">
-                          <SkipBack className="w-3 h-3" />
-                        </button>
-                        <button onClick={() => playAudio(podcast.url)} className="w-9 h-9 rounded-xl flex items-center justify-center text-white cursor-pointer" style={{ background: disciplinaCor }}>
-                          <Pause className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => skipForward(15)} className="w-7 h-7 rounded-lg bg-white border border-[#0A3D52]/5 flex items-center justify-center text-[#0A3D52]/50 cursor-pointer">
-                          <SkipForward className="w-3 h-3" />
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => setPlaybackRate(playbackRates[(currentRateIdx + 1) % playbackRates.length])}
-                        className="text-[9px] font-black uppercase text-[#0A3D52]/50 px-2 py-1 rounded-lg bg-white border border-[#0A3D52]/5 cursor-pointer"
-                      >
-                        {playbackRates[currentRateIdx]}x
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => playAudio(podcast.url)}
-                    className="w-full bg-[#F5F7FA] rounded-xl py-2 text-[10px] font-black uppercase tracking-wider cursor-pointer"
-                    style={{ color: disciplinaCor }}
-                  >
-                    Ouvir
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AudioProgressBar({ podcastUrl, cor }: { podcastUrl: string; cor: string }) {
-  const [time, setTime] = useState(0);
-  const [dur, setDur] = useState(0);
-
-  useEffect(() => {
-    return subscribeAudio(() => {
-      const s = getAudioState();
-      if (s.currentUrl === podcastUrl) {
-        setTime(s.currentTime);
-        setDur(s.duration);
-      }
-    });
-  }, [podcastUrl]);
-
-  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    seekAudio(pct * dur);
-  };
-
-  return (
-    <div>
-      <div className="h-1.5 bg-white rounded-full overflow-hidden cursor-pointer" onClick={seek}>
-        <div className="h-full rounded-full transition-all duration-200" style={{ width: `${dur ? (time / dur) * 100 : 0}%`, background: cor }} />
-      </div>
-      <div className="flex justify-between mt-0.5">
-        <span className="text-[8px] font-mono text-[#0A3D52]/40">{formatarDuracao(time)}</span>
-        <span className="text-[8px] font-mono text-[#0A3D52]/40">{dur ? formatarDuracao(dur) : "--:--"}</span>
-      </div>
     </div>
   );
 }

@@ -1,32 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  FileUp,
   Search,
   Filter,
   FileText,
   Link as LinkIcon,
-  Trash2,
-  Download,
   ArrowLeft,
-  GraduationCap,
-  Plus,
   File,
   Menu,
-  LayoutDashboard,
-  Calendar as CalendarIcon,
+  ExternalLink,
   BookOpen,
-  Settings,
-  MessageSquare,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useState, useMemo } from "react";
-import { MATERIALS, type Material } from "@/data/materials";
+import { MATERIALS } from "@/data/materials";
 import { disciplinas } from "@/data/disciplines";
 const disciplines = disciplinas;
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { format, parseISO } from "date-fns";
 
 export const Route = createFileRoute("/materials")({
   component: MaterialsManager,
@@ -51,9 +41,14 @@ function MaterialsManager() {
     });
   }, [searchTerm, filterDiscipline]);
 
-  const handleDelete = (id: string) => {
-    toast.error("Exclusão simulada. No futuro, isso removerá o arquivo do servidor.");
-  };
+  // Contagem por disciplina
+  const countByDiscipline = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const m of MATERIALS) {
+      map[m.disciplineId] = (map[m.disciplineId] || 0) + 1;
+    }
+    return map;
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] text-[#0A3D52] pb-20">
@@ -76,81 +71,85 @@ function MaterialsManager() {
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <h1 className="font-bold text-lg uppercase tracking-tight hidden min-[420px]:inline">
-                Materiais
+                Materiais de Estudo
               </h1>
             </div>
           </div>
-
           <AppDesktopNav />
-
-          <button className="bg-[#D4941E] text-[#0A3D52] p-2 rounded-xl hover:scale-105 transition-all">
-            <Plus className="w-5 h-5" />
-          </button>
+          <BookOpen className="w-6 h-6 text-[#D4941E]" />
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        {/* Controls */}
-        <div className="bg-white p-6 rounded-3xl border border-[#0A3D52]/10 shadow-sm mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <main className="max-w-5xl mx-auto px-4 py-6">
+        {/* Banner */}
+        <div className="bg-gradient-to-br from-[#0A3D52] to-[#0A3D52]/90 rounded-3xl p-6 mb-6 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4941E]/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+          <div className="relative z-10">
+            <h2 className="text-2xl font-black">{MATERIALS.length} Materiais Disponiveis</h2>
+            <p className="text-[11px] font-bold text-white/50 mt-1">
+              Links oficiais, provas antigas, cadernos e videos organizados por disciplina
+            </p>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white p-5 rounded-2xl border border-[#0A3D52]/10 shadow-sm mb-6 space-y-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A3D52]/30" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#0A3D52]/30" />
             <input
               type="text"
-              placeholder="Buscar por título ou matéria..."
-              className="w-full bg-[#F5F7FA] border-none rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E]"
+              placeholder="Buscar material..."
+              className="w-full bg-[#F5F7FA] border-none rounded-xl pl-11 pr-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E] outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-[#0A3D52]/30 shrink-0" />
-            <select
-              className="flex-1 bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E]"
-              value={filterDiscipline}
-              onChange={(e) => setFilterDiscipline(e.target.value)}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button
+              onClick={() => setFilterDiscipline("Todas")}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border shrink-0 cursor-pointer",
+                filterDiscipline === "Todas"
+                  ? "bg-[#D4941E] text-[#0A3D52] border-[#D4941E]"
+                  : "bg-white text-[#0A3D52]/50 border-[#0A3D52]/10 hover:border-[#D4941E]/30",
+              )}
             >
-              <option value="Todas">Todas as Disciplinas</option>
-              {disciplines.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.nome}
-                </option>
-              ))}
-            </select>
+              Todas ({MATERIALS.length})
+            </button>
+            {disciplines.map((d) => (
+              <button
+                key={d.id}
+                onClick={() => setFilterDiscipline(d.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border shrink-0 cursor-pointer",
+                  filterDiscipline === d.id
+                    ? "text-white border-transparent"
+                    : "bg-white text-[#0A3D52]/50 border-[#0A3D52]/10 hover:border-[#D4941E]/30",
+                )}
+                style={filterDiscipline === d.id ? { background: d.cor } : {}}
+              >
+                {d.codigo} ({countByDiscipline[d.id] || 0})
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Upload Area (Premium UI) */}
-        <div className="mb-8 p-10 bg-white border-2 border-dashed border-[#0A3D52]/10 rounded-[2.5rem] flex flex-col items-center justify-center text-center group hover:border-[#D4941E]/30 transition-all cursor-pointer">
-          <div className="w-16 h-16 rounded-full bg-[#F5F7FA] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <FileUp className="w-8 h-8 text-[#0A3D52]/20 group-hover:text-[#D4941E]" />
-          </div>
-          <h3 className="font-black text-sm uppercase tracking-widest mb-2">Upload de Materiais</h3>
-          <p className="text-xs text-[#0A3D52]/40 max-w-xs uppercase font-bold leading-relaxed">
-            Arraste arquivos PDF ou clique para selecionar.
-            <br />
-            Limite de 20MB por arquivo.
-          </p>
-        </div>
-
-        {/* List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between px-4 text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40">
-            <span>Arquivo</span>
-            <span className="hidden md:block">Data de Upload</span>
-            <span>Ações</span>
-          </div>
-
+        {/* Materials Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredMaterials.map((material) => {
             const discipline = disciplines.find((d) => d.id === material.disciplineId);
             return (
-              <div
+              <a
                 key={material.id}
-                className="bg-white rounded-2xl p-4 border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all"
+                href={material.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 shadow-sm hover:shadow-lg hover:border-[#D4941E]/30 transition-all group flex flex-col"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-start gap-3 mb-3">
                   <div
                     className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
                       material.type === "pdf"
                         ? "bg-[#E74C3C]/10 text-[#E74C3C]"
                         : material.type === "link"
@@ -159,71 +158,46 @@ function MaterialsManager() {
                     )}
                   >
                     {material.type === "pdf" ? (
-                      <FileText className="w-6 h-6" />
+                      <FileText className="w-5 h-5" />
                     ) : material.type === "link" ? (
-                      <LinkIcon className="w-6 h-6" />
+                      <LinkIcon className="w-5 h-5" />
                     ) : (
-                      <File className="w-6 h-6" />
+                      <File className="w-5 h-5" />
                     )}
                   </div>
-                  <div>
-                    <h4 className="font-bold text-sm leading-tight group-hover:text-[#D4941E] transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-sm leading-tight text-[#0A3D52] group-hover:text-[#D4941E] transition-colors line-clamp-2">
                       {material.title}
                     </h4>
-                    <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-tighter mt-0.5">
-                      {discipline?.nome || "Geral"}
-                    </p>
                   </div>
+                  <ExternalLink className="w-4 h-4 text-[#0A3D52]/15 group-hover:text-[#D4941E] shrink-0 transition-colors" />
                 </div>
-
-                <div className="hidden md:block text-[10px] font-black text-[#0A3D52]/30 uppercase">
-                  {format(parseISO(material.uploadedAt), "dd/MM/yyyy HH:mm")}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button className="p-2 hover:bg-[#F5F7FA] rounded-lg text-[#0A3D52]/40 hover:text-[#0A3D52] transition-colors">
-                    <Download className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(material.id)}
-                    className="p-2 hover:bg-[#E74C3C]/10 rounded-lg text-[#0A3D52]/40 hover:text-[#E74C3C] transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+                {discipline && (
+                  <div className="mt-auto pt-3 border-t border-[#0A3D52]/5 flex items-center gap-2">
+                    <div
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: discipline.cor }}
+                    />
+                    <span className="text-[9px] font-black uppercase tracking-wider text-[#0A3D52]/40 truncate">
+                      {discipline.codigo} — {discipline.nome}
+                    </span>
+                  </div>
+                )}
+              </a>
             );
           })}
-
-          {filteredMaterials.length === 0 && (
-            <div className="text-center py-20">
-              <FileUp className="w-12 h-12 text-[#0A3D52]/10 mx-auto mb-4" />
-              <p className="font-bold text-[#0A3D52]/30 uppercase text-xs tracking-widest">
-                Nenhum material encontrado
-              </p>
-            </div>
-          )}
         </div>
+
+        {filteredMaterials.length === 0 && (
+          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-[#0A3D52]/20">
+            <BookOpen className="w-12 h-12 text-[#0A3D52]/10 mx-auto mb-4" />
+            <p className="font-bold text-[#0A3D52]/40 uppercase tracking-widest text-sm">
+              Nenhum material encontrado
+            </p>
+          </div>
+        )}
       </main>
       <AppBottomNav />
     </div>
-  );
-}
-
-function MoreVertical({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="12" cy="5" r="1" />
-      <circle cx="12" cy="19" r="1" />
-    </svg>
   );
 }
