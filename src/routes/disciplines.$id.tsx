@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Calendar as CalendarIcon,
@@ -19,6 +19,14 @@ import {
   Trophy,
   ChevronDown,
   Calculator,
+  Target,
+  Zap,
+  BookOpen,
+  Headphones,
+  Timer,
+  Flame,
+  TrendingUp,
+  Brain,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
@@ -31,8 +39,9 @@ import { GradesCalculator } from "@/components/GradesCalculator";
 import { DisciplinaMateriais } from "@/components/DisciplinaMateriais";
 import { loadCheckpoints, saveCheckpoint, subscribeCheckpoints } from "@/lib/checkpoints";
 import { getSemanaAtual, getProgressoEsperado } from "@/lib/progresso";
+import { track } from "@/lib/metricas";
 import { cn } from "@/lib/utils";
-import { format, isAfter, parseISO } from "date-fns";
+import { format, isAfter, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/disciplines/$id")({
@@ -46,6 +55,7 @@ type TabType = "guia" | "cronograma" | "notas" | "materiais" | "provas" | "simul
 
 function DisciplinePage() {
   const { id } = useParams({ from: "/disciplines/$id" });
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("cronograma");
 
   const discipline = useMemo(() => disciplines.find((d) => d.id === id), [id]);
@@ -85,6 +95,7 @@ function DisciplinePage() {
     const proximo = !concluidas[aulaId];
     setConcluidas((m) => ({ ...m, [aulaId]: proximo }));
     saveCheckpoint(discipline.id, aulaId, proximo);
+    track("checkpoint_concluido", { disciplinaId: discipline.id, aulaId, concluido: proximo });
   };
 
   const totalAulas = discipline?.aulas.length ?? 0;
@@ -92,6 +103,34 @@ function DisciplinePage() {
   const progressoCheckpoints = totalAulas ? Math.round((feitas / totalAulas) * 100) : 0;
   const semanaAtual = getSemanaAtual();
   const pctEsperado = discipline ? getProgressoEsperado(discipline) : 0;
+
+  // ============================================================
+  // MODO AP: detecta se há prova próxima (≤14 dias)
+  // ============================================================
+  const diasRestantesProva = nextExam
+    ? differenceInDays(parseISO((nextExam as any).dataInicio), new Date())
+    : null;
+  const modoAP = diasRestantesProva !== null && diasRestantesProva <= 14 && diasRestantesProva >= 0;
+  const provaHoje = diasRestantesProva === 0;
+  const provaAmanha = diasRestantesProva === 1;
+
+  // Aulas que entram no conteúdo da AP (baseado no nextExam.conteudo)
+  const aulasAP = useMemo(() => {
+    if (!discipline || !nextExam) return [];
+    const conteudo = (nextExam as any).conteudo || "";
+    // Tenta extrair número de aulas do conteúdo (ex: "Aulas 1 a 7")
+    const match = conteudo.match(/(\d+)\s*a\s*(\d+)/);
+    if (match) {
+      const inicio = parseInt(match[1]);
+      const fim = parseInt(match[2]);
+      return discipline.aulas.filter((a) => a.numero >= inicio && a.numero <= fim);
+    }
+    // Se não conseguir extrair, retorna todas as aulas
+    return discipline.aulas;
+  }, [discipline, nextExam]);
+
+  const aulasAPFeitas = aulasAP.filter((a) => concluidas[a.id]).length;
+  const progressoAP = aulasAP.length > 0 ? Math.round((aulasAPFeitas / aulasAP.length) * 100) : 0;
 
   const proximosEventosChat = events
     .slice(0, 6)
@@ -105,6 +144,7 @@ function DisciplinePage() {
     : [
         `Disciplina: ${discipline.nome} (${discipline.codigo}) — CEDERJ Administração 2026-2`,
         `Modalidade: EAD com avaliações presenciais (AP) e a distância (AD)`,
+        modoAP ? `⚠️ MODO AP ATIVO — prova em ${diasRestantesProva} dia(s)! Focar no conteúdo da AP.` : "",
         discipline.guia?.objetivoGeral ? `Objetivo geral: ${discipline.guia.objetivoGeral}` : "",
         discipline.guia?.metodoEstudo
           ? `Método de estudo sugerido: ${discipline.guia.metodoEstudo}`
@@ -116,12 +156,13 @@ function DisciplinePage() {
         discipline.formulaNota?.n2 ? `Fórmula N2: ${discipline.formulaNota.n2}` : "",
         "",
         `Progresso do aluno: ${feitas}/${totalAulas} aulas concluídas.`,
+        modoAP ? `Progresso AP: ${aulasAPFeitas}/${aulasAP.length} aulas da AP (${progressoAP}%)` : "",
         `CH: ${discipline.ch ?? "45h"}`,
         "",
         "Roteiro de aulas (cronograma oficial):",
         ...discipline.aulas.map(
           (a) =>
-            `Aula ${a.numero} — ${a.titulo}${a.paginas ? ` (${a.paginas})` : ""} [Semana ${a.semanaEstudo}]${concluidas[a.id] ? " ✓ concluída" : ""}`,
+            `Aula ${a.numero} — ${a.titulo}${a.paginas ? ` (${a.paginas})` : ""} [Semana ${a.semanaEstudo}]${concluidas[a.id] ? " ✓ concluída" : ""}${aulasAP.some((aa) => aa.id === a.id) ? " ★ NA AP" : ""}`,
         ),
         "",
         "Próximas avaliações/entregas desta disciplina:",
@@ -130,6 +171,7 @@ function DisciplinePage() {
         "INSTRUÇÕES PARA O TUTOR:",
         "- Responda sempre no contexto do CEDERJ (formato AD/AP, EAD)",
         "- Seja prático e objetivo, focado em ajudar a se preparar para as provas",
+        modoAP ? "- PRIORIDADE MÁXIMA: focar no conteúdo que cai na AP que está próxima" : "",
         "- Use exemplos reais quando possível",
         "- Se não souber algo específico do CEDERJ, diga 'consulte o cronograma oficial'",
       ]
@@ -233,8 +275,88 @@ function DisciplinePage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 -mt-10 relative z-20">
-        {/* Next Exam Alert */}
-        {nextExam && (
+        {/* ============================================================
+            MODO AP BANNER — aparece quando prova está ≤14 dias
+            ============================================================ */}
+        {modoAP && nextExam && (
+          <div
+            className={cn(
+              "rounded-2xl p-5 shadow-lg mb-8 border-l-8 relative overflow-hidden",
+              provaHoje
+                ? "bg-[#E74C3C]/5 border-[#E74C3C] animate-pulse"
+                : provaAmanha
+                  ? "bg-[#D4941E]/5 border-[#D4941E]"
+                  : "bg-[#D4941E]/5 border-[#D4941E]",
+            )}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4941E]/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div
+                  className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center",
+                    provaHoje ? "bg-[#E74C3C]/10" : "bg-[#D4941E]/10",
+                  )}
+                >
+                  {provaHoje ? (
+                    <Flame className="w-7 h-7 text-[#E74C3C]" />
+                  ) : (
+                    <Target className="w-7 h-7 text-[#D4941E]" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40">
+                    {provaHoje
+                      ? "🔥 PROVA HOJE!"
+                      : provaAmanha
+                        ? "⚡ PROVA AMANHÃ!"
+                        : `⏱ ${diasRestantesProva} DIAS PARA A PROVA`}
+                  </p>
+                  <h4 className="font-black text-xl">
+                    {(nextExam as any).titulo}
+                  </h4>
+                  <p className="text-sm text-[#0A3D52]/60 font-medium mt-0.5">
+                    {format(parseISO((nextExam as any).dataInicio), "dd 'de' MMMM", { locale: ptBR })}
+                    {(nextExam as any).horario ? ` às ${(nextExam as any).horario}` : ""}
+                    {(nextExam as any).local ? ` • ${(nextExam as any).local}` : ""}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Progresso da AP */}
+                <div className="text-center mr-4">
+                  <p className="text-2xl font-black text-[#D4941E]">{progressoAP}%</p>
+                  <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
+                    {aulasAPFeitas}/{aulasAP.length} aulas da AP
+                  </p>
+                </div>
+                {/* Ações rápidas */}
+                <button
+                  onClick={() => {
+                    navigate({ to: "/simulados", search: { disciplina: discipline.id } });
+                  }}
+                  className="bg-[#D4941E] text-[#0A3D52] px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider hover:scale-105 transition-all shadow-md flex items-center gap-2"
+                >
+                  <Zap className="w-3.5 h-3.5" /> Simular AP
+                </button>
+              </div>
+            </div>
+
+            {/* Barra de progresso da AP */}
+            <div className="mt-4 relative z-10">
+              <div className="w-full h-1.5 bg-[#0A3D52]/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#D4941E] rounded-full transition-all duration-700"
+                  style={{ width: `${progressoAP}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Next Exam Alert (quando NÃO está em modo AP) */}
+        {!modoAP && nextExam && (
           <div className="bg-white rounded-2xl border-l-8 border-[#D4941E] p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-[#D4941E]/10 flex items-center justify-center">
@@ -311,15 +433,18 @@ function DisciplinePage() {
               {activeTab === "cronograma" && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xl font-black uppercase tracking-tight">Roteiro Semanal</h3>
+                    <h3 className="text-xl font-black uppercase tracking-tight">
+                      {modoAP ? "Aulas da AP" : "Roteiro Semanal"}
+                    </h3>
                     <span className="text-[10px] font-black text-[#27AE60] bg-[#27AE60]/10 px-2 py-1 rounded-full uppercase">
                       {progressoCheckpoints}% concluído
                     </span>
                   </div>
 
                   <div className="space-y-3">
-                    {discipline.aulas.map((a) => {
+                    {(modoAP && aulasAP.length > 0 ? aulasAP : discipline.aulas).map((a) => {
                       const feita = !!concluidas[a.id];
+                      const naAP = aulasAP.some((aa) => aa.id === a.id);
                       return (
                         <div
                           key={a.id}
@@ -327,7 +452,9 @@ function DisciplinePage() {
                             "rounded-2xl border p-4 transition-colors",
                             feita
                               ? "border-[#27AE60]/30 bg-[#27AE60]/5"
-                              : "border-[#0A3D52]/10 bg-white",
+                              : naAP && modoAP
+                                ? "border-[#D4941E]/30 bg-[#D4941E]/5"
+                                : "border-[#0A3D52]/10 bg-white",
                           )}
                         >
                           <label className="flex items-start gap-3 cursor-pointer">
@@ -339,6 +466,9 @@ function DisciplinePage() {
                             />
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
+                                {naAP && modoAP && (
+                                  <Star className="w-3.5 h-3.5 text-[#D4941E] fill-[#D4941E]" />
+                                )}
                                 <span
                                   className={cn(
                                     "font-bold text-sm",
@@ -427,20 +557,7 @@ function DisciplinePage() {
               )}
 
               {activeTab === "simulados" && (
-                <div className="flex flex-col items-center justify-center text-center py-10 space-y-6">
-                  <div className="w-20 h-20 rounded-full bg-[#D4941E]/10 flex items-center justify-center">
-                    <Star className="w-10 h-10 text-[#D4941E]" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black uppercase mb-2">Simulados Interativos</h3>
-                    <p className="text-sm text-[#0A3D52]/60 max-w-xs mx-auto">
-                      Teste seus conhecimentos com questões baseadas nas provas reais do CEDERJ.
-                    </p>
-                  </div>
-                  <button className="bg-[#D4941E] text-[#0A3D52] px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-[#D4941E]/20 hover:scale-105 transition-all">
-                    Iniciar Simulado AP1
-                  </button>
-                </div>
+                <SimuladoTab discipline={discipline} modoAP={modoAP} nextExam={nextExam} />
               )}
             </div>
 
@@ -448,6 +565,11 @@ function DisciplinePage() {
             <div>
               <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                 <MessageSquare className="w-3 h-3 text-[#D4941E]" /> Tutor IA
+                {modoAP && (
+                  <span className="text-[#D4941E] ml-2 text-[9px] bg-[#D4941E]/10 px-2 py-0.5 rounded-full">
+                    Focado na AP
+                  </span>
+                )}
               </h3>
               <StudyAssistant contexto={contextoDisciplina} disciplinaCor={discipline.cor} />
             </div>
@@ -455,6 +577,38 @@ function DisciplinePage() {
 
           {/* Sidebar Area */}
           <div className="space-y-6">
+            {/* Métricas de Estudo */}
+            <div className="bg-[#F5F7FA] rounded-3xl p-6 border border-[#0A3D52]/5">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <TrendingUp className="w-3 h-3 text-[#D4941E]" /> Métricas de Estudo
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white p-3 rounded-xl border border-[#0A3D52]/5 text-center">
+                  <p className="text-xl font-black text-[#27AE60]">{feitas}</p>
+                  <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">Aulas Feitas</p>
+                </div>
+                <div className="bg-white p-3 rounded-xl border border-[#0A3D52]/5 text-center">
+                  <p className="text-xl font-black text-[#D4941E]">{totalAulas - feitas}</p>
+                  <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">Restantes</p>
+                </div>
+                <div className="bg-white p-3 rounded-xl border border-[#0A3D52]/5 text-center">
+                  <p className="text-xl font-black text-[#0A3D52]">{semanaAtual}</p>
+                  <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">Semana</p>
+                </div>
+                <div className="bg-white p-3 rounded-xl border border-[#0A3D52]/5 text-center">
+                  <p className={cn(
+                    "text-xl font-black",
+                    progressoCheckpoints >= pctEsperado ? "text-[#27AE60]" : "text-[#E74C3C]",
+                  )}>
+                    {progressoCheckpoints >= pctEsperado ? "✓" : "!"}
+                  </p>
+                  <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
+                    {progressoCheckpoints >= pctEsperado ? "No Ritmo" : "Atrasado"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Critérios de Aprovação */}
             <div className="bg-[#F5F7FA] rounded-3xl p-6 border border-[#0A3D52]/5">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
@@ -480,28 +634,160 @@ function DisciplinePage() {
                 <CalendarIcon className="w-3 h-3 text-[#D4941E]" /> Datas Importantes
               </h4>
               <div className="space-y-4">
-                {events.map((event: any) => (
-                  <div key={event.id} className="flex gap-4 group">
-                    <div className="flex flex-col items-center">
-                      <div className="w-2 h-2 rounded-full bg-[#0A3D52] group-hover:bg-[#D4941E] transition-colors" />
-                      <div className="w-0.5 flex-1 bg-[#0A3D52]/10 my-1" />
+                {events.map((event: any) => {
+                  const isFuture = isAfter(parseISO(event.dataInicio), new Date());
+                  return (
+                    <div key={event.id} className="flex gap-4 group">
+                      <div className="flex flex-col items-center">
+                        <div
+                          className={cn(
+                            "w-2 h-2 rounded-full transition-colors",
+                            isFuture ? "bg-[#D4941E] group-hover:bg-[#D4941E]" : "bg-[#0A3D52]/20",
+                          )}
+                        />
+                        <div className="w-0.5 flex-1 bg-[#0A3D52]/10 my-1" />
+                      </div>
+                      <div className="pb-4">
+                        <p className="text-[10px] font-black uppercase text-[#0A3D52]/40 tracking-tighter">
+                          {format(parseISO(event.dataInicio), "dd/MM/yyyy")}
+                        </p>
+                        <h5
+                          className={cn(
+                            "font-bold text-sm transition-colors",
+                            isFuture ? "text-[#0A3D52] group-hover:text-[#D4941E]" : "text-[#0A3D52]/40",
+                          )}
+                        >
+                          {event.titulo}
+                        </h5>
+                      </div>
                     </div>
-                    <div className="pb-4">
-                      <p className="text-[10px] font-black uppercase text-[#0A3D52]/40 tracking-tighter">
-                        {format(parseISO(event.dataInicio), "dd/MM/yyyy")}
-                      </p>
-                      <h5 className="font-bold text-sm text-[#0A3D52] group-hover:text-[#D4941E] transition-colors">
-                        {event.titulo}
-                      </h5>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Ações Rápidas */}
+            <div className="bg-gradient-to-br from-[#0A3D52] to-[#0A3D52]/90 rounded-3xl p-6 text-white">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 text-white/60">
+                Ações Rápidas
+              </h4>
+              <div className="space-y-2">
+                <Link
+                  to="/simulados"
+                  search={{ disciplina: discipline.id }}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  <Zap className="w-4 h-4 text-[#D4941E]" />
+                  <span className="text-xs font-bold">Iniciar Simulado</span>
+                </Link>
+                <Link
+                  to="/podcasts"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  <Headphones className="w-4 h-4 text-[#D4941E]" />
+                  <span className="text-xs font-bold">Ouvir Podcasts</span>
+                </Link>
+                <Link
+                  to="/materials"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  <FileText className="w-4 h-4 text-[#D4941E]" />
+                  <span className="text-xs font-bold">Ver Materiais</span>
+                </Link>
               </div>
             </div>
           </div>
         </div>
         <AppBottomNav />
       </main>
+    </div>
+  );
+}
+
+// ============================================================
+// SimuladoTab — conectado ao simulador real
+// ============================================================
+function SimuladoTab({
+  discipline,
+  modoAP,
+  nextExam,
+}: {
+  discipline: Disciplina;
+  modoAP: boolean;
+  nextExam: any;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+          <Star className="w-5 h-5 text-[#D4941E]" /> Simulados
+          {modoAP && (
+            <span className="text-[10px] font-black text-[#D4941E] bg-[#D4941E]/10 px-2 py-0.5 rounded-full uppercase">
+              Focado na AP
+            </span>
+          )}
+        </h3>
+      </div>
+
+      {/* Cards de ação */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <button
+          onClick={() => {
+            navigate({ to: "/simulados", search: { disciplina: discipline.id } });
+            track("simulado_gerado", { disciplinaId: discipline.id, origem: "discipline_tab" });
+          }}
+          className="bg-gradient-to-br from-[#D4941E] to-[#D4941E]/80 text-[#0A3D52] p-6 rounded-2xl text-left hover:scale-[1.02] transition-all shadow-lg shadow-[#D4941E]/20"
+        >
+          <Zap className="w-8 h-8 mb-3" />
+          <h4 className="font-black text-lg uppercase">
+            {modoAP ? "Simular AP Agora" : "Novo Simulado"}
+          </h4>
+          <p className="text-[11px] font-bold opacity-70 mt-1">
+            Questões geradas por IA baseadas no conteúdo real
+          </p>
+        </button>
+
+        {nextExam && (
+          <div className="bg-[#F5F7FA] border border-[#0A3D52]/10 p-6 rounded-2xl">
+            <Target className="w-8 h-8 mb-3 text-[#D4941E]" />
+            <h4 className="font-black text-lg uppercase">
+              {(nextExam as any).tipo}
+            </h4>
+            <p className="text-[11px] font-bold text-[#0A3D52]/60 mt-1">
+              {format(parseISO((nextExam as any).dataInicio), "dd/MM/yyyy")}
+              {(nextExam as any).horario ? ` às ${(nextExam as any).horario}` : ""}
+            </p>
+            <p className="text-[10px] font-bold text-[#0A3D52]/40 mt-2 uppercase">
+              Conteúdo: {(nextExam as any).conteudo || "Ver guia"}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Dicas */}
+      <div className="bg-[#F5F7FA] rounded-2xl p-5 border border-[#0A3D52]/5">
+        <h5 className="font-black text-xs uppercase mb-3 flex items-center gap-2">
+          <Brain className="w-3.5 h-3.5 text-[#D4941E]" /> Dicas para o Simulado
+        </h5>
+        <ul className="space-y-2 text-[11px] text-[#0A3D52]/70 font-medium">
+          <li className="flex gap-2">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#27AE60] shrink-0 mt-0.5" />
+            Leia cada questão com atenção antes de responder
+          </li>
+          <li className="flex gap-2">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#27AE60] shrink-0 mt-0.5" />
+            {modoAP
+              ? "Foque nas questões sobre o conteúdo que cai na AP"
+              : "Revise o conteúdo antes de iniciar"}
+          </li>
+          <li className="flex gap-2">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#27AE60] shrink-0 mt-0.5" />
+            Após corrigir, revise as questões que errou
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

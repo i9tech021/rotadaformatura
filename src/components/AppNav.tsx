@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   Settings,
   Sparkles,
+  Trophy,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -25,34 +26,35 @@ export interface NavItem {
 
 /** Menu lateral (sheet) — ordem global. */
 export const MENU_ITEMS: NavItem[] = [
-  { to: "/", label: "Dashboard", curto: "Início", icon: LayoutDashboard },
-  { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
-  { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
+  { to: "/", label: "Dashboard", curto: "Inicio", icon: LayoutDashboard },
   { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
+  { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
+  { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
+  { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
   { to: "/calculadora", label: "Calculadora", curto: "Calc", icon: Calculator },
-  { to: "/calendar", label: "Calendário", curto: "Calendário", icon: CalendarIcon },
+  { to: "/calendar", label: "Calendario", curto: "Calendario", icon: CalendarIcon },
   { to: "/materials", label: "Arquivos", curto: "Arquivos", icon: FileText },
-  { to: "/settings", label: "Configurações", curto: "Perfil", icon: Settings },
+  { to: "/settings", label: "Configuracoes", curto: "Perfil", icon: Settings },
 ];
 
 /** Links desktop (topo). */
 export const DESKTOP_ITEMS: NavItem[] = [
   { to: "/", label: "Dashboard", curto: "Dashboard", icon: LayoutDashboard },
-  { to: "/simulados", label: "Simulados", curto: "Simulados", icon: Sparkles },
-  { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
   { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
-  { to: "/calculadora", label: "Calculadora", curto: "Calculadora", icon: Calculator },
-  { to: "/calendar", label: "Calendário", curto: "Calendário", icon: CalendarIcon },
+  { to: "/simulados", label: "Simulados", curto: "Simulados", icon: Sparkles },
+  { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
+  { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
+  { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
 ];
 
-/** Bottom nav mobile — máx 5 itens. */
+/** Bottom nav mobile — max 5 itens. */
 export const BOTTOM_ITEMS: NavItem[] = [
-  { to: "/", label: "Dashboard", curto: "Início", icon: LayoutDashboard },
-  { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
-  { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
+  { to: "/", label: "Dashboard", curto: "Inicio", icon: LayoutDashboard },
   { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
-  { to: "/calculadora", label: "Calculadora", curto: "Calc", icon: Calculator },
+  { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
+  { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
+  { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
 ];
 
 /** Conteúdo do menu lateral (dentro do Sheet de cada página). */

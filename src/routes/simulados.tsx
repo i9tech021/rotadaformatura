@@ -52,14 +52,18 @@ export const Route = createFileRoute("/simulados")({
   head: () => ({
     meta: [{ title: "Simulados | Rota da Formatura" }],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    disciplina: typeof search["disciplina"] === "string" ? (search["disciplina"] as string) : undefined,
+  }),
 });
 
 const QTD_OPCOES = [10, 12, 15];
 
 function SimuladosPage() {
+  const { disciplina: disciplinaParam } = Route.useSearch();
   const [identidade, setIdentidade] = useState<Identidade | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
-  const [disciplinaId, setDisciplinaId] = useState(disciplinas[0]?.id ?? "");
+  const [disciplinaId, setDisciplinaId] = useState(disciplinaParam || disciplinas[0]?.id || "");
   const [etapa, setEtapa] = useState<EtapaQuestao>("AP1");
   const [qtd, setQtd] = useState(12);
   const [gerando, setGerando] = useState(false);
@@ -70,6 +74,11 @@ function SimuladosPage() {
   const [provas, setProvas] = useState<ProvaAntiga[]>([]);
   const [subindoProva, setSubindoProva] = useState(false);
   const provaInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync search param with state
+  useEffect(() => {
+    if (disciplinaParam) setDisciplinaId(disciplinaParam);
+  }, [disciplinaParam]);
 
   const disciplina = useMemo(() => disciplinas.find((d) => d.id === disciplinaId), [disciplinaId]);
   const minutos = etapa.startsWith("AD") ? 30 : 60;
