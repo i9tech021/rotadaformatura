@@ -144,8 +144,10 @@ Estas datas vêm de `events.ts` e alimentam o countdown do dashboard e os alerta
 
 | Data | Prova | Conteúdo |
 | --- | --- | --- |
-| **05/09 (sáb)** | AP1 Métodos Determinísticos I | Aulas 1-8 + pp.144-145 |
-| **06/09 (dom)** | AP1 História do Pensamento Adm. II | Aulas 11-20 |
+| **12/09 (sáb)** | AP1 Métodos Determinísticos I | Aulas 1-8 + pp.144-145 |
+| **12/09 (sáb)** | AP1 Sociedade e Organizações | Aulas 1-14 |
+| **12/09 (sáb)** | AP1 Economia Brasileira Contemporânea | Aulas 1-7 |
+| **12/09 (sáb)** | AP1 Fundamentos de Finanças | Aulas 1-7 |
 | **13/09 (dom)** | AP1 Contabilidade Geral I | Lições 1-5 (prática) |
 
 > ⚠️ As datas em `events.ts` são fixas de 2026. Se o semestre mudar, atualize `events.ts`.

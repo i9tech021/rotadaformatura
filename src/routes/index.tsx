@@ -146,14 +146,20 @@ function AcademicDashboard() {
   const totalAPs = eventosAcao.filter((e) => e.tipo?.startsWith("AP")).length;
   const apsConcluidas = Math.round((progressoSemestre / 100) * totalAPs);
 
-  // Rodada AP1: todas as AP1 do semestre com status calculado pela timeline real
-  const ap1s = useMemo(
-    () =>
-      eventosAcao
-        .filter((e) => e.tipo === "AP1")
-        .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime()),
-    [eventosAcao],
-  );
+  // Rodada AP1: provas VINDOURA primeiro, passadas por último
+  const ap1s = useMemo(() => {
+    const hoje = new Date();
+    return eventosAcao
+      .filter((e) => e.tipo === "AP1")
+      .sort((a, b) => {
+        const da = new Date(a.dataInicio);
+        const db = new Date(b.dataInicio);
+        const passadaA = da < hoje;
+        const passadaB = db < hoje;
+        if (passadaA !== passadaB) return passadaA ? 1 : -1;
+        return da.getTime() - db.getTime();
+      });
+  }, [eventosAcao]);
 
   const proximosEventosChat = eventosAcao
     .slice(0, 6)
@@ -504,7 +510,7 @@ function AcademicDashboard() {
             </p>
           </div>
 
-          {/* Rodada AP1 — todas com status calculado */}
+          {/* Rodada AP1 — vindouras primeiro, passadas no final */}
           <div className="mt-4">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40 mb-2 flex items-center gap-2">
               <Target className="w-3.5 h-3.5 text-[#D4941E]" /> Rodada AP1
@@ -512,14 +518,16 @@ function AcademicDashboard() {
             <div className="space-y-2">
               {ap1s.map((e) => {
                 const st = getStatusEvento(e.dataInicio);
+                const diasRestantes = diasPara(e, agora);
+                const isProxima = st === "em_breve" || st === "hoje";
                 const badge =
                   st === "concluido"
                     ? { label: "✓ Concluída", cls: "bg-[#27AE60]/10 text-[#27AE60]" }
                     : st === "hoje"
-                      ? { label: "Hoje", cls: "bg-[#D4941E]/15 text-[#D4941E]" }
+                      ? { label: "HOJE!", cls: "bg-[#E74C3C]/15 text-[#E74C3C] animate-pulse" }
                       : st === "em_breve"
                         ? {
-                            label: `em ${diasPara(e, agora)} dias`,
+                            label: `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""}`,
                             cls: "bg-[#D4941E]/15 text-[#D4941E]",
                           }
                         : {
@@ -529,13 +537,31 @@ function AcademicDashboard() {
                 return (
                   <div
                     key={e.id}
-                    className="bg-white rounded-xl border border-[#0A3D52]/10 p-3 flex items-center justify-between gap-3"
+                    className={cn(
+                      "bg-white rounded-xl border p-3 flex items-center justify-between gap-3 transition-all",
+                      isProxima
+                        ? "border-[#D4941E]/30 shadow-md ring-1 ring-[#D4941E]/10"
+                        : "border-[#0A3D52]/10 opacity-60",
+                    )}
                   >
                     <div className="min-w-0">
-                      <p className="text-[10px] font-black uppercase text-[#0A3D52]/40">
-                        {e.disciplinaCodigo} • {formatarDataBrasil(e.dataInicio)}
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] font-black uppercase text-[#0A3D52]/40">
+                          {e.disciplinaCodigo}
+                        </p>
+                        {isProxima && (
+                          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[#D4941E]/10 text-[#D4941E]">
+                            Estudar agora
+                          </span>
+                        )}
+                      </div>
+                      <p className={cn("font-bold text-sm truncate", isProxima ? "" : "text-[#0A3D52]/60")}>
+                        {e.titulo}
                       </p>
-                      <p className="font-bold text-sm truncate">{e.titulo}</p>
+                      <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase mt-0.5">
+                        {formatarDataBrasil(e.dataInicio)}
+                        {e.horario ? ` às ${e.horario}` : ""}
+                      </p>
                     </div>
                     <span
                       className={cn(

@@ -51,7 +51,7 @@ Deploy na Vercel a partir deste repo. Leia isto antes de mexer no código.
    Ao mudar cor de marca, atualize AMBOS os lugares (ou unifique num só sistema).
 
 ## Datas críticas (AP1 — fixas em 2026, vêm de `events.ts`)
-05/09 Métodos Det. I · 06/09 HPA II · 13/09 Contab. Geral I.
+05/09 Métodos Det. I · 06/09 HPA II · 12/09 SO/EBC/FFN · 13/09 Contab. Geral I.
 Se o semestre mudar, edite `events.ts`.
 
 ## O que NÃO está implementado (não "invente" como se fosse real)

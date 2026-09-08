@@ -111,11 +111,13 @@ import { todasSemanas, getTarefasPendentes } from '../data/studyPlan';
 
 | Data | Prova | Conteúdo |
 |---|---|---|
-| **05/09 (sáb)** | AP1 Métodos Det. I | Aulas 1-8 + pp.144-145 |
-| **06/09 (dom)** | AP1 HPA II | Aulas 11-20 |
+| **12/09 (sáb)** | AP1 Métodos Det. I | Aulas 1-8 + pp.144-145 |
+| **12/09 (sáb)** | AP1 Sociedade e Organizações | Aulas 1-14 |
+| **12/09 (sáb)** | AP1 Economia Brasileira Contemporânea | Aulas 1-7 |
+| **12/09 (sáb)** | AP1 Fundamentos de Finanças | Aulas 1-7 |
 | **13/09 (dom)** | AP1 Contab. Geral I | Lições 1-5 (prática) |
 
 ---
 
-*Gerado em: 11/08/2026*
+*Gerado em: 08/09/2026*
 *Semestre: 2026-2 | Curso: Administração | Instituição: CEDERJ*
