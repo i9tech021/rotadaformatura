@@ -42,7 +42,9 @@ function PodcastsPage() {
   const [arquivoPendente, setArquivoPendente] = useState<File | null>(null);
   const [tituloForm, setTituloForm] = useState("");
   const [descricaoForm, setDescricaoForm] = useState("");
+  const [objetivoForm, setObjetivoForm] = useState("");
   const [disciplinaForm, setDisciplinaForm] = useState(disciplinas[0]?.id ?? "");
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const recarregar = useCallback(async () => {
@@ -107,12 +109,19 @@ function PodcastsPage() {
       return;
     }
     setSubindo(true);
-    const r = await uploadPodcast(arquivoPendente, {
-      disciplinaId: disciplinaForm,
-      titulo: tituloForm.trim(),
-      descricao: descricaoForm.trim(),
-    });
+    setUploadProgress(5);
+    const r = await uploadPodcast(
+      arquivoPendente,
+      {
+        disciplinaId: disciplinaForm,
+        titulo: tituloForm.trim(),
+        descricao: descricaoForm.trim(),
+        objetivo: objetivoForm,
+      },
+      setUploadProgress,
+    );
     setSubindo(false);
+    setUploadProgress(0);
     if (!r.ok) {
       toast.error(r.error || "Erro ao subir o podcast.");
       return;
@@ -125,6 +134,7 @@ function PodcastsPage() {
     setArquivoPendente(null);
     setTituloForm("");
     setDescricaoForm("");
+    setObjetivoForm("");
     recarregar();
   };
 
@@ -315,6 +325,22 @@ function PodcastsPage() {
                   ))}
                 </select>
 
+                <select
+                  value={objetivoForm}
+                  onChange={(e) => setObjetivoForm(e.target.value)}
+                  className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#7C3AED] outline-none cursor-pointer"
+                >
+                  <option value="">Selecione o objetivo...</option>
+                  <option value="AP1">AP1 — Prova Presencial 1</option>
+                  <option value="AP2">AP2 — Prova Presencial 2</option>
+                  <option value="AP3">AP3 — Recuperacao</option>
+                  <option value="AD1">AD1 — Atividade a Distancia 1</option>
+                  <option value="AD2">AD2 — Atividade a Distancia 2</option>
+                  <option value="revisao">Revisao Geral</option>
+                  <option value="conteudo">Conteudo de Aula</option>
+                  <option value="dica">Dica / Resumo Rapido</option>
+                </select>
+
                 <textarea
                   value={descricaoForm}
                   onChange={(e) => setDescricaoForm(e.target.value)}
@@ -322,6 +348,27 @@ function PodcastsPage() {
                   rows={2}
                   className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#7C3AED] outline-none resize-none"
                 />
+
+                {/* Barra de progresso durante upload */}
+                {subindo && (
+                  <div className="space-y-1.5">
+                    <div className="w-full h-2.5 bg-[#F5F7FA] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#7C3AED] to-[#7C3AED]/70 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] font-bold text-[#0A3D52]/40 text-center">
+                      {uploadProgress < 20
+                        ? "Preparando audio..."
+                        : uploadProgress < 80
+                          ? `Enviando... ${uploadProgress}%`
+                          : uploadProgress < 95
+                            ? "Salvando..."
+                            : "Quase pronto!"}
+                    </p>
+                  </div>
+                )}
 
                 <button
                   onClick={confirmarUpload}
@@ -333,7 +380,17 @@ function PodcastsPage() {
                       : "bg-[#7C3AED] text-white shadow-lg shadow-[#7C3AED]/20 hover:scale-[1.01] cursor-pointer",
                   )}
                 >
-                  {subindo ? "Publicando..." : "Publicar podcast"}
+                  {subindo ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Enviando...
+                    </span>
+                  ) : (
+                    "Publicar podcast"
+                  )}
                 </button>
               </div>
             )}

@@ -9,6 +9,7 @@ export interface Podcast {
   disciplina_id: string;
   titulo: string;
   descricao: string;
+  objetivo?: string;
   url: string;
   duracao_seg?: number | null;
   criado_em: string;
@@ -45,45 +46,53 @@ export async function listPodcasts(disciplinaId?: string): Promise<Podcast[]> {
 /** Faz upload do áudio e registra o podcast. */
 export async function uploadPodcast(
   arquivo: File,
-  meta: { disciplinaId: string; titulo: string; descricao: string },
+  meta: { disciplinaId: string; titulo: string; descricao: string; objetivo?: string },
+  onProgress?: (pct: number) => void,
 ): Promise<{ ok: boolean; error?: string; podcast?: Podcast }> {
   const sb = getSupabase();
   const id = `pod-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  // Extrai duração do áudio via elemento Audio (funciona nos dois caminhos)
+  onProgress?.(10);
   const duracaoSeg = await extrairDuracao(arquivo);
+  onProgress?.(20);
 
   let url = "";
   if (sb) {
     const ext = arquivo.name.split(".").pop() || "mp3";
     const path = `${meta.disciplinaId}/${id}.${ext}`;
-    const { error: upErr } = await sb.storage
-      .from("podcasts")
-      .upload(path, arquivo, { cacheControl: "3600", upsert: false });
-    if (upErr) return { ok: false, error: `Falha no upload: ${upErr.message}` };
-    const { data } = sb.storage.from("podcasts").getPublicUrl(path);
-    url = data.publicUrl;
 
+    // Upload com progresso via XMLHttpRequest
+    try {
+      url = await uploadComProgresso(sb, path, arquivo, onProgress);
+    } catch (err: any) {
+      return { ok: false, error: `Falha no upload: ${err.message || "Erro desconhecido"}` };
+    }
+
+    onProgress?.(85);
     const podcast: Podcast = {
       id,
       disciplina_id: meta.disciplinaId,
       titulo: meta.titulo,
       descricao: meta.descricao,
+      objetivo: meta.objetivo,
       url,
       duracao_seg: duracaoSeg,
       criado_em: new Date().toISOString(),
     };
     const { error: dbErr } = await sb.from("podcasts").insert([podcast]);
     if (dbErr) return { ok: false, error: `Falha ao salvar: ${dbErr.message}` };
+    onProgress?.(100);
     return { ok: true, podcast };
   }
 
-  // Fallback local: URL temporária (só válida nesta sessão do navegador)
+  // Fallback local
+  onProgress?.(50);
   const podcast: Podcast = {
     id,
     disciplina_id: meta.disciplinaId,
     titulo: meta.titulo,
     descricao: meta.descricao,
+    objetivo: meta.objetivo,
     url: URL.createObjectURL(arquivo),
     duracao_seg: duracaoSeg,
     criado_em: new Date().toISOString(),
@@ -91,7 +100,61 @@ export async function uploadPodcast(
   const local = loadLocal();
   local.unshift(podcast);
   saveLocal(local);
+  onProgress?.(100);
   return { ok: true, podcast };
+}
+
+/** Upload com progresso via Supabase Storage. */
+function uploadComProgresso(
+  sb: any,
+  path: string,
+  arquivo: File,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Tenta usar XHR para progresso real
+    try {
+      const xhr = new XMLHttpRequest();
+      const bucketUrl = `${(sb as any).storageUrl || ""}/object/upload/podcasts/${path}`;
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 60) + 20; // 20-80%
+          onProgress?.(pct);
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const { data } = sb.storage.from("podcasts").getPublicUrl(path);
+          resolve(data.publicUrl);
+        } else {
+          reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
+        }
+      });
+
+      xhr.addEventListener("error", () => reject(new Error("Falha de rede no upload")));
+
+      const anonKey = (sb as any).realtime?.params?.apikey || "";
+      xhr.open("POST", bucketUrl);
+      xhr.setRequestHeader("Authorization", `Bearer ${anonKey}`);
+      xhr.setRequestHeader("x-upsert", "false");
+      xhr.send(arquivo);
+    } catch {
+      // Fallback: usa o SDK Supabase direto (sem progresso)
+      sb.storage
+        .from("podcasts")
+        .upload(path, arquivo, { cacheControl: "3600", upsert: false })
+        .then(({ error }: any) => {
+          if (error) reject(error);
+          else {
+            const { data } = sb.storage.from("podcasts").getPublicUrl(path);
+            resolve(data.publicUrl);
+          }
+        })
+        .catch(reject);
+    }
+  });
 }
 
 /** Remove podcast (banco + storage se Supabase; senão local). */

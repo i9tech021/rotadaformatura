@@ -1,7 +1,7 @@
 // src/components/PodcastCard.tsx
 // Card de podcast com player inline + ações.
 
-import { Headphones, Trash2 } from "lucide-react";
+import { Headphones, Trash2, Target } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
 import { formatarDuracao, type Podcast } from "@/lib/podcastService";
 
@@ -13,6 +13,17 @@ interface PodcastCardProps {
   onRemover?: (podcast: Podcast) => void;
 }
 
+const objetivoLabel: Record<string, string> = {
+  AP1: "AP1",
+  AP2: "AP2",
+  AP3: "AP3",
+  AD1: "AD1",
+  AD2: "AD2",
+  revisao: "Revisao",
+  conteudo: "Aula",
+  dica: "Dica",
+};
+
 export function PodcastCard({
   podcast,
   disciplinaCor,
@@ -20,6 +31,8 @@ export function PodcastCard({
   podeRemover,
   onRemover,
 }: PodcastCardProps) {
+  const objLabel = podcast.objetivo ? objetivoLabel[podcast.objetivo] || podcast.objetivo : null;
+
   return (
     <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-4 shadow-sm hover:border-[#D4941E]/30 transition-all">
       <div className="flex items-start gap-3 mb-3">
@@ -30,13 +43,18 @@ export function PodcastCard({
           <Headphones className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span
               className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
               style={{ color: disciplinaCor, background: `${disciplinaCor}15` }}
             >
               {disciplinaNome}
             </span>
+            {objLabel && (
+              <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#D4941E]/10 text-[#D4941E] flex items-center gap-0.5">
+                <Target className="w-2.5 h-2.5" /> {objLabel}
+              </span>
+            )}
             {podcast.duracao_seg ? (
               <span className="text-[9px] font-bold text-[#0A3D52]/40 font-mono">
                 {formatarDuracao(podcast.duracao_seg)}

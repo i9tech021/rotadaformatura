@@ -60,6 +60,7 @@ function DisciplinePodcastPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [objetivo, setObjetivo] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -94,18 +95,23 @@ function DisciplinePodcastPage() {
       return;
     }
     setUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(5);
     try {
-      const result = await uploadPodcast(file, {
-        disciplinaId: id,
-        titulo: titulo.trim(),
-        descricao: descricao.trim(),
-      });
-      setUploadProgress(90);
+      const result = await uploadPodcast(
+        file,
+        {
+          disciplinaId: id,
+          titulo: titulo.trim(),
+          descricao: descricao.trim(),
+          objetivo,
+        },
+        setUploadProgress,
+      );
       if (result.ok) {
         toast.success("Podcast publicado com sucesso!");
         setTitulo("");
         setDescricao("");
+        setObjetivo("");
         setShowUpload(false);
         if (fileRef.current) fileRef.current.value = "";
         recarregar();
@@ -243,6 +249,21 @@ function DisciplinePodcastPage() {
               onChange={(e) => setTitulo(e.target.value)}
               className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E] outline-none"
             />
+            <select
+              value={objetivo}
+              onChange={(e) => setObjetivo(e.target.value)}
+              className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E] outline-none cursor-pointer"
+            >
+              <option value="">Selecione o objetivo...</option>
+              <option value="AP1">AP1 — Prova Presencial 1</option>
+              <option value="AP2">AP2 — Prova Presencial 2</option>
+              <option value="AP3">AP3 — Recuperacao</option>
+              <option value="AD1">AD1 — Atividade a Distancia 1</option>
+              <option value="AD2">AD2 — Atividade a Distancia 2</option>
+              <option value="revisao">Revisao Geral</option>
+              <option value="conteudo">Conteudo de Aula</option>
+              <option value="dica">Dica / Resumo Rapido</option>
+            </select>
             <textarea
               placeholder="Descricao (opcional)"
               value={descricao}
@@ -347,11 +368,12 @@ function DisciplinePodcastPage() {
                       {active ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm leading-tight">{podcast.titulo}</h4>
-                      {podcast.descricao && (
-                        <p className="text-[10px] text-[#0A3D52]/50 font-medium line-clamp-2 mt-0.5">{podcast.descricao}</p>
-                      )}
-                      <div className="flex items-center gap-3 mt-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {podcast.objetivo && (
+                          <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#D4941E]/10 text-[#D4941E]">
+                            {podcast.objetivo}
+                          </span>
+                        )}
                         {podcast.duracao_seg ? (
                           <span className="text-[9px] font-bold text-[#0A3D52]/40 font-mono flex items-center gap-1">
                             <Clock className="w-3 h-3" /> {formatarDuracao(podcast.duracao_seg)}
@@ -361,6 +383,10 @@ function DisciplinePodcastPage() {
                           {new Date(podcast.criado_em).toLocaleDateString("pt-BR")}
                         </span>
                       </div>
+                      <h4 className="font-bold text-sm leading-tight mt-1">{podcast.titulo}</h4>
+                      {podcast.descricao && (
+                        <p className="text-[10px] text-[#0A3D52]/50 font-medium line-clamp-2 mt-0.5">{podcast.descricao}</p>
+                      )}
                     </div>
                     <button
                       onClick={() => handleDelete(podcast)}
