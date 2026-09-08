@@ -388,6 +388,26 @@ function DisciplinePage() {
           </div>
         )}
 
+        {/* Card Podcast — chamativo, full-width */}
+        <Link
+          to="/disciplines/$id/podcast"
+          params={{ id: discipline.id }}
+          className="block bg-gradient-to-r from-[#7C3AED] to-[#7C3AED]/80 rounded-2xl p-5 mb-8 text-white shadow-lg shadow-[#7C3AED]/20 hover:shadow-xl hover:shadow-[#7C3AED]/30 hover:scale-[1.01] transition-all"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur-sm shrink-0">
+              <Headphones className="w-7 h-7" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-black text-lg uppercase leading-tight">Podcasts da Disciplina</h4>
+              <p className="text-[11px] font-bold text-white/60 mt-0.5">
+                Ouça revisoes e resumos em audio — compartilhe com a turma
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-white/40 shrink-0" />
+          </div>
+        </Link>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
@@ -684,14 +704,6 @@ function DisciplinePage() {
                 >
                   <Zap className="w-4 h-4 text-[#D4941E]" />
                   <span className="text-xs font-bold">Iniciar Simulado</span>
-                </Link>
-                <Link
-                  to="/disciplines/$id/podcast"
-                  params={{ id: discipline.id }}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <Headphones className="w-4 h-4 text-[#D4941E]" />
-                  <span className="text-xs font-bold">Podcasts da Disciplina</span>
                 </Link>
                 <Link
                   to="/materials"
