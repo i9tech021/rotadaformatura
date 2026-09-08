@@ -4,6 +4,7 @@
 // não há server function disponível. A chave VITE_AI_API_KEY já é exposta ao
 // bundle (prefixo VITE_), então este arquivo roda 100% no cliente.
 import { z } from "zod";
+import { STUDY_GUIDES } from "../data/studyGuides";
 
 // Modelo gratuito padrão da OpenRouter. Troque via VITE_AI_MODEL se quiser.
 // openrouter/free seleciona automaticamente entre todos os free disponíveis.
@@ -64,9 +65,50 @@ export async function askAcademicAI(input: AskAcademicAIInput): Promise<{ answer
     return { answer: erroConfig };
   }
 
-  const systemContent = context?.resumo
+  // Detecta a disciplina pela pergunta e inclui o guia de estudo correspondente
+  const questionLower = question.toLowerCase();
+  const disciplinaMap: Record<string, string> = {
+    "economia": "EBC", "ebc": "EBC", "milagre": "EBC", "pnd": "EBC",
+    "plano cruzado": "EBC", "collor": "EBC", "petróleo": "EBC",
+    "sociedade": "SO", "organizações": "SO", "organizacoes": "SO",
+    "trabalho": "SO", "sociologia": "SO", "sustentabilidade": "SO",
+    "contabilidade": "CG1", "balanço": "CG1", "balanco": "CG1",
+    "patrimonial": "CG1", "dre": "CG1", "passivo": "CG1", "ativo": "CG1",
+    "métodos": "MDI", "metodos": "MDI", "conjuntos": "MDI",
+    "proposições": "MDI", "proposicoes": "MDI", "tabela-verdade": "MDI",
+    "radicais": "MDI", "porcentagem": "MDI", "lógica": "MDI",
+  };
+
+  let codigoDetectado: string | null = null;
+  for (const [keyword, codigo] of Object.entries(disciplinaMap)) {
+    if (questionLower.includes(keyword)) {
+      codigoDetectado = codigo;
+      break;
+    }
+  }
+
+  const guide = codigoDetectado
+    ? STUDY_GUIDES.find((g) => g.disciplinaCodigo === codigoDetectado)
+    : undefined;
+
+  let systemContent = context?.resumo
     ? `${SYSTEM_PROMPT}\n\nCONTEXTO DO ALUNO:\n${context.resumo}`
     : SYSTEM_PROMPT;
+
+  if (guide) {
+    systemContent += `\n\nGUIA DE ESTUDO — ${guide.disciplinaCodigo} (${guide.provaTipo}):
+Conteúdo cobrado:
+${guide.conteudocobrado.map((c) => `- ${c}`).join("\n")}
+
+Tópicos-chave:
+${guide.topicsChave.map((t) => `- ${t}`).join("\n")}
+
+Dicas de prova:
+${guide.dicasDeProva.map((d) => `- ${d}`).join("\n")}
+
+Exercícios típicos:
+${guide.exerciciosTipicos.map((e) => `- ${e}`).join("\n")}`;
+  }
 
   const messages = [
     { role: "system" as const, content: systemContent },
