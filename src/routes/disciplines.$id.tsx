@@ -30,6 +30,7 @@ import { StudyAssistant } from "@/components/StudyAssistant";
 import { GradesCalculator } from "@/components/GradesCalculator";
 import { DisciplinaMateriais } from "@/components/DisciplinaMateriais";
 import { loadCheckpoints, saveCheckpoint, subscribeCheckpoints } from "@/lib/checkpoints";
+import { getSemanaAtual, getProgressoEsperado } from "@/lib/progresso";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -89,6 +90,8 @@ function DisciplinePage() {
   const totalAulas = discipline?.aulas.length ?? 0;
   const feitas = Object.values(concluidas).filter(Boolean).length;
   const progressoCheckpoints = totalAulas ? Math.round((feitas / totalAulas) * 100) : 0;
+  const semanaAtual = getSemanaAtual();
+  const pctEsperado = discipline ? getProgressoEsperado(discipline) : 0;
 
   const proximosEventosChat = events
     .slice(0, 6)
@@ -200,17 +203,29 @@ function DisciplinePage() {
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 min-w-[240px]">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[10px] font-black uppercase tracking-wider text-white/60">
-                  Checkpoints
+                  Semana {semanaAtual}
                 </span>
                 <span className="text-lg font-black">
                   {feitas}/{totalAulas}
                 </span>
               </div>
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden relative">
                 <div
-                  className="h-full bg-[#27AE60] transition-all duration-1000"
+                  className="absolute inset-y-0 left-0 bg-white/20 rounded-full"
+                  style={{ width: `${pctEsperado}%` }}
+                />
+                <div
+                  className="absolute inset-y-0 left-0 bg-[#27AE60] transition-all duration-1000"
                   style={{ width: `${progressoCheckpoints}%` }}
                 />
+              </div>
+              <div className="flex justify-between mt-1.5">
+                <span className="text-[9px] text-white/40">
+                  Esperado: {pctEsperado}%
+                </span>
+                <span className="text-[9px] text-[#27AE60] font-bold">
+                  {progressoCheckpoints}%
+                </span>
               </div>
             </div>
           </div>
