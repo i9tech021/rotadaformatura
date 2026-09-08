@@ -103,46 +103,11 @@ export function formatarDataLibera(iso: string): string {
 }
 
 /**
- * Verifica o limite de 1 simulado a cada 7 dias para o autor.
- * Retorna também a data/hora em que libera de novo.
+ * Limite de simulados removido — liberado para todos, sem restrição.
  */
 export async function podeGerarSimulado(
-  autorLocalId: string,
+  _autorLocalId: string,
 ): Promise<{ pode: boolean; motivo?: string; liberaEm?: string }> {
-  const limite = new Date(Date.now() - SETE_DIAS_MS).toISOString();
-
-  const sb = getSupabase();
-  if (sb) {
-    const { data, error } = await sb
-      .from("simulados_realizados")
-      .select("criado_em")
-      .eq("autor_local_id", autorLocalId)
-      .gte("criado_em", limite)
-      .order("criado_em", { ascending: false })
-      .limit(1);
-    if (!error && data && data.length > 0) {
-      const ultimo = new Date((data[0] as { criado_em: string }).criado_em).getTime();
-      const libera = new Date(ultimo + SETE_DIAS_MS).toISOString();
-      return {
-        pode: false,
-        motivo: `Limite de 1 simulado por semana. Libera em ${formatarDataLibera(libera)}.`,
-        liberaEm: libera,
-      };
-    }
-  }
-
-  const locais = loadLocal()
-    .filter((s) => s.autor_local_id === autorLocalId && s.criado_em >= limite)
-    .sort((a, b) => (a.criado_em < b.criado_em ? 1 : -1));
-  if (locais.length > 0) {
-    const ultimo = new Date((locais[0] as SimuladoRow).criado_em).getTime();
-    const libera = new Date(ultimo + SETE_DIAS_MS).toISOString();
-    return {
-      pode: false,
-      motivo: `Limite de 1 simulado por semana. Libera em ${formatarDataLibera(libera)}.`,
-      liberaEm: libera,
-    };
-  }
   return { pode: true };
 }
 
