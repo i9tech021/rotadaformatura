@@ -22,12 +22,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useState, useMemo } from "react";
 import { MATERIALS, type Material } from "@/data/materials";
-import {
-  metodosDeterministicos,
-  historiaPensamentoAdm,
-  contabilidadeGeral,
-} from "@/data/disciplines";
-const disciplines = [metodosDeterministicos, historiaPensamentoAdm, contabilidadeGeral];
+import { disciplinas } from "@/data/disciplines";
+const disciplines = disciplinas;
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
