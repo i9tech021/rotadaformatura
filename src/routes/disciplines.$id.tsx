@@ -681,11 +681,12 @@ function DisciplinePage() {
                   <span className="text-xs font-bold">Iniciar Simulado</span>
                 </Link>
                 <Link
-                  to="/podcasts"
+                  to="/disciplines/$id-podcast"
+                  params={{ id: discipline.id }}
                   className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
                 >
                   <Headphones className="w-4 h-4 text-[#D4941E]" />
-                  <span className="text-xs font-bold">Ouvir Podcasts</span>
+                  <span className="text-xs font-bold">Podcasts da Disciplina</span>
                 </Link>
                 <Link
                   to="/materials"
