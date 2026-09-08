@@ -234,6 +234,7 @@ create table if not exists public.podcasts (
   disciplina_id text not null,
   titulo text not null,
   descricao text,
+  objetivo text,
   url text not null,
   duracao_seg numeric,
   criado_em timestamptz default now()

@@ -61,12 +61,27 @@ export async function uploadPodcast(
     const ext = arquivo.name.split(".").pop() || "mp3";
     const path = `${meta.disciplinaId}/${id}.${ext}`;
 
-    // Upload com progresso via XMLHttpRequest
-    try {
-      url = await uploadComProgresso(sb, path, arquivo, onProgress);
-    } catch (err: any) {
-      return { ok: false, error: `Falha no upload: ${err.message || "Erro desconhecido"}` };
+    // Upload via SDK (confiavel). Progresso simulado porque o SDK nao expoe %.
+    onProgress?.(25);
+    let uploadAnim = 25;
+    const tick = setInterval(() => {
+      // avanca devagar de 25 ate 75 enquanto envia
+      uploadAnim = Math.min(75, uploadAnim + 4);
+      onProgress?.(uploadAnim);
+    }, 300);
+    const { error: upErr } = await sb.storage
+      .from("podcasts")
+      .upload(path, arquivo, { cacheControl: "3600", upsert: false });
+    clearInterval(tick);
+    if (upErr) {
+      const msg = upErr.message || "";
+      if (/bucket/i.test(msg) && /not found|nao encontrado|does not exist/i.test(msg)) {
+        return { ok: false, error: "Bucket 'podcasts' nao existe no Supabase. Crie o bucket ou rode o schema.sql." };
+      }
+      return { ok: false, error: `Falha no upload: ${msg}` };
     }
+    const { data } = sb.storage.from("podcasts").getPublicUrl(path);
+    url = data.publicUrl;
 
     onProgress?.(85);
     const podcast: Podcast = {
@@ -79,7 +94,16 @@ export async function uploadPodcast(
       duracao_seg: duracaoSeg,
       criado_em: new Date().toISOString(),
     };
-    const { error: dbErr } = await sb.from("podcasts").insert([podcast]);
+    let { error: dbErr } = await sb.from("podcasts").insert([podcast]);
+    if (dbErr && /objetivo/i.test(dbErr.message || "")) {
+      // Coluna 'objetivo' ainda nao existe no banco: salva sem ela
+      const { objetivo: _ign, ...semObjetivo } = podcast;
+      const retry = await sb.from("podcasts").insert([semObjetivo]);
+      dbErr = retry.error;
+      if (!dbErr) {
+        console.warn("[podcasts] coluna 'objetivo' nao existe no banco — salvo sem objetivo. Rode a migration 005.");
+      }
+    }
     if (dbErr) return { ok: false, error: `Falha ao salvar: ${dbErr.message}` };
     onProgress?.(100);
     return { ok: true, podcast };
@@ -102,59 +126,6 @@ export async function uploadPodcast(
   saveLocal(local);
   onProgress?.(100);
   return { ok: true, podcast };
-}
-
-/** Upload com progresso via Supabase Storage. */
-function uploadComProgresso(
-  sb: any,
-  path: string,
-  arquivo: File,
-  onProgress?: (pct: number) => void,
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // Tenta usar XHR para progresso real
-    try {
-      const xhr = new XMLHttpRequest();
-      const bucketUrl = `${(sb as any).storageUrl || ""}/object/upload/podcasts/${path}`;
-
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          const pct = Math.round((e.loaded / e.total) * 60) + 20; // 20-80%
-          onProgress?.(pct);
-        }
-      });
-
-      xhr.addEventListener("load", () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const { data } = sb.storage.from("podcasts").getPublicUrl(path);
-          resolve(data.publicUrl);
-        } else {
-          reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
-        }
-      });
-
-      xhr.addEventListener("error", () => reject(new Error("Falha de rede no upload")));
-
-      const anonKey = (sb as any).realtime?.params?.apikey || "";
-      xhr.open("POST", bucketUrl);
-      xhr.setRequestHeader("Authorization", `Bearer ${anonKey}`);
-      xhr.setRequestHeader("x-upsert", "false");
-      xhr.send(arquivo);
-    } catch {
-      // Fallback: usa o SDK Supabase direto (sem progresso)
-      sb.storage
-        .from("podcasts")
-        .upload(path, arquivo, { cacheControl: "3600", upsert: false })
-        .then(({ error }: any) => {
-          if (error) reject(error);
-          else {
-            const { data } = sb.storage.from("podcasts").getPublicUrl(path);
-            resolve(data.publicUrl);
-          }
-        })
-        .catch(reject);
-    }
-  });
 }
 
 /** Remove podcast (banco + storage se Supabase; senão local). */
