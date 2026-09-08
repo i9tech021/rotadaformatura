@@ -18,12 +18,14 @@ import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as MetricasRouteImport } from './routes/metricas'
 import { Route as PodcastsRouteImport } from './routes/podcasts'
 import { Route as PublicacoesRouteImport } from './routes/publicacoes'
+import { Route as RankingRouteImport } from './routes/ranking'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SimuladosRouteImport } from './routes/simulados'
 import { Route as CommunityIndexRouteImport } from './routes/community/index'
 import { Route as CommunityChatRouteImport } from './routes/community/chat'
 import { Route as DisciplinesIndexRouteImport } from './routes/disciplines.index'
 import { Route as DisciplinesIdRouteImport } from './routes/disciplines.$id'
+import { Route as DisciplinesIdPodcastRouteImport } from './routes/disciplines/$id/podcast'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +72,11 @@ const PublicacoesRoute = PublicacoesRouteImport.update({
   path: '/publicacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RankingRoute = RankingRouteImport.update({
+  id: '/ranking',
+  path: '/ranking',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -100,6 +107,11 @@ const DisciplinesIdRoute = DisciplinesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => DisciplinesRoute,
 } as any)
+const DisciplinesIdPodcastRoute = DisciplinesIdPodcastRouteImport.update({
+  id: '/podcast',
+  path: '/podcast',
+  getParentRoute: () => DisciplinesIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -111,12 +123,14 @@ export interface FileRoutesByFullPath {
   '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
   '/publicacoes': typeof PublicacoesRoute
+  '/ranking': typeof RankingRoute
   '/settings': typeof SettingsRoute
   '/simulados': typeof SimuladosRoute
   '/community/chat': typeof CommunityChatRoute
-  '/disciplines/$id': typeof DisciplinesIdRoute
+  '/disciplines/$id': typeof DisciplinesIdRouteWithChildren
   '/community/': typeof CommunityIndexRoute
   '/disciplines/': typeof DisciplinesIndexRoute
+  '/disciplines/$id/podcast': typeof DisciplinesIdPodcastRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -127,12 +141,14 @@ export interface FileRoutesByTo {
   '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
   '/publicacoes': typeof PublicacoesRoute
+  '/ranking': typeof RankingRoute
   '/settings': typeof SettingsRoute
   '/simulados': typeof SimuladosRoute
   '/community/chat': typeof CommunityChatRoute
-  '/disciplines/$id': typeof DisciplinesIdRoute
+  '/disciplines/$id': typeof DisciplinesIdRouteWithChildren
   '/community': typeof CommunityIndexRoute
   '/disciplines': typeof DisciplinesIndexRoute
+  '/disciplines/$id/podcast': typeof DisciplinesIdPodcastRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -145,12 +161,14 @@ export interface FileRoutesById {
   '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
   '/publicacoes': typeof PublicacoesRoute
+  '/ranking': typeof RankingRoute
   '/settings': typeof SettingsRoute
   '/simulados': typeof SimuladosRoute
   '/community/chat': typeof CommunityChatRoute
-  '/disciplines/$id': typeof DisciplinesIdRoute
+  '/disciplines/$id': typeof DisciplinesIdRouteWithChildren
   '/community/': typeof CommunityIndexRoute
   '/disciplines/': typeof DisciplinesIndexRoute
+  '/disciplines/$id/podcast': typeof DisciplinesIdPodcastRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -164,12 +182,14 @@ export interface FileRouteTypes {
     | '/metricas'
     | '/podcasts'
     | '/publicacoes'
+    | '/ranking'
     | '/settings'
     | '/simulados'
     | '/community/chat'
     | '/disciplines/$id'
     | '/community/'
     | '/disciplines/'
+    | '/disciplines/$id/podcast'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -180,12 +200,14 @@ export interface FileRouteTypes {
     | '/metricas'
     | '/podcasts'
     | '/publicacoes'
+    | '/ranking'
     | '/settings'
     | '/simulados'
     | '/community/chat'
     | '/disciplines/$id'
     | '/community'
     | '/disciplines'
+    | '/disciplines/$id/podcast'
   id:
     | '__root__'
     | '/'
@@ -197,12 +219,14 @@ export interface FileRouteTypes {
     | '/metricas'
     | '/podcasts'
     | '/publicacoes'
+    | '/ranking'
     | '/settings'
     | '/simulados'
     | '/community/chat'
     | '/disciplines/$id'
     | '/community/'
     | '/disciplines/'
+    | '/disciplines/$id/podcast'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -215,6 +239,7 @@ export interface RootRouteChildren {
   MetricasRoute: typeof MetricasRoute
   PodcastsRoute: typeof PodcastsRoute
   PublicacoesRoute: typeof PublicacoesRoute
+  RankingRoute: typeof RankingRoute
   SettingsRoute: typeof SettingsRoute
   SimuladosRoute: typeof SimuladosRoute
   CommunityChatRoute: typeof CommunityChatRoute
@@ -286,6 +311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ranking': {
+      id: '/ranking'
+      path: '/ranking'
+      fullPath: '/ranking'
+      preLoaderRoute: typeof RankingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -328,16 +360,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DisciplinesIdRouteImport
       parentRoute: typeof DisciplinesRoute
     }
+    '/disciplines/$id/podcast': {
+      id: '/disciplines/$id/podcast'
+      path: '/podcast'
+      fullPath: '/disciplines/$id/podcast'
+      preLoaderRoute: typeof DisciplinesIdPodcastRouteImport
+      parentRoute: typeof DisciplinesIdRoute
+    }
   }
 }
 
+interface DisciplinesIdRouteChildren {
+  DisciplinesIdPodcastRoute: typeof DisciplinesIdPodcastRoute
+}
+
+const DisciplinesIdRouteChildren: DisciplinesIdRouteChildren = {
+  DisciplinesIdPodcastRoute: DisciplinesIdPodcastRoute,
+}
+
+const DisciplinesIdRouteWithChildren = DisciplinesIdRoute._addFileChildren(
+  DisciplinesIdRouteChildren,
+)
+
 interface DisciplinesRouteChildren {
-  DisciplinesIdRoute: typeof DisciplinesIdRoute
+  DisciplinesIdRoute: typeof DisciplinesIdRouteWithChildren
   DisciplinesIndexRoute: typeof DisciplinesIndexRoute
 }
 
 const DisciplinesRouteChildren: DisciplinesRouteChildren = {
-  DisciplinesIdRoute: DisciplinesIdRoute,
+  DisciplinesIdRoute: DisciplinesIdRouteWithChildren,
   DisciplinesIndexRoute: DisciplinesIndexRoute,
 }
 
@@ -355,6 +406,7 @@ const rootRouteChildren: RootRouteChildren = {
   MetricasRoute: MetricasRoute,
   PodcastsRoute: PodcastsRoute,
   PublicacoesRoute: PublicacoesRoute,
+  RankingRoute: RankingRoute,
   SettingsRoute: SettingsRoute,
   SimuladosRoute: SimuladosRoute,
   CommunityChatRoute: CommunityChatRoute,

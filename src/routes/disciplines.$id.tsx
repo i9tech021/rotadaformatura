@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Calendar as CalendarIcon,
@@ -55,6 +55,12 @@ type TabType = "guia" | "cronograma" | "notas" | "materiais" | "provas" | "simul
 function DisciplinePage() {
   const { id } = useParams({ from: "/disciplines/$id" });
   const navigate = useNavigate();
+  const location = useRouterState({ select: (s) => s.location });
+  const isPodcastRoute = location.pathname.endsWith("/podcast");
+
+  if (isPodcastRoute) {
+    return <Outlet />;
+  }
   const [activeTab, setActiveTab] = useState<TabType>("cronograma");
 
   const discipline = useMemo(() => disciplines.find((d) => d.id === id), [id]);
