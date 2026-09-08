@@ -5,10 +5,12 @@
 // bundle (prefixo VITE_), então este arquivo roda 100% no cliente.
 import { z } from "zod";
 
-// Modelo gratuito padrão da OpenRouter. Troque via VITE_AI_MODEL se quiser
-// (ex.: nvidia/nemotron-3-ultra-550b-a55b:free, google/gemma-4-26b-a4b-it:free).
-export const AI_MODEL =
-  (import.meta.env as any).VITE_AI_MODEL || "nvidia/nemotron-3.5-lightning:free";
+// Modelo gratuito padrão da OpenRouter. Troque via VITE_AI_MODEL se quiser.
+// openrouter/free seleciona automaticamente entre todos os free disponíveis.
+const PRIMARY_MODEL =
+  (import.meta.env as any).VITE_AI_MODEL || "openrouter/free";
+const FALLBACK_MODEL = "inclusionai/ling-3.0-flash-sante:free";
+export const AI_MODEL = PRIMARY_MODEL;
 
 const SYSTEM_PROMPT = `Você é o "Tutor Rota da Formatura", assistente acadêmico de alunos do curso de Administração a distância do CEDERJ (semestre 2026-2).
 
@@ -80,34 +82,43 @@ export async function askAcademicAI(input: AskAcademicAIInput): Promise<{ answer
   const isReasoningModel =
     /(lightning|nemotron-3\.5|nemotron-3-ultra|reasoning|think|r1|o3|o4)/i.test(AI_MODEL);
   const body: Record<string, unknown> = {
-    model: AI_MODEL,
     messages,
     temperature: 0.5,
     max_tokens: 600,
   };
   if (isReasoningModel) body["reasoning"] = { enabled: false };
 
-  try {
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "X-Title": "Rota da Formatura",
-      },
-      body: JSON.stringify(body),
-    });
+  // Tenta o modelo primário; se falhar, caí no fallback
+  const models = [AI_MODEL, ...(AI_MODEL !== FALLBACK_MODEL ? [FALLBACK_MODEL] : [])];
 
-    if (!res.ok) {
+  for (const model of models) {
+    try {
+      const reqBody = { ...body, model };
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "X-Title": "Rota da Formatura",
+        },
+        body: JSON.stringify(reqBody),
+      });
+
+      if (res.ok) {
+        const answer = await extrairResposta(res);
+        if (answer) return { answer };
+      }
+      // Se 429 ou erro do servidor, tenta o próximo modelo
+      if (res.status === 429 || res.status >= 500) continue;
+      // Outros erros (400, 401) → retorna mensagem de erro
       return { answer: res.status === 429 ? erroLimite : erroConexao };
+    } catch {
+      // Timeout/rede → tenta o próximo modelo
+      continue;
     }
-
-    const answer = await extrairResposta(res);
-    if (!answer) return { answer: erroConexao };
-    return { answer };
-  } catch {
-    return { answer: erroConexao };
   }
+
+  return { answer: erroConexao };
 }
 
 /**

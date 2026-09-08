@@ -24,7 +24,7 @@ Deploy na Vercel a partir deste repo. Leia isto antes de mexer no código.
 - **IA (Tutor):** `src/components/StudyAssistant.tsx` + `src/lib/academic.functions.ts`
   (server function `askAcademicAI`). Usa a **OpenRouter** (OpenAI-compatible) — `VITE_AI_BASE_URL`
   aponta para `https://openrouter.ai/api/v1`, funciona no deploy da Vercel (100% cliente). Modelo em
-  `VITE_AI_MODEL` (free padrão: `nvidia/nemotron-3.5-lightning:free`). Chave `VITE_AI_API_KEY`
+  `VITE_AI_MODEL` (free padrão: `openrouter/free` — auto-seleciona entre todos os free disponíveis, com fallback para `inclusionai/ling-3.0-flash-sante:free`). Chave `VITE_AI_API_KEY`
   é lida SÓ dentro da server function (nunca referencie em componentes de tela).
   Free models podem dar 429 (limite do pool) — o app mostra "tente novamente em instantes".
 - Gerenciador: **bun** (`bun install`, `bun run dev`). npm também funciona.

@@ -352,8 +352,8 @@ export async function gerarQuestoesIA(input: {
 }): Promise<{ ok: boolean; questoes?: QuestaoGerada[]; error?: string }> {
   const baseUrl = (import.meta.env["VITE_AI_BASE_URL"] as string) || "https://openrouter.ai/api/v1";
   const apiKey = import.meta.env["VITE_AI_API_KEY"] as string | undefined;
-  const model =
-    (import.meta.env["VITE_AI_MODEL"] as string) || "nvidia/nemotron-3.5-lightning:free";
+  const PRIMARY_MODEL = (import.meta.env["VITE_AI_MODEL"] as string) || "openrouter/free";
+  const FALLBACK_MODEL = "inclusionai/ling-3.0-flash-sante:free";
 
   if (!apiKey) return { ok: false, error: "IA não configurada (VITE_AI_API_KEY)." };
 
@@ -378,47 +378,51 @@ Regras obrigatórias:
 - Exemplo de UMA questão no formato exato:
 {"enunciado":"Quanto é 2+2?","alternativas":["A) 3","B) 4","C) 5","D) 6"],"resposta_correta":1,"explicacao":"2+2=4.","dificuldade":"facil"}`;
 
-  try {
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "X-Title": "Rota da Formatura",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
-        max_tokens: 12000,
-        reasoning: { enabled: false },
-      }),
-    });
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: res.status === 429 ? "Limite da IA atingido." : `IA erro ${res.status}.`,
-      };
+  // Tenta o modelo primário; se falhar, caí no fallback
+  const models = [PRIMARY_MODEL, ...(PRIMARY_MODEL !== FALLBACK_MODEL ? [FALLBACK_MODEL] : [])];
+
+  for (const model of models) {
+    try {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "X-Title": "Rota da Formatura",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 12000,
+          reasoning: { enabled: false },
+        }),
+      });
+      if (res.ok) {
+        const texto = await res.text();
+        const conteudo = extrairConteudoResposta(texto);
+        if (conteudo) {
+          const json = extrairJsonStrict(conteudo);
+          if (json && Array.isArray(json.questoes)) {
+            const validas = json.questoes
+              .map(validarQuestao)
+              .filter((q): q is QuestaoGerada => q !== null)
+              .slice(0, qtd);
+            if (validas.length > 0) return { ok: true, questoes: validas };
+          }
+        }
+        // Resposta inválida mas HTTP ok → tenta próximo modelo
+        continue;
+      }
+      // 429 ou erro do servidor → tenta próximo modelo
+      if (res.status === 429 || res.status >= 500) continue;
+      return { ok: false, error: `IA erro ${res.status}.` };
+    } catch {
+      continue;
     }
-    const texto = await res.text();
-    // Extrai o conteúdo da mensagem do envelope da API (JSON ou SSE).
-    const conteudo = extrairConteudoResposta(texto);
-    if (!conteudo) {
-      return { ok: false, error: "Resposta vazia da IA." };
-    }
-    const json = extrairJsonStrict(conteudo);
-    if (!json || !Array.isArray(json.questoes)) {
-      return { ok: false, error: "IA não retornou JSON válido." };
-    }
-    const validas = json.questoes
-      .map(validarQuestao)
-      .filter((q): q is QuestaoGerada => q !== null)
-      .slice(0, qtd);
-    if (validas.length === 0) return { ok: false, error: "Nenhuma questão válida retornada." };
-    return { ok: true, questoes: validas };
-  } catch {
-    return { ok: false, error: "Falha de conexão com a IA." };
   }
+
+  return { ok: false, error: "Falha de conexão com a IA." };
 }
 
 /** Salva questões geradas no banco (o banco cresce a cada geração). */
