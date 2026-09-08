@@ -7,6 +7,7 @@ import {
   Clock,
   Download,
   FileText,
+  Flame,
   History,
   Info,
   Layout,
@@ -23,6 +24,8 @@ import {
   Zap,
   BookOpen,
   Headphones,
+  Brain,
+  TrendingUp,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
