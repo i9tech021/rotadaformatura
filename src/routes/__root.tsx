@@ -76,20 +76,41 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Rota da Formatura | Dashboard Acadêmico CEDERJ" },
+      { title: "Rota da Formatura | Organização de estudos para a graduação CEDERJ" },
       {
         name: "description",
         content:
-          "Organize seus estudos do CEDERJ: cronograma, podcasts, simulados e calculadora de média. Gratuito e aberto.",
+          "Organize seus estudos da graduação CEDERJ. Cronograma, podcasts, simulados e calculadora de média em um só lugar. Gratuito para a turma.",
       },
       { name: "author", content: "Rota da Formatura" },
       { name: "theme-color", content: "#0A3D52" },
-      { property: "og:title", content: "Rota da Formatura | Dashboard Acadêmico CEDERJ" },
+      { property: "og:title", content: "Rota da Formatura" },
       {
         property: "og:description",
-        content: "Cronograma, podcasts, simulados e calculadora de média para alunos do CEDERJ.",
+        content:
+          "Organize seus estudos da graduação CEDERJ. Cronograma, podcasts, simulados e calculadora de média em um só lugar. Gratuito para a turma.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "pt_BR" },
+      { property: "og:site_name", content: "Rota da Formatura" },
+      {
+        property: "og:image",
+        content: "https://rotadaformatura.vercel.app/og-cover.png",
+      },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Rota da Formatura: organização de estudos para a graduação CEDERJ" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Rota da Formatura" },
+      {
+        name: "twitter:description",
+        content:
+          "Organize seus estudos da graduação CEDERJ. Cronograma, podcasts, simulados e calculadora de média em um só lugar.",
+      },
+      {
+        name: "twitter:image",
+        content: "https://rotadaformatura.vercel.app/og-cover.png",
+      },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
@@ -99,6 +120,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
@@ -127,18 +149,22 @@ function RootComponent() {
   const matches = useMatches();
   const [checked, setChecked] = useState(false);
 
+  const pathname = matches[matches.length - 1]?.pathname ?? "/";
+  // Rotas públicas (links compartilháveis abrem sem login)
+  const isLoginPage = matches.some((m) => m.pathname === "/login");
+  const isRotaPublica =
+    pathname === "/podcasts" || /^\/disciplines\/[^/]+\/podcast$/.test(pathname);
+
   // Auth guard: redireciona para /login se não tiver identidade
   useEffect(() => {
-    const isLoginPage = matches.some((m) => m.pathname === "/login");
-    if (!isLoginPage && !temIdentidade()) {
+    if (!isLoginPage && !isRotaPublica && !temIdentidade()) {
       window.location.href = "/login";
       return;
     }
     setChecked(true);
-  }, [matches]);
+  }, [matches, isLoginPage, isRotaPublica]);
 
   // Telemetria: pageview a cada troca de rota (fire-and-forget)
-  const pathname = matches[matches.length - 1]?.pathname ?? "/";
   useEffect(() => {
     track("pageview", { rota: pathname });
     atualizarRotaPresenca(pathname);
@@ -151,8 +177,7 @@ function RootComponent() {
   }, []);
 
   // Aguarda verificação antes de renderizar
-  const isLoginPage = matches.some((m) => m.pathname === "/login");
-  if (!isLoginPage && !checked) return null;
+  if (!isLoginPage && !isRotaPublica && !checked) return null;
 
   return (
     <QueryClientProvider client={queryClient}>

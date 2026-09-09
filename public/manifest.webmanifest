@@ -1,13 +1,19 @@
 {
   "name": "Rota da Formatura",
   "short_name": "Rota da Formatura",
-  "description": "Dashboard acadêmico para alunos do CEDERJ: cronograma, podcasts, simulados e calculadora de média.",
+  "description": "Organização de estudos para a graduação CEDERJ: cronograma, podcasts, simulados e calculadora de média.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F5F7FA",
   "theme_color": "#0A3D52",
   "lang": "pt-BR",
   "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/favicon.svg",
       "sizes": "any",
