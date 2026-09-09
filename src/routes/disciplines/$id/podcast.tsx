@@ -61,6 +61,7 @@ function DisciplinePodcastPage() {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [objetivo, setObjetivo] = useState("");
+  const [arquivoNome, setArquivoNome] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -82,6 +83,24 @@ function DisciplinePodcastPage() {
     recarregar();
     return subscribePodcasts(recarregar);
   }, [recarregar]);
+
+  const onArquivoSelecionado = () => {
+    const f = fileRef.current?.files?.[0];
+    if (!f) return;
+    if (f.size > 50 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. Maximo de 50MB.");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    setArquivoNome(f.name);
+    if (!titulo) setTitulo(f.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "));
+    toast.success(`Audio selecionado: ${f.name}`);
+  };
+
+  const limparArquivo = () => {
+    if (fileRef.current) fileRef.current.value = "";
+    setArquivoNome("");
+  };
 
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];
@@ -112,6 +131,7 @@ function DisciplinePodcastPage() {
         setTitulo("");
         setDescricao("");
         setObjetivo("");
+        setArquivoNome("");
         setShowUpload(false);
         if (fileRef.current) fileRef.current.value = "";
         recarregar();
@@ -274,20 +294,25 @@ function DisciplinePodcastPage() {
             <input
               ref={fileRef}
               type="file"
-              accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.wma"
+              accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.wma,.opus,.amr,.3gp"
               className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f && !titulo) setTitulo(f.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "));
-              }}
+              onChange={onArquivoSelecionado}
             />
             <button
               onClick={() => fileRef.current?.click()}
               className="w-full bg-[#F5F7FA] border border-[#0A3D52]/10 rounded-xl px-4 py-3 text-sm text-left text-[#0A3D52]/50 hover:border-[#D4941E]/30 transition-colors cursor-pointer"
             >
-              {fileRef.current?.files?.[0]?.name || "Selecionar arquivo de audio (MP3, M4A, WAV, OGG)..."}
+              {arquivoNome || "Selecionar arquivo de audio (MP3, M4A, WAV, OGG)..."}
             </button>
-            <p className="text-[9px] text-[#0A3D52]/40 font-medium">Tamanho maximo: 200MB.</p>
+            {arquivoNome && (
+              <button
+                onClick={limparArquivo}
+                className="text-[10px] font-black uppercase text-[#E74C3C] cursor-pointer"
+              >
+                Trocar arquivo
+              </button>
+            )}
+            <p className="text-[9px] text-[#0A3D52]/40 font-medium">Tamanho maximo: 50MB.</p>
             {uploading && (
               <div className="space-y-1">
                 <div className="w-full h-2 bg-[#F5F7FA] rounded-full overflow-hidden">
@@ -298,10 +323,10 @@ function DisciplinePodcastPage() {
             )}
             <button
               onClick={handleUpload}
-              disabled={uploading || !titulo.trim() || !fileRef.current?.files?.[0]}
+              disabled={uploading || !titulo.trim() || !arquivoNome}
               className={cn(
                 "w-full py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all",
-                uploading || !titulo.trim() || !fileRef.current?.files?.[0]
+                uploading || !titulo.trim() || !arquivoNome
                   ? "bg-[#0A3D52]/10 text-[#0A3D52]/30 cursor-not-allowed"
                   : "bg-[#D4941E] text-[#0A3D52] shadow-lg shadow-[#D4941E]/20 hover:scale-[1.02] cursor-pointer",
               )}

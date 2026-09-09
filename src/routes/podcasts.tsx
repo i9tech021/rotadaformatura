@@ -90,12 +90,16 @@ function PodcastsPage() {
       toast.error("Arquivo muito grande. Maximo de 50MB.");
       return;
     }
-    if (!file.type.startsWith("audio/")) {
+    // No celular o tipo MIME muitas vezes vem vazio — valida pela extensão nesses casos
+    const extOk = /\.(mp3|m4a|wav|ogg|oga|opus|aac|wma|mp4|3gp|amr)$/i.test(file.name);
+    const mimeOk = file.type === "" || file.type.startsWith("audio/");
+    if (!mimeOk && !extOk) {
       toast.error("Selecione um arquivo de audio (MP3, M4A ou WAV).");
       return;
     }
     setArquivoPendente(file);
     setTituloForm(file.name.replace(/\.[^.]+$/, ""));
+    toast.success(`Audio selecionado: ${file.name}`);
   };
 
   const confirmarUpload = async () => {

@@ -10,6 +10,7 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 import { temIdentidade } from "@/lib/auth";
 import { track } from "@/lib/metricas";
+import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 
@@ -148,6 +149,8 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      {/* Avisos globais (toast) — sem isso nenhum toast aparece no app */}
+      <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
   );
 }
