@@ -3,7 +3,7 @@
 // enviar — voz com ótima qualidade e ~4x menos tamanho (40MB vira ~11MB).
 // REGRA DE OURO: qualquer falha retorna null e o app envia o ORIGINAL.
 // Nada aqui pode quebrar upload.
-import MP4Box from "mp4box";
+import { createFile as mp4boxCreateFile } from "mp4box";
 import { Muxer, ArrayBufferTarget } from "webm-muxer";
 
 export interface AudioOtimizado {
@@ -252,7 +252,7 @@ async function extrairAAC(
 ): Promise<{ amostras: AmostraAAC[]; codec: string; taxa: number; canais: number; asc: Uint8Array } | null> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const box: any = MP4Box.createFile();
+    const box: any = mp4boxCreateFile();
     const pronto = new Promise<unknown>((res, rej) => {
       box.onReady = res;
       box.onError = rej;

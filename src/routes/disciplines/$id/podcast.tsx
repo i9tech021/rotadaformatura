@@ -407,13 +407,35 @@ function DisciplinePodcastPage() {
                 : "Adicionar mais áudios"}
             </button>
             <p className="text-[9px] text-[#0A3D52]/40 font-medium">MP3, M4A, WAV, OGG — até 500MB cada.</p>
+            <label className="flex items-center gap-3 bg-[#D4941E]/5 border border-[#D4941E]/15 rounded-xl px-4 py-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={otimizar}
+                onChange={(e) => setOtimizar(e.target.checked)}
+                disabled={uploading || otimSuportado === false}
+                className="w-5 h-5 accent-[#D4941E] cursor-pointer shrink-0"
+              />
+              <span className="flex-1">
+                <span className="block text-xs font-black uppercase">Versão leve (economiza espaço)</span>
+                <span className="block text-[10px] font-medium text-[#0A3D52]/50">
+                  {otimSuportado === false
+                    ? "Neste aparelho, envia o arquivo original."
+                    : "Comprimo o áudio no teu aparelho antes de enviar (voz fica ~4x menor)."}
+                </span>
+              </span>
+            </label>
             {lote.map((item, idx) => (
               <div key={item.key} className="bg-[#F5F7FA] rounded-xl p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="w-6 h-6 rounded-lg bg-[#D4941E]/15 text-[#D4941E] text-[10px] font-black flex items-center justify-center shrink-0">
                     {idx + 1}
                   </span>
-                  <p className="flex-1 min-w-0 text-xs font-bold truncate">{item.file.name}</p>
+                  <p className="flex-1 min-w-0 text-xs font-bold truncate">
+                    {item.file.name}
+                    {item.economia !== undefined && (
+                      <span className="text-[#27AE60]"> ({item.economia}% menor)</span>
+                    )}
+                  </p>
                   {!uploading && (
                     <button
                       onClick={() => removerItem(item.key)}
@@ -423,6 +445,14 @@ function DisciplinePodcastPage() {
                     </button>
                   )}
                 </div>
+                {item.status && (
+                  <p className="text-[10px] font-bold text-[#D4941E]">{item.status}</p>
+                )}
+                {item.erro && (
+                  <p className="text-[10px] font-bold text-[#E74C3C] bg-[#E74C3C]/5 rounded-lg px-2 py-1.5">
+                    Não subiu: {item.erro}
+                  </p>
+                )}
                 <input
                   type="text"
                   placeholder="Título do episódio"
