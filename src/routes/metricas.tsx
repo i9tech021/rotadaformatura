@@ -3,12 +3,12 @@
 // volume por evento, por dia, rotas mais usadas, funil do simulado.
 // Acesso com a senha de admin (mesma das exclusões). Sem Supabase, lê o log local.
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, BarChart3, Lock, Menu, Users, Radio } from "lucide-react";
+import { ArrowLeft, BarChart3, Lock, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useEffect, useMemo, useState } from "react";
 import { lerMetricas, type Metrica } from "@/lib/metricas";
-import { subscribePresenca, getOnline, type PessoaOnline } from "@/lib/presenca";
+import { getOnlineFake } from "@/lib/presenca";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/metricas")({
@@ -45,7 +45,8 @@ function MetricasPage() {
   const [erro, setErro] = useState(false);
   const [dados, setDados] = useState<Metrica[]>([]);
   const [carregando, setCarregando] = useState(false);
-  const [online, setOnline] = useState<PessoaOnline[]>(() => getOnline());
+  // Número aparente de online (fake dinâmico por horário — ver presenca.ts)
+  const [onlineFake, setOnlineFake] = useState(() => getOnlineFake());
 
   useEffect(() => {
     if (!autorizado) return;
@@ -55,8 +56,9 @@ function MetricasPage() {
       .then(setDados)
       .catch(() => {})
       .finally(() => setCarregando(false));
-    setOnline(getOnline());
-    return subscribePresenca(() => setOnline(getOnline()));
+    setOnlineFake(getOnlineFake());
+    const tick = setInterval(() => setOnlineFake(getOnlineFake()), 60 * 1000);
+    return () => clearInterval(tick);
   }, [autorizado]);
 
   const resumo = useMemo(() => {
@@ -190,43 +192,15 @@ function MetricasPage() {
           </p>
         ) : (
           <div className="space-y-6">
-            {/* Online agora (tempo real) */}
-            <div className="bg-gradient-to-br from-[#27AE60] to-[#27AE60]/80 rounded-2xl p-5 text-white shadow-lg shadow-[#27AE60]/20">
-              <div className="flex items-center gap-3">
-                <span className="relative flex w-3 h-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
-                </span>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80 flex items-center gap-2">
-                  <Radio className="w-3.5 h-3.5" /> Online agora
-                </h3>
-                <span className="ml-auto text-3xl font-black font-mono">{online.length}</span>
-              </div>
-              {online.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {online.slice(0, 12).map((p) => (
-                    <span
-                      key={p.key}
-                      className="text-[9px] font-bold bg-white/15 rounded-full px-2 py-1"
-                      title={`${p.rota} • ${p.polo}`}
-                    >
-                      <Users className="w-2.5 h-2.5 inline -mt-0.5 mr-1" />
-                      {p.nome}
-                      {p.polo ? ` • ${p.polo}` : ""}
-                    </span>
-                  ))}
-                  {online.length > 12 && (
-                    <span className="text-[9px] font-bold bg-white/15 rounded-full px-2 py-1">
-                      +{online.length - 12}
-                    </span>
-                  )}
-                </div>
-              )}
-              {online.length === 0 && (
-                <p className="text-[10px] text-white/60 font-medium mt-2">
-                  Nenhuma aba com o app aberto no momento (além de você).
-                </p>
-              )}
+            {/* Online agora — discretinho */}
+            <div className="bg-white rounded-xl border border-[#0A3D52]/10 px-4 py-2.5 shadow-sm flex items-center gap-2.5">
+              <span className="relative flex w-2 h-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#27AE60] opacity-60" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#27AE60]" />
+              </span>
+              <p className="text-[11px] font-bold text-[#0A3D52]/60">
+                <span className="font-black text-[#0A3D52]">{onlineFake}</span> online agora
+              </p>
             </div>
 
             {/* KPIs */}
