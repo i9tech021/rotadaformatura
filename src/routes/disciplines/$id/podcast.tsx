@@ -52,6 +52,26 @@ export const Route = createFileRoute("/disciplines/$id/podcast")({
   }),
 });
 
+interface ArquivoLote {
+  key: string;
+  file: File;
+  titulo: string;
+  objetivo: string;
+  descricao: string;
+}
+
+const OBJETIVOS = [
+  { v: "", l: "Objetivo..." },
+  { v: "AP1", l: "AP1" },
+  { v: "AP2", l: "AP2" },
+  { v: "AP3", l: "AP3" },
+  { v: "AD1", l: "AD1" },
+  { v: "AD2", l: "AD2" },
+  { v: "revisao", l: "Revisão" },
+  { v: "conteudo", l: "Aula" },
+  { v: "dica", l: "Dica" },
+];
+
 function DisciplinePodcastPage() {
   const { id } = useParams({ from: "/disciplines/$id/podcast" });
   const discipline = useMemo(() => disciplinas.find((d) => d.id === id), [id]);
@@ -59,12 +79,9 @@ function DisciplinePodcastPage() {
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [objetivo, setObjetivo] = useState("");
-  const [arquivoNome, setArquivoNome] = useState("");
+  const [lote, setLote] = useState<ArquivoLote[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState<{ atual: number; total: number; pct: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [audioState, setAudioState] = useState(getAudioState());
@@ -85,69 +102,103 @@ function DisciplinePodcastPage() {
     return subscribePodcasts(recarregar);
   }, [recarregar]);
 
-  const onArquivoSelecionado = () => {
-    const f = fileRef.current?.files?.[0];
-    if (!f) return;
-    if (f.size > 50 * 1024 * 1024) {
-      toast.error("Arquivo muito grande. Maximo de 50MB.");
-      if (fileRef.current) fileRef.current.value = "";
-      return;
+  const onArquivosSelecionados = () => {
+    const files = fileRef.current?.files;
+    if (!files || files.length === 0) return;
+    const novos: ArquivoLote[] = [];
+    let rejeitados = 0;
+    for (const f of Array.from(files)) {
+      if (f.size > 50 * 1024 * 1024) {
+        rejeitados++;
+        continue;
+      }
+      const validExts = /\.(mp3|m4a|wav|ogg|oga|opus|aac|wma|mp4|3gp|amr)$/i;
+      const mimeOk = f.type === "" || f.type.startsWith("audio/");
+      if (!mimeOk && !validExts.test(f.name)) {
+        rejeitados++;
+        continue;
+      }
+      if ([...lote, ...novos].some((a) => a.file.name === f.name && a.file.size === f.size)) {
+        continue;
+      }
+      novos.push({
+        key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file: f,
+        titulo: f.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
+        objetivo: "",
+        descricao: "",
+      });
     }
-    setArquivoNome(f.name);
-    if (!titulo) setTitulo(f.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "));
-    toast.success(`Audio selecionado: ${f.name}`);
+    if (rejeitados > 0) toast.error(`${rejeitados} arquivo(s) rejeitado(s) (formato ou tamanho).`);
+    if (novos.length > 0) {
+      setLote((l) => [...l, ...novos]);
+      toast.success(`${novos.length} audio(s) na fila.`);
+    }
+    if (fileRef.current) fileRef.current.value = "";
   };
 
-  const limparArquivo = () => {
-    if (fileRef.current) fileRef.current.value = "";
-    setArquivoNome("");
-  };
+  const atualizarItem = (key: string, patch: Partial<ArquivoLote>) =>
+    setLote((l) => l.map((a) => (a.key === key ? { ...a, ...patch } : a)));
+
+  const removerItem = (key: string) => setLote((l) => l.filter((a) => a.key !== key));
 
   const handleUpload = async () => {
-    const file = fileRef.current?.files?.[0];
-    if (!file || !titulo.trim()) {
-      toast.error("Selecione um arquivo e preencha o titulo.");
+    if (lote.length === 0) {
+      toast.error("Selecione pelo menos um arquivo.");
       return;
     }
-    const validExts = /\.(mp3|m4a|wav|ogg|aac|wma)$/i;
-    if (!validExts.test(file.name)) {
-      toast.error("Formato nao suportado. Use MP3, M4A, WAV ou OGG.");
+    if (lote.some((a) => !a.titulo.trim())) {
+      toast.error("Dê um título para todos os áudios.");
       return;
     }
     setUploading(true);
-    setUploadProgress(5);
+    const total = lote.length;
+    let ok = 0;
+    const chavesOk = new Set<string>();
+    const falhas: string[] = [];
     try {
-      const result = await uploadPodcast(
-        file,
-        {
-          disciplinaId: id,
-          titulo: titulo.trim(),
-          descricao: descricao.trim(),
-          objetivo,
-        },
-        setUploadProgress,
-      );
-      if (result.ok) {
-        toast.success("Podcast publicado com sucesso!");
-        track("podcast_publicado", {
-          podcastId: result.podcast?.id ?? null,
-          disciplinaId: id,
-          objetivo: objetivo || null,
-        });
-        setTitulo("");
-        setDescricao("");
-        setObjetivo("");
-        setArquivoNome("");
-        setShowUpload(false);
-        if (fileRef.current) fileRef.current.value = "";
+      for (let i = 0; i < lote.length; i++) {
+        const item = lote[i]!;
+        setUploadProgress({ atual: i + 1, total, pct: Math.round((i / total) * 100) });
+        const result = await uploadPodcast(
+          item.file,
+          {
+            disciplinaId: id,
+            titulo: item.titulo.trim(),
+            descricao: item.descricao.trim(),
+            objetivo: item.objetivo,
+          },
+          (pct) =>
+            setUploadProgress({
+              atual: i + 1,
+              total,
+              pct: Math.round(((i + pct / 100) / total) * 100),
+            }),
+        );
+        if (result.ok) {
+          ok++;
+          chavesOk.add(item.key);
+          track("podcast_publicado", {
+            podcastId: result.podcast?.id ?? null,
+            disciplinaId: id,
+            objetivo: item.objetivo || null,
+            lote: total > 1,
+          });
+        } else {
+          falhas.push(item.file.name);
+          toast.error(result.error || "Falha no upload.");
+        }
+      }
+      if (ok > 0) {
+        toast.success(`${ok} podcast(s) publicado(s)!`);
+        setLote((l) => (falhas.length === 0 ? [] : l.filter((a) => !chavesOk.has(a.key))));
+        if (falhas.length === 0) setShowUpload(false);
         recarregar();
-      } else {
-        toast.error(result.error || "Falha no upload.");
       }
     } catch {
       toast.error("Erro inesperado no upload.");
     }
-    setUploadProgress(0);
+    setUploadProgress(null);
     setUploading(false);
   };
 
@@ -271,90 +322,112 @@ function DisciplinePodcastPage() {
           <span className="font-black text-xs uppercase tracking-wider">Enviar Podcast</span>
         </button>
 
-        {/* Form upload */}
+        {/* Form upload em lote */}
         {showUpload && (
           <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 shadow-lg mb-6 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-black text-sm uppercase">Novo Episodio</h3>
+              <h3 className="font-black text-sm uppercase">
+                Novos Episódios{lote.length > 0 ? ` (${lote.length})` : ""}
+              </h3>
               <button onClick={() => setShowUpload(false)} className="text-[#0A3D52]/40 hover:text-[#0A3D52] cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <input
-              type="text"
-              placeholder="Titulo do episodio"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E] outline-none"
-            />
-            <select
-              value={objetivo}
-              onChange={(e) => setObjetivo(e.target.value)}
-              className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E] outline-none cursor-pointer"
-            >
-              <option value="">Selecione o objetivo...</option>
-              <option value="AP1">AP1 — Prova Presencial 1</option>
-              <option value="AP2">AP2 — Prova Presencial 2</option>
-              <option value="AP3">AP3 — Recuperacao</option>
-              <option value="AD1">AD1 — Atividade a Distancia 1</option>
-              <option value="AD2">AD2 — Atividade a Distancia 2</option>
-              <option value="revisao">Revisao Geral</option>
-              <option value="conteudo">Conteudo de Aula</option>
-              <option value="dica">Dica / Resumo Rapido</option>
-            </select>
-            <textarea
-              placeholder="Descricao (opcional)"
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              rows={2}
-              className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4941E] outline-none resize-none"
-            />
-            <input
               ref={fileRef}
               type="file"
+              multiple
               accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.wma,.opus,.amr,.3gp"
               className="hidden"
-              onChange={onArquivoSelecionado}
+              onChange={onArquivosSelecionados}
             />
             <button
               onClick={() => fileRef.current?.click()}
-              className="w-full bg-[#F5F7FA] border border-[#0A3D52]/10 rounded-xl px-4 py-3 text-sm text-left text-[#0A3D52]/50 hover:border-[#D4941E]/30 transition-colors cursor-pointer"
+              className="w-full bg-[#F5F7FA] border-2 border-dashed border-[#D4941E]/30 rounded-xl px-4 py-4 text-sm text-center text-[#0A3D52]/50 hover:border-[#D4941E]/60 transition-colors cursor-pointer"
             >
-              {arquivoNome || "Selecionar arquivo de audio (MP3, M4A, WAV, OGG)..."}
+              {lote.length === 0
+                ? "Selecionar áudios (pode escolher vários de uma vez)"
+                : "Adicionar mais áudios"}
             </button>
-            {arquivoNome && (
-              <button
-                onClick={limparArquivo}
-                className="text-[10px] font-black uppercase text-[#E74C3C] cursor-pointer"
-              >
-                Trocar arquivo
-              </button>
-            )}
-            <p className="text-[9px] text-[#0A3D52]/40 font-medium">Tamanho maximo: 50MB.</p>
-            {uploading && (
+            <p className="text-[9px] text-[#0A3D52]/40 font-medium">MP3, M4A, WAV, OGG — até 50MB cada.</p>
+            {lote.map((item, idx) => (
+              <div key={item.key} className="bg-[#F5F7FA] rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-[#D4941E]/15 text-[#D4941E] text-[10px] font-black flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </span>
+                  <p className="flex-1 min-w-0 text-xs font-bold truncate">{item.file.name}</p>
+                  {!uploading && (
+                    <button
+                      onClick={() => removerItem(item.key)}
+                      className="text-[10px] font-black uppercase text-[#E74C3C] cursor-pointer shrink-0"
+                    >
+                      Tirar
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  placeholder="Título do episódio"
+                  value={item.titulo}
+                  onChange={(e) => atualizarItem(item.key, { titulo: e.target.value })}
+                  disabled={uploading}
+                  className="w-full bg-white border-none rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#D4941E] outline-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={item.objetivo}
+                    onChange={(e) => atualizarItem(item.key, { objetivo: e.target.value })}
+                    disabled={uploading}
+                    className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-[#D4941E] outline-none cursor-pointer"
+                  >
+                    {OBJETIVOS.map((o) => (
+                      <option key={o.v} value={o.v}>
+                        {o.l}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Descrição (opcional)"
+                    value={item.descricao}
+                    onChange={(e) => atualizarItem(item.key, { descricao: e.target.value })}
+                    disabled={uploading}
+                    className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-[#D4941E] outline-none"
+                  />
+                </div>
+              </div>
+            ))}
+            {uploading && uploadProgress && (
               <div className="space-y-1">
                 <div className="w-full h-2 bg-[#F5F7FA] rounded-full overflow-hidden">
-                  <div className="h-full bg-[#D4941E] rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                  <div className="h-full bg-[#D4941E] rounded-full transition-all duration-300" style={{ width: `${uploadProgress.pct}%` }} />
                 </div>
-                <p className="text-[10px] font-bold text-[#0A3D52]/40 text-center">Enviando... {uploadProgress}%</p>
+                <p className="text-[10px] font-bold text-[#0A3D52]/40 text-center">
+                  Enviando {uploadProgress.atual} de {uploadProgress.total}... {uploadProgress.pct}%
+                </p>
               </div>
             )}
-            <button
-              onClick={handleUpload}
-              disabled={uploading || !titulo.trim() || !arquivoNome}
-              className={cn(
-                "w-full py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all",
-                uploading || !titulo.trim() || !arquivoNome
-                  ? "bg-[#0A3D52]/10 text-[#0A3D52]/30 cursor-not-allowed"
-                  : "bg-[#D4941E] text-[#0A3D52] shadow-lg shadow-[#D4941E]/20 hover:scale-[1.02] cursor-pointer",
-              )}
-            >
-              {uploading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Enviando...
-                </span>
-              ) : "Publicar"}
-            </button>
+            {lote.length > 0 && (
+              <button
+                onClick={handleUpload}
+                disabled={uploading}
+                className={cn(
+                  "w-full py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all",
+                  uploading
+                    ? "bg-[#0A3D52]/10 text-[#0A3D52]/30 cursor-not-allowed"
+                    : "bg-[#D4941E] text-[#0A3D52] shadow-lg shadow-[#D4941E]/20 hover:scale-[1.02] cursor-pointer",
+                )}
+              >
+                {uploading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Enviando...
+                  </span>
+                ) : (
+                  `Publicar ${lote.length} podcast${lote.length !== 1 ? "s" : ""}`
+                )}
+              </button>
+            )}
           </div>
         )}
 

@@ -7,6 +7,7 @@ import {
   Upload,
   Search,
   ChevronRight,
+  ChevronDown,
   BookOpen,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -33,6 +34,38 @@ export const Route = createFileRoute("/podcasts")({
   }),
 });
 
+const MAX_AUDIO_MB = 50;
+
+const OBJETIVOS = [
+  { v: "", l: "Selecione o objetivo..." },
+  { v: "AP1", l: "AP1 — Prova Presencial 1" },
+  { v: "AP2", l: "AP2 — Prova Presencial 2" },
+  { v: "AP3", l: "AP3 — Recuperacao" },
+  { v: "AD1", l: "AD1 — Atividade a Distancia 1" },
+  { v: "AD2", l: "AD2 — Atividade a Distancia 2" },
+  { v: "revisao", l: "Revisao Geral" },
+  { v: "conteudo", l: "Conteudo de Aula" },
+  { v: "dica", l: "Dica / Resumo Rapido" },
+];
+
+interface ArquivoLote {
+  key: string;
+  file: File;
+  titulo: string;
+  objetivo: string;
+  descricao: string;
+}
+
+function arquivoValido(file: File): string | null {
+  if (file.size > MAX_AUDIO_MB * 1024 * 1024) {
+    return `${file.name}: muito grande (max ${MAX_AUDIO_MB}MB).`;
+  }
+  const extOk = /\.(mp3|m4a|wav|ogg|oga|opus|aac|wma|mp4|3gp|amr)$/i.test(file.name);
+  const mimeOk = file.type === "" || file.type.startsWith("audio/");
+  if (!mimeOk && !extOk) return `${file.name}: formato nao suportado.`;
+  return null;
+}
+
 function PodcastsPage() {
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -40,12 +73,11 @@ function PodcastsPage() {
   const [subindo, setSubindo] = useState(false);
   const [busca, setBusca] = useState("");
 
-  const [arquivoPendente, setArquivoPendente] = useState<File | null>(null);
-  const [tituloForm, setTituloForm] = useState("");
-  const [descricaoForm, setDescricaoForm] = useState("");
-  const [objetivoForm, setObjetivoForm] = useState("");
+  // Lote de upload: vários áudios de uma vez, mesma disciplina
+  const [lote, setLote] = useState<ArquivoLote[]>([]);
   const [disciplinaForm, setDisciplinaForm] = useState(disciplinas[0]?.id ?? "");
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [progressoLote, setProgressoLote] = useState<{ atual: number; total: number; pct: number } | null>(null);
+  const [abertas, setAbertas] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const recarregar = useCallback(async () => {
@@ -82,70 +114,106 @@ function PodcastsPage() {
     return lista;
   }, [podcasts, filtroDisciplina, busca]);
 
+  // Seções por matéria (acordeão): todas as disciplinas, mesmo sem áudio
+  const secoes = useMemo(() => {
+    const lista = filtroDisciplina ? disciplinas.filter((d) => d.id === filtroDisciplina) : disciplinas;
+    return lista.map((d) => ({
+      d,
+      itens: podcastsFiltrados.filter((p) => p.disciplina_id === d.id),
+    }));
+  }, [podcastsFiltrados, filtroDisciplina]);
+
   const disciplinaInfo = (id: string) => disciplinas.find((d) => d.id === id);
 
-  const selecionarArquivo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("Arquivo muito grande. Maximo de 50MB.");
-      return;
+  const adicionarArquivos = (files: FileList | File[]) => {
+    const novos: ArquivoLote[] = [];
+    let rejeitados = 0;
+    for (const file of Array.from(files)) {
+      const erro = arquivoValido(file);
+      if (erro) {
+        rejeitados++;
+        continue;
+      }
+      // evita duplicado (mesmo nome + tamanho)
+      if ([...lote, ...novos].some((a) => a.file.name === file.name && a.file.size === file.size)) {
+        continue;
+      }
+      novos.push({
+        key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        titulo: file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
+        objetivo: "",
+        descricao: "",
+      });
     }
-    // No celular o tipo MIME muitas vezes vem vazio — valida pela extensão nesses casos
-    const extOk = /\.(mp3|m4a|wav|ogg|oga|opus|aac|wma|mp4|3gp|amr)$/i.test(file.name);
-    const mimeOk = file.type === "" || file.type.startsWith("audio/");
-    if (!mimeOk && !extOk) {
-      toast.error("Selecione um arquivo de audio (MP3, M4A ou WAV).");
-      return;
+    if (rejeitados > 0) toast.error(`${rejeitados} arquivo(s) rejeitado(s) (formato ou tamanho).`);
+    if (novos.length > 0) {
+      setLote((l) => [...l, ...novos]);
+      toast.success(`${novos.length} audio(s) na fila.`);
     }
-    setArquivoPendente(file);
-    setTituloForm(file.name.replace(/\.[^.]+$/, ""));
-    toast.success(`Audio selecionado: ${file.name}`);
+    // permite selecionar o mesmo arquivo de novo
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const confirmarUpload = async () => {
-    if (!arquivoPendente) return;
-    if (!tituloForm.trim()) {
-      toast.error("De um titulo ao podcast.");
-      return;
-    }
+  const atualizarItem = (key: string, patch: Partial<ArquivoLote>) =>
+    setLote((l) => l.map((a) => (a.key === key ? { ...a, ...patch } : a)));
+
+  const removerItem = (key: string) => setLote((l) => l.filter((a) => a.key !== key));
+
+  const publicarLote = async () => {
+    if (lote.length === 0) return;
     if (!disciplinaForm) {
       toast.error("Selecione a disciplina.");
       return;
     }
-    setSubindo(true);
-    setUploadProgress(5);
-    const r = await uploadPodcast(
-      arquivoPendente,
-      {
-        disciplinaId: disciplinaForm,
-        titulo: tituloForm.trim(),
-        descricao: descricaoForm.trim(),
-        objetivo: objetivoForm,
-      },
-      setUploadProgress,
-    );
-    setSubindo(false);
-    setUploadProgress(0);
-    if (!r.ok) {
-      toast.error(r.error || "Erro ao subir o podcast.");
+    const semTitulo = lote.filter((a) => !a.titulo.trim());
+    if (semTitulo.length > 0) {
+      toast.error("Dê um título para todos os áudios.");
       return;
     }
-    if (!isSupabaseConfigured) {
-      toast.info("Salvo localmente (sem banco configurado).");
-    } else {
-      toast.success("Podcast publicado!");
+    setSubindo(true);
+    const total = lote.length;
+    let ok = 0;
+    const falhas: string[] = [];
+    const chavesOk = new Set<string>();
+    for (let i = 0; i < lote.length; i++) {
+      const item = lote[i]!;
+      setProgressoLote({ atual: i + 1, total, pct: Math.round((i / total) * 100) });
+      const r = await uploadPodcast(
+        item.file,
+        {
+          disciplinaId: disciplinaForm,
+          titulo: item.titulo.trim(),
+          descricao: item.descricao.trim(),
+          objetivo: item.objetivo,
+        },
+        (pct) => setProgressoLote({ atual: i + 1, total, pct: Math.round(((i + pct / 100) / total) * 100) }),
+      );
+      if (r.ok) {
+        ok++;
+        chavesOk.add(item.key);
+        track("podcast_publicado", {
+          podcastId: r.podcast?.id ?? null,
+          disciplinaId: disciplinaForm,
+          objetivo: item.objetivo || null,
+          lote: total > 1,
+        });
+      } else {
+        falhas.push(item.file.name);
+      }
     }
-    track("podcast_publicado", {
-      podcastId: r.podcast?.id ?? null,
-      disciplinaId: disciplinaForm,
-      objetivo: objetivoForm || null,
-    });
-    setArquivoPendente(null);
-    setTituloForm("");
-    setDescricaoForm("");
-    setObjetivoForm("");
-    recarregar();
+    setSubindo(false);
+    setProgressoLote(null);
+    if (ok > 0) {
+      if (!isSupabaseConfigured) toast.info("Salvos localmente (sem banco configurado).");
+      else toast.success(`${ok} podcast(s) publicado(s)!`);
+      // remove os que subiram, mantém os que falharam para tentar de novo
+      setLote((l) => (falhas.length === 0 ? [] : l.filter((a) => !chavesOk.has(a.key))));
+      recarregar();
+    }
+    if (falhas.length > 0) {
+      toast.error(`Falharam: ${falhas.slice(0, 3).join(", ")}${falhas.length > 3 ? "..." : ""}`);
+    }
   };
 
   const handleRemover = async (podcast: Podcast) => {
@@ -285,182 +353,238 @@ function PodcastsPage() {
           </summary>
 
           <div className="bg-white rounded-2xl border border-[#0A3D52]/10 border-t-0 rounded-t-none p-5 shadow-sm space-y-3 -mt-2 pt-6">
-            {!arquivoPendente ? (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-[#7C3AED]/20 rounded-2xl p-8 text-center hover:border-[#7C3AED]/50 hover:bg-[#7C3AED]/5 transition-all cursor-pointer"
+            {/* Disciplina do lote */}
+            <div>
+              <label className="text-[10px] font-black uppercase text-[#0A3D52]/50 tracking-widest block mb-1">
+                Matéria dos áudios
+              </label>
+              <select
+                value={disciplinaForm}
+                onChange={(e) => setDisciplinaForm(e.target.value)}
+                className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-[#7C3AED] outline-none cursor-pointer"
               >
-                <Headphones className="w-8 h-8 mx-auto mb-2 text-[#7C3AED]/30" />
-                <p className="text-sm font-bold text-[#0A3D52]/60">
-                  Clique para selecionar um audio
-                </p>
-                <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-widest mt-1">
-                  MP3, M4A ou WAV — ate 50MB
-                </p>
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-[#F5F7FA] rounded-xl p-3 flex items-center gap-3">
-                  <Headphones className="w-5 h-5 text-[#7C3AED] shrink-0" />
+                {disciplinas.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.codigo} — {d.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-2 border-dashed border-[#7C3AED]/20 rounded-2xl p-6 text-center hover:border-[#7C3AED]/50 hover:bg-[#7C3AED]/5 transition-all cursor-pointer"
+            >
+              <Headphones className="w-8 h-8 mx-auto mb-2 text-[#7C3AED]/30" />
+              <p className="text-sm font-bold text-[#0A3D52]/60">
+                {lote.length === 0
+                  ? "Toque para selecionar os áudios (pode escolher vários)"
+                  : "Adicionar mais áudios"}
+              </p>
+              <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-widest mt-1">
+                MP3, M4A, WAV, OGG — até {MAX_AUDIO_MB}MB cada
+              </p>
+            </button>
+
+            {/* Fila do lote */}
+            {lote.map((item, idx) => (
+              <div key={item.key} className="bg-[#F5F7FA] rounded-xl p-3 space-y-2 border border-[#0A3D52]/5">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-[#7C3AED]/15 text-[#7C3AED] text-[10px] font-black flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate">{arquivoPendente.name}</p>
-                    <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">
-                      {(arquivoPendente.size / (1024 * 1024)).toFixed(1)} MB
+                    <p className="text-xs font-bold truncate">{item.file.name}</p>
+                    <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
+                      {(item.file.size / (1024 * 1024)).toFixed(1)} MB
                     </p>
                   </div>
-                  <button
-                    onClick={() => setArquivoPendente(null)}
-                    className="text-[10px] font-black uppercase text-[#E74C3C] cursor-pointer"
-                  >
-                    Trocar
-                  </button>
+                  {!subindo && (
+                    <button
+                      onClick={() => removerItem(item.key)}
+                      className="text-[10px] font-black uppercase text-[#E74C3C] cursor-pointer shrink-0"
+                    >
+                      Tirar
+                    </button>
+                  )}
                 </div>
-
                 <input
-                  value={tituloForm}
-                  onChange={(e) => setTituloForm(e.target.value)}
-                  placeholder="Titulo do episodio"
-                  className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#7C3AED] outline-none"
+                  value={item.titulo}
+                  onChange={(e) => atualizarItem(item.key, { titulo: e.target.value })}
+                  placeholder="Título do episódio"
+                  disabled={subindo}
+                  className="w-full bg-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#7C3AED] outline-none"
                 />
-
-                <select
-                  value={disciplinaForm}
-                  onChange={(e) => setDisciplinaForm(e.target.value)}
-                  className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#7C3AED] outline-none cursor-pointer"
-                >
-                  {disciplinas.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.codigo} — {d.nome}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={objetivoForm}
-                  onChange={(e) => setObjetivoForm(e.target.value)}
-                  className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#7C3AED] outline-none cursor-pointer"
-                >
-                  <option value="">Selecione o objetivo...</option>
-                  <option value="AP1">AP1 — Prova Presencial 1</option>
-                  <option value="AP2">AP2 — Prova Presencial 2</option>
-                  <option value="AP3">AP3 — Recuperacao</option>
-                  <option value="AD1">AD1 — Atividade a Distancia 1</option>
-                  <option value="AD2">AD2 — Atividade a Distancia 2</option>
-                  <option value="revisao">Revisao Geral</option>
-                  <option value="conteudo">Conteudo de Aula</option>
-                  <option value="dica">Dica / Resumo Rapido</option>
-                </select>
-
-                <textarea
-                  value={descricaoForm}
-                  onChange={(e) => setDescricaoForm(e.target.value)}
-                  placeholder="Descricao (opcional)"
-                  rows={2}
-                  className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#7C3AED] outline-none resize-none"
-                />
-
-                {/* Barra de progresso durante upload */}
-                {subindo && (
-                  <div className="space-y-1.5">
-                    <div className="w-full h-2.5 bg-[#F5F7FA] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-[#7C3AED] to-[#7C3AED]/70 rounded-full transition-all duration-500 ease-out"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                    <p className="text-[10px] font-bold text-[#0A3D52]/40 text-center">
-                      {uploadProgress < 20
-                        ? "Preparando audio..."
-                        : uploadProgress < 80
-                          ? `Enviando... ${uploadProgress}%`
-                          : uploadProgress < 95
-                            ? "Salvando..."
-                            : "Quase pronto!"}
-                    </p>
-                  </div>
-                )}
-
-                <button
-                  onClick={confirmarUpload}
-                  disabled={subindo || !tituloForm.trim()}
-                  className={cn(
-                    "w-full py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all",
-                    subindo || !tituloForm.trim()
-                      ? "bg-[#0A3D52]/10 text-[#0A3D52]/30 cursor-not-allowed"
-                      : "bg-[#7C3AED] text-white shadow-lg shadow-[#7C3AED]/20 hover:scale-[1.01] cursor-pointer",
-                  )}
-                >
-                  {subindo ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Enviando...
-                    </span>
-                  ) : (
-                    "Publicar podcast"
-                  )}
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={item.objetivo}
+                    onChange={(e) => atualizarItem(item.key, { objetivo: e.target.value })}
+                    disabled={subindo}
+                    className="w-full bg-white rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-[#7C3AED] outline-none cursor-pointer"
+                  >
+                    {OBJETIVOS.map((o) => (
+                      <option key={o.v} value={o.v}>
+                        {o.l}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={item.descricao}
+                    onChange={(e) => atualizarItem(item.key, { descricao: e.target.value })}
+                    placeholder="Descrição (opcional)"
+                    disabled={subindo}
+                    className="w-full bg-white rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-[#7C3AED] outline-none"
+                  />
+                </div>
               </div>
+            ))}
+
+            {/* Progresso do lote */}
+            {subindo && progressoLote && (
+              <div className="space-y-1.5">
+                <div className="w-full h-2.5 bg-[#F5F7FA] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#7C3AED] to-[#7C3AED]/70 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${progressoLote.pct}%` }}
+                  />
+                </div>
+                <p className="text-[10px] font-bold text-[#0A3D52]/40 text-center">
+                  Enviando {progressoLote.atual} de {progressoLote.total}... {progressoLote.pct}%
+                </p>
+              </div>
+            )}
+
+            {lote.length > 0 && (
+              <button
+                onClick={publicarLote}
+                disabled={subindo}
+                className={cn(
+                  "w-full py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all",
+                  subindo
+                    ? "bg-[#0A3D52]/10 text-[#0A3D52]/30 cursor-not-allowed"
+                    : "bg-[#7C3AED] text-white shadow-lg shadow-[#7C3AED]/20 hover:scale-[1.01] cursor-pointer",
+                )}
+              >
+                {subindo ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Enviando...
+                  </span>
+                ) : (
+                  `Publicar ${lote.length} podcast${lote.length !== 1 ? "s" : ""}`
+                )}
+              </button>
             )}
 
             <input
               ref={fileInputRef}
               type="file"
-              accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/*"
+              multiple
+              accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/*,.mp3,.m4a,.wav,.ogg,.opus"
               className="hidden"
-              onChange={selecionarArquivo}
+              onChange={(e) => {
+                if (e.target.files) adicionarArquivos(e.target.files);
+              }}
             />
           </div>
         </details>
 
-        {/* Lista de podcasts */}
+        {/* Lista por matéria (expansível) */}
         {carregando ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
               <div
                 key={i}
                 className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 animate-pulse"
               >
-                <div className="flex gap-3 mb-3">
+                <div className="flex gap-3">
                   <div className="w-11 h-11 rounded-xl bg-[#F5F7FA]" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-3 bg-[#F5F7FA] rounded w-1/3" />
-                    <div className="h-4 bg-[#F5F7FA] rounded w-2/3" />
+                    <div className="h-4 bg-[#F5F7FA] rounded w-1/3" />
+                    <div className="h-3 bg-[#F5F7FA] rounded w-1/2" />
                   </div>
                 </div>
-                <div className="h-12 bg-[#F5F7FA] rounded-xl" />
               </div>
             ))}
           </div>
-        ) : podcastsFiltrados.length === 0 ? (
+        ) : secoes.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-[#0A3D52]/10">
             <Headphones className="w-14 h-14 text-[#0A3D52]/8 mx-auto mb-4" />
             <p className="font-black text-xs uppercase tracking-widest text-[#0A3D52]/30 mb-2">
-              {filtroDisciplina
-                ? "Nenhum podcast nesta disciplina"
+              {busca.trim() || filtroDisciplina
+                ? "Nada encontrado"
                 : "Nenhum podcast publicado ainda"}
             </p>
             <p className="text-[11px] text-[#0A3D52]/30 max-w-xs mx-auto">
-              {filtroDisciplina
-                ? "Seja o primeiro a enviar um audio para esta disciplina!"
-                : "Use o formulario acima para publicar o primeiro audio."}
+              Use o formulário acima para publicar os primeiros áudios.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {podcastsFiltrados.map((p) => {
-              const d = disciplinaInfo(p.disciplina_id);
+          <div className="space-y-3">
+            {secoes.map(({ d, itens }) => {
+              const aberta = abertas[d.id] ?? itens.length > 0;
               return (
-                <PodcastCard
-                  key={p.id}
-                  podcast={p}
-                  disciplinaCor={d?.cor ?? "#7C3AED"}
-                  disciplinaNome={d?.codigo ?? "Disciplina"}
-                  podeRemover
-                  onRemover={handleRemover}
-                />
+                <div
+                  key={d.id}
+                  className="bg-white rounded-2xl border border-[#0A3D52]/10 shadow-sm overflow-hidden"
+                >
+                  <button
+                    onClick={() => setAbertas((a) => ({ ...a, [d.id]: !aberta }))}
+                    className="w-full flex items-center gap-3 p-4 cursor-pointer hover:bg-[#F5F7FA]/60 transition-colors text-left"
+                  >
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
+                      style={{ background: `${d.cor}15` }}
+                    >
+                      {d.icone}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-black text-sm leading-tight truncate">{d.nome}</h4>
+                      <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">
+                        {d.codigo} • {itens.length} áudio{itens.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    {itens.length > 0 && (
+                      <span
+                        className="text-[10px] font-black px-2 py-1 rounded-full shrink-0"
+                        style={{ color: d.cor, background: `${d.cor}15` }}
+                      >
+                        {itens.length}
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={cn(
+                        "w-5 h-5 text-[#0A3D52]/30 shrink-0 transition-transform",
+                        aberta && "rotate-180",
+                      )}
+                    />
+                  </button>
+                  {aberta && (
+                    <div className="px-4 pb-4 space-y-3 border-t border-[#0A3D52]/5 pt-4">
+                      {itens.length === 0 ? (
+                        <p className="text-[11px] text-[#0A3D52]/40 font-medium text-center py-3">
+                          Nenhum áudio aqui ainda. Seja o primeiro a enviar!
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                          {itens.map((p) => (
+                            <PodcastCard
+                              key={p.id}
+                              podcast={p}
+                              disciplinaCor={d.cor}
+                              disciplinaNome={d.codigo}
+                              podeRemover
+                              onRemover={handleRemover}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
