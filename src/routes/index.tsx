@@ -218,7 +218,7 @@ function AcademicDashboard() {
     );
     const ad2IniciaEm =
       ad2Events.length > 0
-        ? parseDataLocal(
+        ? new Date(
             Math.min(...ad2Events.map((e) => parseDataLocal(e.dataInicio).getTime())),
           ).toLocaleDateString("pt-BR")
         : "Aguardando";

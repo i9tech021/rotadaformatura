@@ -10,8 +10,11 @@
 // deslocamento. Use SEMPRE este helper para datas de eventos/avaliações
 // (dataInicio, dataFim, dataPresencial). Timestamps completos com timezone
 // (ex: criado_em do Supabase) continuam funcionando via `new Date()`.
-export function parseDataLocal(data: string | Date): Date {
+export function parseDataLocal(data: string | Date | null | undefined): Date {
   if (data instanceof Date) return data;
+  // Blindagem: dado ausente ou em formato inesperado vira "data inválida"
+  // (como fazia `new Date(x)`), NUNCA quebra a tela.
+  if (typeof data !== "string") return new Date(NaN);
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(data.trim());
   if (m) {
     return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));

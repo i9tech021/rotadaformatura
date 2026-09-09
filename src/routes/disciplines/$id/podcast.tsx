@@ -44,6 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { track } from "@/lib/metricas";
+import { otimizarAudio, suportaOtimizacao } from "@/lib/audioLeve";
 
 export const Route = createFileRoute("/disciplines/$id/podcast")({
   component: DisciplinePodcastPage,
@@ -58,6 +59,10 @@ interface ArquivoLote {
   titulo: string;
   objetivo: string;
   descricao: string;
+  blob?: Blob;
+  economia?: number;
+  status?: string;
+  erro?: string;
 }
 
 const OBJETIVOS = [
@@ -82,6 +87,8 @@ function DisciplinePodcastPage() {
   const [lote, setLote] = useState<ArquivoLote[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ atual: number; total: number; pct: number } | null>(null);
+  const [otimizar, setOtimizar] = useState(true);
+  const [otimSuportado, setOtimSuportado] = useState<boolean | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [audioState, setAudioState] = useState(getAudioState());
@@ -99,6 +106,9 @@ function DisciplinePodcastPage() {
 
   useEffect(() => {
     recarregar();
+    suportaOtimizacao()
+      .then(setOtimSuportado)
+      .catch(() => setOtimSuportado(false));
     return subscribePodcasts(recarregar);
   }, [recarregar]);
 
@@ -152,30 +162,73 @@ function DisciplinePodcastPage() {
       return;
     }
     setUploading(true);
-    const total = lote.length;
+    const fila = [...lote];
+    const total = fila.length;
     let ok = 0;
     const chavesOk = new Set<string>();
-    const falhas: string[] = [];
+    const marca = (key: string, patch: Partial<ArquivoLote>) =>
+      setLote((l) => l.map((a) => (a.key === key ? { ...a, ...patch } : a)));
     try {
-      for (let i = 0; i < lote.length; i++) {
-        const item = lote[i]!;
+      for (let i = 0; i < fila.length; i++) {
+        const item = fila[i]!;
+        marca(item.key, { erro: undefined, status: "preparando..." });
         setUploadProgress({ atual: i + 1, total, pct: Math.round((i / total) * 100) });
-        const result = await uploadPodcast(
-          item.file,
-          {
-            disciplinaId: id,
-            titulo: item.titulo.trim(),
-            descricao: item.descricao.trim(),
-            objetivo: item.objetivo,
-          },
-          (pct) =>
-            setUploadProgress({
-              atual: i + 1,
-              total,
-              pct: Math.round(((i + pct / 100) / total) * 100),
-            }),
-        );
-        if (result.ok) {
+
+        // 1) Versão leve
+        let arquivo: File = item.file;
+        let economia: number | undefined = item.economia;
+        let blobPronto = item.blob;
+        if (otimizar && otimSuportado && !blobPronto && item.file.size >= 3 * 1024 * 1024) {
+          marca(item.key, { status: "otimizando (deixando mais leve)..." });
+          try {
+            const leve = await otimizarAudio(item.file, (_fase, pct) => {
+              marca(item.key, { status: `otimizando... ${pct}%` });
+              setUploadProgress({
+                atual: i + 1,
+                total,
+                pct: Math.round(((i + pct / 200) / total) * 100),
+              });
+            });
+            if (leve) {
+              blobPronto = new File([leve.blob], leve.nome, { type: "audio/webm" });
+              economia = leve.economiaPct;
+              marca(item.key, { blob: blobPronto, economia, status: `leve (${leve.economiaPct}% menor)` });
+            } else {
+              marca(item.key, { status: "enviando original..." });
+            }
+          } catch {
+            marca(item.key, { status: "enviando original..." });
+          }
+        }
+        if (blobPronto) arquivo = blobPronto as File;
+
+        // 2) Upload com até 3 tentativas
+        let result: Awaited<ReturnType<typeof uploadPodcast>> | null = null;
+        for (let tent = 1; tent <= 3; tent++) {
+          marca(item.key, { status: tent === 1 ? "enviando..." : `tentativa ${tent} de 3...` });
+          try {
+            result = await uploadPodcast(
+              arquivo,
+              {
+                disciplinaId: id,
+                titulo: item.titulo.trim(),
+                descricao: item.descricao.trim(),
+                objetivo: item.objetivo,
+              },
+              (pct) =>
+                setUploadProgress({
+                  atual: i + 1,
+                  total,
+                  pct: Math.round(((i + pct / 100) / total) * 100),
+                }),
+            );
+          } catch {
+            result = { ok: false, error: "Erro de rede." };
+          }
+          if (result.ok) break;
+          if (tent < 3) await new Promise((res) => setTimeout(res, 2000));
+        }
+        if (result?.ok) {
           ok++;
           chavesOk.add(item.key);
           track("podcast_publicado", {
@@ -183,17 +236,21 @@ function DisciplinePodcastPage() {
             disciplinaId: id,
             objetivo: item.objetivo || null,
             lote: total > 1,
+            leve: Boolean(blobPronto),
+            economiaPct: economia ?? null,
+            arquivo: item.file.name,
           });
         } else {
-          falhas.push(item.file.name);
-          toast.error(result.error || "Falha no upload.");
+          marca(item.key, { erro: result?.error || "Falha no envio.", status: undefined });
         }
       }
       if (ok > 0) {
-        toast.success(`${ok} podcast(s) publicado(s)!`);
-        setLote((l) => (falhas.length === 0 ? [] : l.filter((a) => !chavesOk.has(a.key))));
-        if (falhas.length === 0) setShowUpload(false);
+        toast.success(`${ok} áudio(s) publicado(s)!`);
+        setLote((l) => l.filter((a) => !chavesOk.has(a.key)));
+        if (chavesOk.size === fila.length) setShowUpload(false);
         recarregar();
+      } else if (fila.length > 0) {
+        toast.error("Nenhum áudio subiu. Veja o motivo em cada item.");
       }
     } catch {
       toast.error("Erro inesperado no upload.");

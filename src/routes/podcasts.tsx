@@ -26,6 +26,7 @@ import { PodcastCard } from "@/components/PodcastCard";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { track } from "@/lib/metricas";
 import { getUsoStorage, formatarBytes, COTA_BYTES } from "@/lib/armazenamento";
+import { otimizarAudio, suportaOtimizacao } from "@/lib/audioLeve";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/podcasts")({
@@ -55,6 +56,10 @@ interface ArquivoLote {
   titulo: string;
   objetivo: string;
   descricao: string;
+  blob?: Blob; // versão leve pronta (quando otimizada)
+  economia?: number; // % economizada vs original
+  status?: string; // texto de fase ("otimizando…", "tentativa 2…")
+  erro?: string; // motivo da falha (para exibir)
 }
 
 function arquivoValido(file: File): string | null {
@@ -80,6 +85,9 @@ function PodcastsPage() {
   const [progressoLote, setProgressoLote] = useState<{ atual: number; total: number; pct: number } | null>(null);
   const [abertas, setAbertas] = useState<Record<string, boolean>>({});
   const [espacoUsado, setEspacoUsado] = useState<number | null>(null);
+  // Versão leve: comprime antes de enviar (desliga se o aparelho não suportar)
+  const [otimizar, setOtimizar] = useState(true);
+  const [otimSuportado, setOtimSuportado] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const recarregar = useCallback(async () => {
@@ -93,6 +101,9 @@ function PodcastsPage() {
     getUsoStorage()
       .then((u) => setEspacoUsado(u.totalBytes))
       .catch(() => {});
+    suportaOtimizacao()
+      .then(setOtimSuportado)
+      .catch(() => setOtimSuportado(false));
     return subscribePodcasts(recarregar);
   }, [recarregar]);
 
@@ -177,24 +188,80 @@ function PodcastsPage() {
       return;
     }
     setSubindo(true);
-    const total = lote.length;
+    const fila = [...lote];
+    const total = fila.length;
     let ok = 0;
-    const falhas: string[] = [];
     const chavesOk = new Set<string>();
-    for (let i = 0; i < lote.length; i++) {
-      const item = lote[i]!;
+    const marca = (key: string, patch: Partial<ArquivoLote>) =>
+      setLote((l) => l.map((a) => (a.key === key ? { ...a, ...patch } : a)));
+
+    for (let i = 0; i < fila.length; i++) {
+      const item = fila[i]!;
+      marca(item.key, { erro: undefined, status: "preparando..." });
       setProgressoLote({ atual: i + 1, total, pct: Math.round((i / total) * 100) });
-      const r = await uploadPodcast(
-        item.file,
-        {
-          disciplinaId: disciplinaForm,
-          titulo: item.titulo.trim(),
-          descricao: item.descricao.trim(),
-          objetivo: item.objetivo,
-        },
-        (pct) => setProgressoLote({ atual: i + 1, total, pct: Math.round(((i + pct / 100) / total) * 100) }),
-      );
-      if (r.ok) {
+
+      // 1) Versão leve (se ligada, suportada e ainda não otimizado)
+      let arquivo: File = item.file;
+      let nomeEnvio = item.file.name;
+      let economia: number | undefined = item.economia;
+      let blobPronto = item.blob;
+      if (otimizar && otimSuportado && !blobPronto && item.file.size >= 3 * 1024 * 1024) {
+        marca(item.key, { status: "otimizando (deixando mais leve)..." });
+        try {
+          const leve = await otimizarAudio(item.file, (_fase, pct) => {
+            marca(item.key, { status: `otimizando... ${pct}%` });
+            setProgressoLote({
+              atual: i + 1,
+              total,
+              pct: Math.round(((i + pct / 200) / total) * 100),
+            });
+          });
+          if (leve) {
+            blobPronto = new File([leve.blob], leve.nome, { type: "audio/webm" });
+            economia = leve.economiaPct;
+            marca(item.key, { blob: blobPronto, economia, status: `leve (${leve.economiaPct}% menor)` });
+          } else {
+            marca(item.key, { status: "enviando original..." });
+          }
+        } catch {
+          marca(item.key, { status: "enviando original..." });
+        }
+      }
+      if (blobPronto) {
+        arquivo = blobPronto as File;
+        nomeEnvio = (blobPronto as File).name || nomeEnvio;
+      }
+
+      // 2) Upload com até 3 tentativas
+      let r: Awaited<ReturnType<typeof uploadPodcast>> | null = null;
+      for (let tent = 1; tent <= 3; tent++) {
+        marca(item.key, {
+          status: tent === 1 ? "enviando..." : `tentativa ${tent} de 3...`,
+        });
+        try {
+          r = await uploadPodcast(
+            arquivo,
+            {
+              disciplinaId: disciplinaForm,
+              titulo: item.titulo.trim(),
+              descricao: item.descricao.trim(),
+              objetivo: item.objetivo,
+            },
+            (pct) =>
+              setProgressoLote({
+                atual: i + 1,
+                total,
+                pct: Math.round(((i + pct / 100) / total) * 100),
+              }),
+          );
+        } catch {
+          r = { ok: false, error: "Erro de rede." };
+        }
+        if (r.ok) break;
+        if (tent < 3) await new Promise((res) => setTimeout(res, 2000));
+      }
+
+      if (r?.ok) {
         ok++;
         chavesOk.add(item.key);
         track("podcast_publicado", {
@@ -202,22 +269,27 @@ function PodcastsPage() {
           disciplinaId: disciplinaForm,
           objetivo: item.objetivo || null,
           lote: total > 1,
+          leve: Boolean(blobPronto),
+          economiaPct: economia ?? null,
+          arquivo: nomeEnvio,
         });
       } else {
-        falhas.push(item.file.name);
+        marca(item.key, { erro: r?.error || "Falha no envio.", status: undefined });
       }
     }
     setSubindo(false);
     setProgressoLote(null);
     if (ok > 0) {
       if (!isSupabaseConfigured) toast.info("Salvos localmente (sem banco configurado).");
-      else toast.success(`${ok} podcast(s) publicado(s)!`);
-      // remove os que subiram, mantém os que falharam para tentar de novo
-      setLote((l) => (falhas.length === 0 ? [] : l.filter((a) => !chavesOk.has(a.key))));
+      else toast.success(`${ok} áudio(s) publicado(s)!`);
+      // remove os que subiram, mantém os que falharam (com o motivo visível)
+      setLote((l) => l.filter((a) => !chavesOk.has(a.key)));
+      getUsoStorage()
+        .then((u) => setEspacoUsado(u.totalBytes))
+        .catch(() => {});
       recarregar();
-    }
-    if (falhas.length > 0) {
-      toast.error(`Falharam: ${falhas.slice(0, 3).join(", ")}${falhas.length > 3 ? "..." : ""}`);
+    } else if (fila.length > 0) {
+      toast.error("Nenhum áudio subiu. Veja o motivo em cada item.");
     }
   };
 
@@ -396,6 +468,25 @@ function PodcastsPage() {
               )}
             </button>
 
+            {/* Versão leve */}
+            <label className="flex items-center gap-3 bg-[#7C3AED]/5 border border-[#7C3AED]/15 rounded-xl px-4 py-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={otimizar}
+                onChange={(e) => setOtimizar(e.target.checked)}
+                disabled={subindo || otimSuportado === false}
+                className="w-5 h-5 accent-[#7C3AED] cursor-pointer shrink-0"
+              />
+              <span className="flex-1">
+                <span className="block text-xs font-black uppercase">Versão leve (economiza espaço)</span>
+                <span className="block text-[10px] font-medium text-[#0A3D52]/50">
+                  {otimSuportado === false
+                    ? "Neste aparelho, envia o arquivo original."
+                    : "Comprimo o áudio no teu aparelho antes de enviar (voz fica ~4x menor)."}
+                </span>
+              </span>
+            </label>
+
             {/* Fila do lote */}
             {lote.map((item, idx) => (
               <div key={item.key} className="bg-[#F5F7FA] rounded-xl p-3 space-y-2 border border-[#0A3D52]/5">
@@ -407,6 +498,9 @@ function PodcastsPage() {
                     <p className="text-xs font-bold truncate">{item.file.name}</p>
                     <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
                       {(item.file.size / (1024 * 1024)).toFixed(1)} MB
+                      {item.economia !== undefined && (
+                        <span className="text-[#27AE60]"> → leve ({item.economia}% menor)</span>
+                      )}
                     </p>
                   </div>
                   {!subindo && (
@@ -418,6 +512,14 @@ function PodcastsPage() {
                     </button>
                   )}
                 </div>
+                {item.status && (
+                  <p className="text-[10px] font-bold text-[#7C3AED]">{item.status}</p>
+                )}
+                {item.erro && (
+                  <p className="text-[10px] font-bold text-[#E74C3C] bg-[#E74C3C]/5 rounded-lg px-2 py-1.5">
+                    Não subiu: {item.erro}
+                  </p>
+                )}
                 <input
                   value={item.titulo}
                   onChange={(e) => atualizarItem(item.key, { titulo: e.target.value })}

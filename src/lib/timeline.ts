@@ -103,5 +103,11 @@ export function getProgressoTempo(
 
 /** Formata data em "dd 'de' MMMM" em português (ex: "12 de setembro"). */
 export function formatarDataBrasil(data: string | Date): string {
-  return format(parseDataLocal(data), "dd 'de' MMMM", { locale: ptBR });
+  try {
+    const d = parseDataLocal(data);
+    if (Number.isNaN(d.getTime())) return "—";
+    return format(d, "dd 'de' MMMM", { locale: ptBR });
+  } catch {
+    return "—";
+  }
 }
