@@ -25,6 +25,7 @@ import {
 import { PodcastCard } from "@/components/PodcastCard";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { track } from "@/lib/metricas";
+import { getUsoStorage, formatarBytes, COTA_BYTES } from "@/lib/armazenamento";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/podcasts")({
@@ -78,6 +79,7 @@ function PodcastsPage() {
   const [disciplinaForm, setDisciplinaForm] = useState(disciplinas[0]?.id ?? "");
   const [progressoLote, setProgressoLote] = useState<{ atual: number; total: number; pct: number } | null>(null);
   const [abertas, setAbertas] = useState<Record<string, boolean>>({});
+  const [espacoUsado, setEspacoUsado] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const recarregar = useCallback(async () => {
@@ -88,6 +90,9 @@ function PodcastsPage() {
 
   useEffect(() => {
     recarregar();
+    getUsoStorage()
+      .then((u) => setEspacoUsado(u.totalBytes))
+      .catch(() => {});
     return subscribePodcasts(recarregar);
   }, [recarregar]);
 
@@ -384,6 +389,11 @@ function PodcastsPage() {
               <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-widest mt-1">
                 MP3, M4A, WAV, OGG — até {MAX_AUDIO_MB}MB cada
               </p>
+              {espacoUsado !== null && (
+                <p className="text-[10px] font-bold text-[#0A3D52]/40 mt-2">
+                  Espaço usado: {formatarBytes(espacoUsado)} de {formatarBytes(COTA_BYTES)}
+                </p>
+              )}
             </button>
 
             {/* Fila do lote */}

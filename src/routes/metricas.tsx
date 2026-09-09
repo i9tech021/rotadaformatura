@@ -3,12 +3,13 @@
 // volume por evento, por dia, rotas mais usadas, funil do simulado.
 // Acesso com a senha de admin (mesma das exclusões). Sem Supabase, lê o log local.
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, BarChart3, Lock, Menu } from "lucide-react";
+import { ArrowLeft, BarChart3, Lock, Menu, Database } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useEffect, useMemo, useState } from "react";
 import { lerMetricas, type Metrica } from "@/lib/metricas";
 import { getOnlineFake } from "@/lib/presenca";
+import { getUsoStorage, formatarBytes, COTA_BYTES, type UsoStorage } from "@/lib/armazenamento";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/metricas")({
@@ -47,6 +48,7 @@ function MetricasPage() {
   const [carregando, setCarregando] = useState(false);
   // Número aparente de online (fake dinâmico por horário — ver presenca.ts)
   const [onlineFake, setOnlineFake] = useState(() => getOnlineFake());
+  const [storage, setStorage] = useState<UsoStorage | null>(null);
 
   useEffect(() => {
     if (!autorizado) return;
@@ -56,6 +58,9 @@ function MetricasPage() {
       .then(setDados)
       .catch(() => {})
       .finally(() => setCarregando(false));
+    getUsoStorage()
+      .then(setStorage)
+      .catch(() => {});
     setOnlineFake(getOnlineFake());
     const tick = setInterval(() => setOnlineFake(getOnlineFake()), 60 * 1000);
     return () => clearInterval(tick);
@@ -222,6 +227,79 @@ function MetricasPage() {
                   </p>
                 </div>
               ))}
+            </div>
+
+            {/* Armazenamento (Supabase Storage) */}
+            <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 shadow-sm">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40 mb-4 flex items-center gap-2">
+                <Database className="w-3.5 h-3.5 text-[#D4941E]" /> Armazenamento
+              </h3>
+              {!storage ? (
+                <p className="text-[10px] font-bold uppercase text-[#0A3D52]/30">
+                  Medindo arquivos...
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-end justify-between">
+                    <p className="text-2xl font-black font-mono">
+                      {formatarBytes(storage.totalBytes)}
+                    </p>
+                    <p className="text-[10px] font-bold uppercase text-[#0A3D52]/40">
+                      de {formatarBytes(COTA_BYTES)} • {storage.totalArquivos} arquivo
+                      {storage.totalArquivos !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="w-full h-3 bg-[#F5F7FA] rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        storage.totalBytes / COTA_BYTES >= 0.9
+                          ? "bg-[#E74C3C]"
+                          : storage.totalBytes / COTA_BYTES >= 0.7
+                            ? "bg-[#D4941E]"
+                            : "bg-[#27AE60]",
+                      )}
+                      style={{
+                        width: `${Math.min(100, Math.round((storage.totalBytes / COTA_BYTES) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                  {storage.buckets.map((b) => (
+                    <div key={b.bucket} className="pt-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-black uppercase text-[#0A3D52]/60">
+                          {b.bucket}
+                        </span>
+                        <span className="text-[10px] font-bold text-[#0A3D52]/40 font-mono">
+                          {formatarBytes(b.bytes)} • {b.arquivos} arq.
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {Object.entries(b.porPasta)
+                          .sort((a, b2) => b2[1].bytes - a[1].bytes)
+                          .map(([pasta, u]) => (
+                            <div key={pasta} className="flex items-center gap-2">
+                              <span className="flex-1 text-[10px] font-medium text-[#0A3D52]/50 truncate">
+                                {pasta}
+                              </span>
+                              <div className="w-24 h-1.5 bg-[#F5F7FA] rounded-full overflow-hidden shrink-0">
+                                <div
+                                  className="h-full bg-[#0A3D52] rounded-full"
+                                  style={{
+                                    width: `${b.bytes ? Math.round((u.bytes / b.bytes) * 100) : 0}%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="w-16 text-right text-[9px] font-bold text-[#0A3D52]/40 font-mono shrink-0">
+                                {formatarBytes(u.bytes)}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Por evento */}
