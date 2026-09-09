@@ -104,7 +104,17 @@ export async function uploadPodcast(
         console.warn("[podcasts] coluna 'objetivo' nao existe no banco — salvo sem objetivo. Rode a migration 005.");
       }
     }
-    if (dbErr) return { ok: false, error: `Falha ao salvar: ${dbErr.message}` };
+    if (dbErr) {
+      const msg = dbErr.message || "";
+      if (/row-level security/i.test(msg)) {
+        return {
+          ok: false,
+          error:
+            "Banco bloqueou o salvamento (RLS). Rode a migration 006_podcasts_rls.sql no SQL Editor do Supabase.",
+        };
+      }
+      return { ok: false, error: `Falha ao salvar: ${msg}` };
+    }
     onProgress?.(100);
     return { ok: true, podcast };
   }

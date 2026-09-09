@@ -274,7 +274,28 @@ begin
     execute 'create policy "podcasts_public_insert" on storage.objects
       for insert to anon with check (bucket_id = ''podcasts'')';
   end if;
+  -- permite excluir o arquivo ao apagar o podcast
+  execute 'drop policy if exists "podcasts_public_delete" on storage.objects';
+  if not exists (
+    select 1 from pg_policies where policyname = 'podcasts_public_delete'
+  ) then
+    execute 'create policy "podcasts_public_delete" on storage.objects
+      for delete to anon using (bucket_id = ''podcasts'')';
+  end if;
 end $$;
+
+-- RLS da tabela podcasts: app aberto (sem login), anon lê/insere/exclui
+alter table public.podcasts enable row level security;
+grant select, insert, update, delete on public.podcasts to anon;
+drop policy if exists "podcasts_anon_select" on public.podcasts;
+create policy "podcasts_anon_select"
+  on public.podcasts for select to anon using (true);
+drop policy if exists "podcasts_anon_insert" on public.podcasts;
+create policy "podcasts_anon_insert"
+  on public.podcasts for insert to anon with check (true);
+drop policy if exists "podcasts_anon_delete" on public.podcasts;
+create policy "podcasts_anon_delete"
+  on public.podcasts for delete to anon using (true);
 
 -- Bucket de Storage único para publicacoes (podcast/pfd)
 insert into storage.buckets (id, name, public)
