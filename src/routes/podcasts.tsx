@@ -344,7 +344,7 @@ function PodcastsPage() {
               <Upload className="w-5 h-5 text-[#7C3AED]" />
             </div>
             <div className="flex-1">
-              <h4 className="font-black text-sm uppercase">Publicar podcast</h4>
+              <h4 className="font-black text-sm uppercase">Publicar estudo em áudio</h4>
               <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">
                 Envie um audio para a turma
               </p>
@@ -474,7 +474,7 @@ function PodcastsPage() {
                     Enviando...
                   </span>
                 ) : (
-                  `Publicar ${lote.length} podcast${lote.length !== 1 ? "s" : ""}`
+                  `Publicar ${lote.length} áudio${lote.length !== 1 ? "s" : ""}`
                 )}
               </button>
             )}

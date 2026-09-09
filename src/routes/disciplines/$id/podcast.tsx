@@ -424,7 +424,7 @@ function DisciplinePodcastPage() {
                     <Loader2 className="w-4 h-4 animate-spin" /> Enviando...
                   </span>
                 ) : (
-                  `Publicar ${lote.length} podcast${lote.length !== 1 ? "s" : ""}`
+                  `Publicar ${lote.length} áudio${lote.length !== 1 ? "s" : ""}`
                 )}
               </button>
             )}
