@@ -1,5 +1,6 @@
 // src/data/events.ts
 // Eventos acadêmicos do semestre 2026-2 - CEDERJ Administração
+import { parseDataLocal } from "@/lib/datas";
 
 export interface EventoAcademico {
   id: string;
@@ -773,7 +774,7 @@ export const getEventosPorTipo = (tipo: EventoAcademico["tipo"]) =>
 
 export const getEventosPorMes = (ano: number, mes: number) =>
   eventos.filter((e) => {
-    const d = new Date(e.dataInicio);
+    const d = parseDataLocal(e.dataInicio);
     return d.getFullYear() === ano && d.getMonth() === mes - 1;
   });
 
@@ -783,21 +784,27 @@ export const getProximosEventos = (dias = 30) => {
   limite.setDate(hoje.getDate() + dias);
   return eventos
     .filter((e) => {
-      const d = new Date(e.dataInicio);
+      const d = parseDataLocal(e.dataInicio);
       return d >= hoje && d <= limite;
     })
-    .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime());
+    .sort(
+      (a, b) =>
+        parseDataLocal(a.dataInicio).getTime() - parseDataLocal(b.dataInicio).getTime(),
+    );
 };
 
 export const getEventosUrgentes = () => {
   const hoje = new Date();
   return eventos
     .filter((e) => {
-      const d = new Date(e.dataInicio);
+      const d = parseDataLocal(e.dataInicio);
       const diff = Math.ceil((d.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
       return diff >= 0 && diff <= e.alertaDias;
     })
-    .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime());
+    .sort(
+      (a, b) =>
+        parseDataLocal(a.dataInicio).getTime() - parseDataLocal(b.dataInicio).getTime(),
+    );
 };
 
 // ============================================================
@@ -807,7 +814,7 @@ export const TIPOS_ACAO = ["AD1", "AD2", "AP1", "AP2", "AP3", "QUESTIONARIO"] as
 
 // Prazo efetivo do evento: dataFim (ADs) ou dataPresencial/dataInicio (APs)
 export const prazoDe = (e: EventoAcademico): Date =>
-  new Date(e.dataFim ?? e.dataPresencial ?? e.dataInicio);
+  parseDataLocal(e.dataFim ?? e.dataPresencial ?? e.dataInicio);
 
 // Dias até o prazo (negativo = vencido). Compara só a data (ignora hora).
 export const diasPara = (e: EventoAcademico, hoje: Date = new Date()): number => {

@@ -3,10 +3,11 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { EventoAcademico } from "@/data/events";
+import { parseDataLocal } from "./datas";
 
 // helpers para comparação "dia a dia" (ignora horas)
 const hojeMs = () => new Date().setHours(0, 0, 0, 0);
-const inicioDoDia = (d: string | Date) => new Date(d).setHours(0, 0, 0, 0);
+const inicioDoDia = (d: string | Date) => parseDataLocal(d).setHours(0, 0, 0, 0);
 
 export type StatusEvento = "concluido" | "hoje" | "em_breve" | "futuro";
 
@@ -25,8 +26,10 @@ export function getStatusEvento(dataInicio: string | Date): StatusEvento {
 /** Próximo evento cronológico (futuro ou hoje) — a "próxima etapa". */
 export function getProximaEtapa(eventos: EventoAcademico[]): EventoAcademico | null {
   const futuros = eventos
-    .filter((e) => e.dataInicio && new Date(e.dataInicio) >= new Date())
-    .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime());
+    .filter((e) => e.dataInicio && parseDataLocal(e.dataInicio) >= new Date())
+    .sort(
+      (a, b) => parseDataLocal(a.dataInicio).getTime() - parseDataLocal(b.dataInicio).getTime(),
+    );
   return futuros[0] ?? null;
 }
 
@@ -34,11 +37,13 @@ export function getProximaEtapa(eventos: EventoAcademico[]): EventoAcademico | n
 export function getDiasParaProximaAP(eventos: EventoAcademico[]): number | null {
   const aps = eventos
     .filter((e) => e.tipo?.startsWith("AP") && e.dataInicio)
-    .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime());
+    .sort(
+      (a, b) => parseDataLocal(a.dataInicio).getTime() - parseDataLocal(b.dataInicio).getTime(),
+    );
 
   const agora = new Date();
   for (const ap of aps) {
-    const dataAp = new Date(ap.dataInicio as string);
+    const dataAp = parseDataLocal(ap.dataInicio as string);
     if (dataAp >= agora) {
       return Math.ceil((dataAp.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24));
     }
@@ -52,7 +57,9 @@ export function getProgressoSemestre(eventos: EventoAcademico[]): number {
   const total = aps.length;
   if (total === 0) return 0;
   const agora = new Date();
-  const concluidos = aps.filter((e) => e.dataInicio && new Date(e.dataInicio) < agora).length;
+  const concluidos = aps.filter(
+    (e) => e.dataInicio && parseDataLocal(e.dataInicio) < agora,
+  ).length;
   return Math.round((concluidos / total) * 100);
 }
 
@@ -73,9 +80,9 @@ export function getProgressoTempo(
 ): ProgressoTempo {
   const datas: number[] = [];
   for (const e of eventos) {
-    if (e.dataInicio) datas.push(new Date(e.dataInicio).getTime());
+    if (e.dataInicio) datas.push(parseDataLocal(e.dataInicio).getTime());
     const fim = (e as { dataFim?: string }).dataFim;
-    if (fim) datas.push(new Date(fim).getTime());
+    if (fim) datas.push(parseDataLocal(fim).getTime());
   }
   if (datas.length === 0) {
     return { percentual: 0, diasDecorridos: 0, diasTotais: 1, diasRestantes: 1 };
@@ -96,5 +103,5 @@ export function getProgressoTempo(
 
 /** Formata data em "dd 'de' MMMM" em português (ex: "12 de setembro"). */
 export function formatarDataBrasil(data: string | Date): string {
-  return format(new Date(data), "dd 'de' MMMM", { locale: ptBR });
+  return format(parseDataLocal(data), "dd 'de' MMMM", { locale: ptBR });
 }

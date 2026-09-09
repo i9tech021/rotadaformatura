@@ -1,6 +1,8 @@
 // src/lib/lembretes.ts
 // Lembretes de avaliações: preferência por evento salva em localStorage
 // + disparo via Notification API quando o prazo entra na janela de alerta.
+import { parseDataLocal } from "./datas";
+
 const LS_KEY = "rdf:lembretes";
 const LS_FIRED_KEY = "rdf:lembretes:avisados";
 
@@ -59,7 +61,7 @@ export function toggleLembrete(eventId: string): boolean {
 }
 
 function diasParaPrazo(ev: EventoLembrete): number {
-  const prazo = new Date(ev.dataFim ?? ev.dataInicio);
+  const prazo = parseDataLocal(ev.dataFim ?? ev.dataInicio);
   const hoje = new Date();
   const a = new Date(prazo.getFullYear(), prazo.getMonth(), prazo.getDate());
   const b = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());

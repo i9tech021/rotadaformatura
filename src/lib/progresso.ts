@@ -5,6 +5,7 @@ import { loadCheckpoints } from "./checkpoints";
 import { loadNotas } from "./gradesService";
 import { listarHistorico } from "./simuladoService";
 import { getIdentidade } from "./auth";
+import { parseDataLocal } from "./datas";
 import type { Disciplina } from "@/data/disciplines";
 
 const ETAPAS_PROVA = ["AD1", "AD2", "AP1", "AP2", "AP3"];
@@ -26,7 +27,7 @@ export interface ProgressoDisciplina {
 // Semana 1 começa em 27/07/2026. Cada disciplina tem aulas com
 // semanaEstudo que indica quando deveriam ser feitas.
 // ============================================================
-const DATA_INICIO_SEMESTRE = new Date("2026-07-27");
+const DATA_INICIO_SEMESTRE = parseDataLocal("2026-07-27");
 const TOTAL_SEMANAS = 14;
 
 export function getSemanaAtual(): number {
@@ -52,7 +53,7 @@ export function getProgressoEsperado(disciplina: Disciplina): number {
   // Adiciona bônus se há prova esta semana
   const temProvaEstaSemana = disciplina.avaliacoes.some((av) => {
     if (!av.dataPresencial && !av.dataInicio) return false;
-    const dataProva = new Date(av.dataPresencial || av.dataInicio || "");
+    const dataProva = parseDataLocal(av.dataPresencial || av.dataInicio || "");
     const semanaProva = Math.floor(
       (dataProva.getTime() - DATA_INICIO_SEMESTRE.getTime()) / (7 * 24 * 60 * 60 * 1000),
     ) + 1;

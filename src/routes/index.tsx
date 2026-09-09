@@ -75,6 +75,7 @@ import {
   getProgressoTempo,
   formatarDataBrasil,
 } from "@/lib/timeline";
+import { parseDataLocal } from "@/lib/datas";
 
 function useAgora(intervalMs = 30000) {
   const [agora, setAgora] = useState(() => new Date());
@@ -152,8 +153,8 @@ function AcademicDashboard() {
     return eventosAcao
       .filter((e) => e.tipo === "AP1")
       .sort((a, b) => {
-        const da = new Date(a.dataInicio);
-        const db = new Date(b.dataInicio);
+        const da = parseDataLocal(a.dataInicio);
+        const db = parseDataLocal(b.dataInicio);
         const passadaA = da < hoje;
         const passadaB = db < hoje;
         if (passadaA !== passadaB) return passadaA ? 1 : -1;
@@ -213,12 +214,12 @@ function AcademicDashboard() {
     let totalAulas = 0;
     let progressoPeso = 0;
     const ad2Events = eventosAcao.filter(
-      (e) => e.tipo === "AD2" && new Date(e.dataInicio) >= new Date(agora),
+      (e) => e.tipo === "AD2" && parseDataLocal(e.dataInicio) >= new Date(agora),
     );
     const ad2IniciaEm =
       ad2Events.length > 0
-        ? new Date(
-            Math.min(...ad2Events.map((e) => new Date(e.dataInicio).getTime())),
+        ? parseDataLocal(
+            Math.min(...ad2Events.map((e) => parseDataLocal(e.dataInicio).getTime())),
           ).toLocaleDateString("pt-BR")
         : "Aguardando";
     const ad2Count = ad2Events.length;
