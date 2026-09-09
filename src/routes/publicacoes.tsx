@@ -117,9 +117,12 @@ function PublicacoesPage() {
   const selecionarArquivo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const maxBytes = 50 * 1024 * 1024;
+    // áudio aceita arquivos longos; PDF mantém limite menor
+    const maxBytes = (tipoForm === "podcast" ? 500 : 50) * 1024 * 1024;
     if (file.size > maxBytes) {
-      toast.error("Máximo de 50MB por arquivo.");
+      toast.error(
+        tipoForm === "podcast" ? "Máximo de 500MB por áudio." : "Máximo de 50MB por PDF.",
+      );
       return;
     }
     if (tipoForm === "podcast" && !file.type.startsWith("audio/")) {
@@ -342,7 +345,7 @@ function PublicacoesPage() {
                   >
                     <span className="text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50">
                       {tipoForm === "podcast"
-                        ? "🎧 Selecionar áudio (MP3/M4A/WAV • 50MB)"
+                        ? "🎧 Selecionar áudio (MP3/M4A/WAV • 500MB)"
                         : "📄 Selecionar PDF (50MB)"}
                     </span>
                   </button>

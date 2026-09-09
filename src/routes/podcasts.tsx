@@ -34,7 +34,7 @@ export const Route = createFileRoute("/podcasts")({
   }),
 });
 
-const MAX_AUDIO_MB = 50;
+const MAX_AUDIO_MB = 500;
 
 const OBJETIVOS = [
   { v: "", l: "Selecione o objetivo..." },

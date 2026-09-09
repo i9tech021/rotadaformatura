@@ -108,7 +108,7 @@ function DisciplinePodcastPage() {
     const novos: ArquivoLote[] = [];
     let rejeitados = 0;
     for (const f of Array.from(files)) {
-      if (f.size > 50 * 1024 * 1024) {
+      if (f.size > 500 * 1024 * 1024) {
         rejeitados++;
         continue;
       }
@@ -349,7 +349,7 @@ function DisciplinePodcastPage() {
                 ? "Selecionar áudios (pode escolher vários de uma vez)"
                 : "Adicionar mais áudios"}
             </button>
-            <p className="text-[9px] text-[#0A3D52]/40 font-medium">MP3, M4A, WAV, OGG — até 50MB cada.</p>
+            <p className="text-[9px] text-[#0A3D52]/40 font-medium">MP3, M4A, WAV, OGG — até 500MB cada.</p>
             {lote.map((item, idx) => (
               <div key={item.key} className="bg-[#F5F7FA] rounded-xl p-3 space-y-2">
                 <div className="flex items-center gap-2">
