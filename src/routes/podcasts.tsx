@@ -23,6 +23,7 @@ import {
 } from "@/lib/podcastService";
 import { PodcastCard } from "@/components/PodcastCard";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { track } from "@/lib/metricas";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/podcasts")({
@@ -135,6 +136,11 @@ function PodcastsPage() {
     } else {
       toast.success("Podcast publicado!");
     }
+    track("podcast_publicado", {
+      podcastId: r.podcast?.id ?? null,
+      disciplinaId: disciplinaForm,
+      objetivo: objetivoForm || null,
+    });
     setArquivoPendente(null);
     setTituloForm("");
     setDescricaoForm("");

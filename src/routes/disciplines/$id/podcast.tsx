@@ -43,6 +43,7 @@ import {
 } from "@/lib/audioContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { track } from "@/lib/metricas";
 
 export const Route = createFileRoute("/disciplines/$id/podcast")({
   component: DisciplinePodcastPage,
@@ -128,6 +129,11 @@ function DisciplinePodcastPage() {
       );
       if (result.ok) {
         toast.success("Podcast publicado com sucesso!");
+        track("podcast_publicado", {
+          podcastId: result.podcast?.id ?? null,
+          disciplinaId: id,
+          objetivo: objetivo || null,
+        });
         setTitulo("");
         setDescricao("");
         setObjetivo("");
@@ -180,6 +186,18 @@ function DisciplinePodcastPage() {
   };
 
   const isPlayingThis = (url: string) => audioState.playing && audioState.currentUrl === url;
+
+  const tocar = (podcast: Podcast) => {
+    const novo = audioState.currentUrl !== podcast.url;
+    playAudio(podcast.url, { titulo: podcast.titulo, disciplina: discipline?.nome });
+    if (novo) {
+      track("audio_tocado", {
+        podcastId: podcast.id,
+        disciplinaId: id,
+        objetivo: podcast.objetivo ?? null,
+      });
+    }
+  };
   const playbackRates = [1, 1.25, 1.5, 2];
   const currentRateIdx = playbackRates.indexOf(audioState.playbackRate);
 
@@ -386,11 +404,17 @@ function DisciplinePodcastPage() {
                 >
                   <div className="flex items-start gap-3 mb-3">
                     <button
-                      onClick={() => active ? pauseAudio() : playAudio(podcast.url)}
+                      onClick={() => (active ? pauseAudio() : tocar(podcast))}
                       className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center text-white shadow-md active:scale-95 transition-all cursor-pointer"
                       style={{ background: discipline.cor }}
                     >
-                      {active ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                      {audioState.buffering && active ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : active ? (
+                        <Pause className="w-5 h-5" />
+                      ) : (
+                        <Play className="w-5 h-5 ml-0.5" />
+                      )}
                     </button>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -431,7 +455,7 @@ function DisciplinePodcastPage() {
                           <button onClick={() => skipBackward(15)} className="w-8 h-8 rounded-lg bg-white border border-[#0A3D52]/5 flex items-center justify-center text-[#0A3D52]/50 hover:text-[#0A3D52] cursor-pointer">
                             <SkipBack className="w-3.5 h-3.5" />
                           </button>
-                          <button onClick={() => playAudio(podcast.url)} className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm cursor-pointer" style={{ background: discipline.cor }}>
+                          <button onClick={() => tocar(podcast)} className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm cursor-pointer" style={{ background: discipline.cor }}>
                             <Pause className="w-5 h-5" />
                           </button>
                           <button onClick={() => skipForward(15)} className="w-8 h-8 rounded-lg bg-white border border-[#0A3D52]/5 flex items-center justify-center text-[#0A3D52]/50 hover:text-[#0A3D52] cursor-pointer">
@@ -448,12 +472,15 @@ function DisciplinePodcastPage() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => playAudio(podcast.url)}
+                      onClick={() => tocar(podcast)}
                       className="w-full bg-[#F5F7FA] rounded-xl py-2.5 text-[10px] font-black uppercase tracking-wider hover:bg-[#0A3D52]/5 transition-colors cursor-pointer flex items-center justify-center gap-2"
                       style={{ color: discipline.cor }}
                     >
                       <Music className="w-3.5 h-3.5" /> Ouvir
                     </button>
+                  )}
+                  {audioState.error && active && (
+                    <p className="text-[10px] font-bold text-[#E74C3C] mt-2">{audioState.error}</p>
                   )}
                 </div>
               );
@@ -461,35 +488,6 @@ function DisciplinePodcastPage() {
           </div>
         )}
       </main>
-
-      {/* Mini player flutuante quando tocando */}
-      {audioState.playing && (
-        <div className="fixed bottom-16 left-0 right-0 z-50 px-4 md:px-0 pointer-events-none">
-          <div className="max-w-3xl mx-auto pointer-events-auto">
-            <div className="bg-[#0A3D52] text-white rounded-2xl p-3 shadow-2xl flex items-center gap-3 border border-white/10">
-              <button
-                onClick={() => {
-                  const cur = podcasts.find((p) => p.url === audioState.currentUrl);
-                  if (cur) playAudio(cur.url);
-                }}
-                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 active:scale-95 transition-all cursor-pointer"
-                style={{ background: discipline.cor }}
-              >
-                {audioState.playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold truncate">
-                  {podcasts.find((p) => p.url === audioState.currentUrl)?.titulo || "Tocando..."}
-                </p>
-                <p className="text-[9px] text-white/40 font-mono">{formatarDuracao(audioState.currentTime)}</p>
-              </div>
-              <button onClick={() => skipForward(15)} className="text-white/50 hover:text-white p-1 cursor-pointer">
-                <SkipForward className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

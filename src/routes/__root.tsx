@@ -11,6 +11,8 @@ import { type ReactNode, useEffect, useState } from "react";
 import { temIdentidade } from "@/lib/auth";
 import { track } from "@/lib/metricas";
 import { Toaster } from "@/components/ui/sonner";
+import { MiniPlayerGlobal } from "@/components/MiniPlayerGlobal";
+import { iniciarPresenca, atualizarRotaPresenca } from "@/lib/presenca";
 
 import appCss from "../styles.css?url";
 
@@ -139,7 +141,14 @@ function RootComponent() {
   const pathname = matches[matches.length - 1]?.pathname ?? "/";
   useEffect(() => {
     track("pageview", { rota: pathname });
+    atualizarRotaPresenca(pathname);
   }, [pathname]);
+
+  // Presença online (Realtime) — uma vez por sessão
+  useEffect(() => {
+    const parar = iniciarPresenca();
+    return parar;
+  }, []);
 
   // Aguarda verificação antes de renderizar
   const isLoginPage = matches.some((m) => m.pathname === "/login");
@@ -151,6 +160,8 @@ function RootComponent() {
       <Outlet />
       {/* Avisos globais (toast) — sem isso nenhum toast aparece no app */}
       <Toaster position="top-center" richColors closeButton />
+      {/* Player de áudio global — continua tocando entre páginas */}
+      <MiniPlayerGlobal />
     </QueryClientProvider>
   );
 }

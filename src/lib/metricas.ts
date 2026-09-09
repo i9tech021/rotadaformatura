@@ -12,7 +12,9 @@ export type EventoMetrica =
   | "nota_publicada"
   | "publicacao_criada"
   | "prova_enviada"
-  | "checkpoint_concluido";
+  | "checkpoint_concluido"
+  | "audio_tocado"
+  | "podcast_publicado";
 
 export interface Metrica {
   id: string;

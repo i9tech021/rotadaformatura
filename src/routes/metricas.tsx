@@ -3,11 +3,12 @@
 // volume por evento, por dia, rotas mais usadas, funil do simulado.
 // Acesso com a senha de admin (mesma das exclusões). Sem Supabase, lê o log local.
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, BarChart3, Lock, Menu } from "lucide-react";
+import { ArrowLeft, BarChart3, Lock, Menu, Users, Radio } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useEffect, useMemo, useState } from "react";
 import { lerMetricas, type Metrica } from "@/lib/metricas";
+import { subscribePresenca, getOnline, type PessoaOnline } from "@/lib/presenca";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/metricas")({
@@ -21,13 +22,15 @@ const ADMIN_SENHA = "cederj2026";
 const LS_ADMIN = "rdf:metricas-admin";
 
 const ROTULOS: Record<string, string> = {
-  pageview: "Páginas vistas",
+  pageview: "Páginas vistas (acessos)",
   simulado_gerado: "Simulados gerados",
   simulado_corrigido: "Simulados corrigidos",
   nota_publicada: "Notas publicadas",
   publicacao_criada: "Materiais publicados",
   prova_enviada: "Provas enviadas",
   checkpoint_concluido: "Aulas concluídas",
+  audio_tocado: "Áudios tocados",
+  podcast_publicado: "Podcasts publicados",
 };
 
 function diaISO(iso: string): string {
@@ -42,6 +45,7 @@ function MetricasPage() {
   const [erro, setErro] = useState(false);
   const [dados, setDados] = useState<Metrica[]>([]);
   const [carregando, setCarregando] = useState(false);
+  const [online, setOnline] = useState<PessoaOnline[]>(() => getOnline());
 
   useEffect(() => {
     if (!autorizado) return;
@@ -51,6 +55,8 @@ function MetricasPage() {
       .then(setDados)
       .catch(() => {})
       .finally(() => setCarregando(false));
+    setOnline(getOnline());
+    return subscribePresenca(() => setOnline(getOnline()));
   }, [autorizado]);
 
   const resumo = useMemo(() => {
@@ -78,6 +84,17 @@ function MetricasPage() {
     const corrigidos = porEvento["simulado_corrigido"] ?? 0;
     const taxaCorrecao = gerados > 0 ? Math.round((corrigidos / gerados) * 100) : 0;
     const usuariosUnicos = new Set(dados.map((m) => m.autor_local_id).filter(Boolean)).size;
+    const hojeKey = new Date().toISOString().slice(0, 10);
+    const acessosHoje = dados.filter(
+      (m) => m.evento === "pageview" && diaISO(m.created_at) === hojeKey,
+    ).length;
+    const usuariosHoje = new Set(
+      dados
+        .filter((m) => diaISO(m.created_at) === hojeKey && m.autor_local_id)
+        .map((m) => m.autor_local_id as string),
+    ).size;
+    const audiosTocados = porEvento["audio_tocado"] ?? 0;
+    const podcastsPublicados = porEvento["podcast_publicado"] ?? 0;
     return {
       porEvento,
       porDia,
@@ -89,6 +106,10 @@ function MetricasPage() {
       corrigidos,
       taxaCorrecao,
       usuariosUnicos,
+      acessosHoje,
+      usuariosHoje,
+      audiosTocados,
+      podcastsPublicados,
     };
   }, [dados]);
 
@@ -169,9 +190,52 @@ function MetricasPage() {
           </p>
         ) : (
           <div className="space-y-6">
+            {/* Online agora (tempo real) */}
+            <div className="bg-gradient-to-br from-[#27AE60] to-[#27AE60]/80 rounded-2xl p-5 text-white shadow-lg shadow-[#27AE60]/20">
+              <div className="flex items-center gap-3">
+                <span className="relative flex w-3 h-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
+                </span>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80 flex items-center gap-2">
+                  <Radio className="w-3.5 h-3.5" /> Online agora
+                </h3>
+                <span className="ml-auto text-3xl font-black font-mono">{online.length}</span>
+              </div>
+              {online.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {online.slice(0, 12).map((p) => (
+                    <span
+                      key={p.key}
+                      className="text-[9px] font-bold bg-white/15 rounded-full px-2 py-1"
+                      title={`${p.rota} • ${p.polo}`}
+                    >
+                      <Users className="w-2.5 h-2.5 inline -mt-0.5 mr-1" />
+                      {p.nome}
+                      {p.polo ? ` • ${p.polo}` : ""}
+                    </span>
+                  ))}
+                  {online.length > 12 && (
+                    <span className="text-[9px] font-bold bg-white/15 rounded-full px-2 py-1">
+                      +{online.length - 12}
+                    </span>
+                  )}
+                </div>
+              )}
+              {online.length === 0 && (
+                <p className="text-[10px] text-white/60 font-medium mt-2">
+                  Nenhuma aba com o app aberto no momento (além de você).
+                </p>
+              )}
+            </div>
+
             {/* KPIs */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
+                { l: "Acessos hoje", v: String(resumo.acessosHoje) },
+                { l: "Usuários hoje", v: String(resumo.usuariosHoje) },
+                { l: "Áudios tocados", v: String(resumo.audiosTocados) },
+                { l: "Podcasts publicados", v: String(resumo.podcastsPublicados) },
                 { l: "Eventos (30d)", v: String(dados.length) },
                 { l: "Usuários únicos", v: String(resumo.usuariosUnicos) },
                 { l: "Simulados gerados", v: String(resumo.gerados) },
