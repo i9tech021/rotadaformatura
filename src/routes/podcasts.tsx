@@ -27,6 +27,7 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { track } from "@/lib/metricas";
 import { getUsoStorage, formatarBytes, COTA_BYTES } from "@/lib/armazenamento";
 import { otimizarAudio, suportaOtimizacao } from "@/lib/audioLeve";
+import { LIMITE_UPLOAD_MB } from "@/lib/podcastService";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/podcasts")({
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/podcasts")({
   }),
 });
 
-const MAX_AUDIO_MB = 500;
+const MAX_AUDIO_MB = 500; // validação de sanidade no aparelho (o servidor aceita ~50MB)
 
 const OBJETIVOS = [
   { v: "", l: "Selecione o objetivo..." },
@@ -217,7 +218,7 @@ function PodcastsPage() {
             });
           });
           if (leve) {
-            blobPronto = new File([leve.blob], leve.nome, { type: "audio/webm" });
+            blobPronto = new File([leve.blob], leve.nome, { type: leve.mime });
             economia = leve.economiaPct;
             marca(item.key, { blob: blobPronto, economia, status: `leve (${leve.economiaPct}% menor)` });
           } else {
@@ -230,6 +231,13 @@ function PodcastsPage() {
       if (blobPronto) {
         arquivo = blobPronto as File;
         nomeEnvio = (blobPronto as File).name || nomeEnvio;
+      } else if (arquivo.size > LIMITE_UPLOAD_MB * 1024 * 1024) {
+        // grande demais para o servidor e sem versão leve: nem tenta
+        marca(item.key, {
+          erro: `Arquivo de ${(arquivo.size / 1048576).toFixed(0)}MB: o servidor aceita até ${LIMITE_UPLOAD_MB}MB. Liga a "Versão leve" para comprimir antes de enviar.`,
+          status: undefined,
+        });
+        continue;
       }
 
       // 2) Upload com até 3 tentativas
@@ -459,7 +467,7 @@ function PodcastsPage() {
                   : "Adicionar mais áudios"}
               </p>
               <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-widest mt-1">
-                MP3, M4A, WAV, OGG — até {MAX_AUDIO_MB}MB cada
+                MP3, M4A, WAV, OGG, AAC — servidor aceita ~{LIMITE_UPLOAD_MB}MB (a Versão leve comprime)
               </p>
               {espacoUsado !== null && (
                 <p className="text-[10px] font-bold text-[#0A3D52]/40 mt-2">
@@ -595,7 +603,7 @@ function PodcastsPage() {
               ref={fileInputRef}
               type="file"
               multiple
-              accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/*,.mp3,.m4a,.wav,.ogg,.opus"
+              accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/*,.mp3,.m4a,.wav,.ogg,.opus,.aac"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files) adicionarArquivos(e.target.files);

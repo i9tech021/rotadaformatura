@@ -4,6 +4,9 @@
 
 import { getSupabase, isSupabaseConfigured } from "./supabase";
 
+/** Teto real do servidor por arquivo (~50MB). Acima disso, só com Versão leve. */
+export const LIMITE_UPLOAD_MB = 50;
+
 export interface Podcast {
   id: string;
   disciplina_id: string;

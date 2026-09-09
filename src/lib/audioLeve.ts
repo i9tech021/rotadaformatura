@@ -9,37 +9,71 @@ import { Muxer, ArrayBufferTarget } from "webm-muxer";
 export interface AudioOtimizado {
   blob: Blob;
   nome: string;
+  mime: string;
   segundos: number;
   economiaPct: number;
 }
 
-let probeCache: boolean | null = null;
+type CodecLeve = "opus" | "mp4a";
 
-/** Este aparelho consegue otimizar? (WebCodecs + Opus + reprodução webm) */
-export async function suportaOtimizacao(): Promise<boolean> {
-  if (probeCache !== null) return probeCache;
+let probeCache: CodecLeve | null | undefined = undefined;
+
+/** Codec disponível neste aparelho (opus = Chrome/Android; mp4a = Safari). */
+async function codecSuportado(): Promise<CodecLeve | null> {
+  if (probeCache !== undefined) return probeCache;
   try {
     const w = window as unknown as Record<string, unknown>;
     if (typeof w["AudioEncoder"] === "undefined" || typeof w["AudioDecoder"] === "undefined") {
-      probeCache = false;
-      return false;
+      probeCache = null;
+      return null;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const AE = w["AudioEncoder"] as any;
-    const sup = await AE.isConfigSupported({
-      codec: "opus",
-      sampleRate: 24000,
-      numberOfChannels: 1,
-      bitrate: 24000,
-    });
     const audio = document.createElement("audio");
-    const toca = audio.canPlayType('audio/webm;codecs="opus"');
-    probeCache = Boolean(sup?.supported) && toca !== "";
-    return probeCache;
+    // 1) Opus (melhor custo-benefício)
+    try {
+      const sup = await AE.isConfigSupported({
+        codec: "opus",
+        sampleRate: 24000,
+        numberOfChannels: 1,
+        bitrate: 24000,
+      });
+      if (sup?.supported && audio.canPlayType('audio/webm;codecs="opus"') !== "") {
+        probeCache = "opus";
+        return "opus";
+      }
+    } catch {
+      // tenta o próximo
+    }
+    // 2) AAC (Safari/iPhone) — empacota em ADTS, toca em tudo
+    try {
+      const sup = await AE.isConfigSupported({
+        codec: "mp4a.40.2",
+        sampleRate: 24000,
+        numberOfChannels: 1,
+        bitrate: 32000,
+      });
+      const toca =
+        audio.canPlayType("audio/aac") !== "" ||
+        audio.canPlayType('audio/mp4; codecs="mp4a.40.2"') !== "";
+      if (sup?.supported && toca) {
+        probeCache = "mp4a";
+        return "mp4a";
+      }
+    } catch {
+      // sem suporte
+    }
+    probeCache = null;
+    return null;
   } catch {
-    probeCache = false;
-    return false;
+    probeCache = null;
+    return null;
   }
+}
+
+/** Este aparelho consegue otimizar? (WebCodecs + reprodução do formato) */
+export async function suportaOtimizacao(): Promise<boolean> {
+  return (await codecSuportado()) !== null;
 }
 
 // ---------- utilidades ----------
@@ -331,6 +365,23 @@ async function extrairAAC(
   }
 }
 
+// ---------- saída: ADTS (AAC puro, sem dependência; toca em tudo) ----------
+
+// sampling_frequency_index para 24000 Hz = 6
+function quadroADTS(aac: Uint8Array, canais = 1): Uint8Array {
+  const len = aac.length + 7;
+  const out = new Uint8Array(len);
+  out[0] = 0xff;
+  out[1] = 0xf1; // MPEG-4, sem CRC
+  out[2] = (1 << 6) | (6 << 2) | ((canais >> 2) & 1); // AAC-LC, 24kHz
+  out[3] = ((canais & 3) << 6) | ((len >> 11) & 3);
+  out[4] = (len >> 3) & 0xff;
+  out[5] = ((len & 7) << 5) | 0x1f;
+  out[6] = 0xfc;
+  out.set(aac, 7);
+  return out;
+}
+
 // ---------- pipeline principal ----------
 
 export async function otimizarAudio(
@@ -338,7 +389,8 @@ export async function otimizarAudio(
   aoProgredir?: (fase: string, pct: number) => void,
 ): Promise<AudioOtimizado | null> {
   try {
-    if (!(await suportaOtimizacao())) return null;
+    const codec = await codecSuportado();
+    if (!codec) return null;
     if (file.size < 3 * 1024 * 1024) return null; // pequeno: não vale a pena
     const nomeBase = file.name.replace(/\.[^.]+$/, "");
     const ext = (file.name.split(".").pop() || "").toLowerCase();
@@ -451,26 +503,55 @@ export async function otimizarAudio(
 
     if (quadros24k < 24000) return null; // menos de 1s: não vale
 
-    // ---- codifica Opus 24kbps mono ----
+    // ---- codifica (Opus 24kbps ou AAC 32kbps, mono 24kHz) ----
     aoProgredir?.("comprimindo", 55);
-    const muxer = new Muxer({
-      target: new ArrayBufferTarget(),
-      audio: { codec: "O", sampleRate: 24000, numberOfChannels: 1 },
-    });
+    const ehOpus = codec === "opus";
+    const muxer = ehOpus
+      ? new Muxer({
+          target: new ArrayBufferTarget(),
+          audio: { codec: "O", sampleRate: 24000, numberOfChannels: 1 },
+        })
+      : null;
+    const quadrosAAC: Uint8Array[] = [];
     const enc = new AudioEncoder({
-      output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+      output: (chunk, meta) => {
+        if (muxer) {
+          muxer.addAudioChunk(chunk, meta);
+        } else {
+          // AAC cru -> empacota em ADTS
+          const buf = new Uint8Array(chunk.byteLength);
+          chunk.copyTo(buf);
+          quadrosAAC.push(quadroADTS(buf, 1));
+        }
+      },
       error: () => {
         throw new Error("encode");
       },
     });
-    enc.configure({ codec: "opus", sampleRate: 24000, numberOfChannels: 1, bitrate: 24000 });
-    const TAM = 5760; // ~0.24s por chunk
+    enc.configure(
+      ehOpus
+        ? { codec: "opus", sampleRate: 24000, numberOfChannels: 1, bitrate: 24000 }
+        : { codec: "mp4a.40.2", sampleRate: 24000, numberOfChannels: 1, bitrate: 32000 },
+    );
+    const TAM = ehOpus ? 5760 : 1024; // AAC exige múltiplos de 1024
     let tsOut = 0;
     // concatena blocos
     let resto = new Float32Array(0);
     const fonte = [...blocos24k];
     let processados = 0;
     const totalBlocos = fonte.length;
+    const enviaFatia = (fatia: Float32Array) => {
+      const ad = new AudioData({
+        format: "f32-planar",
+        sampleRate: 24000,
+        numberOfFrames: fatia.length,
+        timestamp: tsOut,
+        data: fatia,
+      });
+      tsOut += (fatia.length / 24000) * 1e6;
+      enc.encode(ad);
+      ad.close();
+    };
     while (fonte.length > 0 || resto.length >= TAM) {
       while (resto.length < TAM && fonte.length > 0) {
         const b = fonte.shift()!;
@@ -480,18 +561,8 @@ export async function otimizarAudio(
         resto = jun;
       }
       if (resto.length < TAM) break;
-      const fatia = resto.slice(0, TAM);
+      enviaFatia(resto.slice(0, TAM));
       resto = resto.slice(TAM);
-      const ad = new AudioData({
-        format: "f32-planar",
-        sampleRate: 24000,
-        numberOfFrames: TAM,
-        timestamp: tsOut,
-        data: fatia,
-      });
-      tsOut += (TAM / 24000) * 1e6;
-      enc.encode(ad);
-      ad.close();
       processados++;
       if (processados % 20 === 0) {
         aoProgredir?.("comprimindo", 55 + Math.round((processados / Math.max(1, totalBlocos)) * 30));
@@ -499,28 +570,48 @@ export async function otimizarAudio(
       }
     }
     if (resto.length > 0) {
-      const ad = new AudioData({
-        format: "f32-planar",
-        sampleRate: 24000,
-        numberOfFrames: resto.length,
-        timestamp: tsOut,
-        data: resto,
-      });
-      enc.encode(ad);
-      ad.close();
+      if (ehOpus) {
+        enviaFatia(resto);
+      } else {
+        // completa o último quadro AAC com silêncio
+        const cheio = new Float32Array(TAM);
+        cheio.set(resto);
+        enviaFatia(cheio);
+      }
     }
     await enc.flush();
     enc.close();
-    muxer.finalize();
-    const buf = (muxer.target as ArrayBufferTarget).buffer;
-    if (!buf || buf.byteLength < 1024) return null;
+    let blob: Blob;
+    let extensao: string;
+    let mime: string;
+    if (muxer) {
+      muxer.finalize();
+      const buf = (muxer.target as ArrayBufferTarget).buffer;
+      if (!buf || buf.byteLength < 1024) return null;
+      blob = new Blob([buf], { type: "audio/webm" });
+      extensao = "webm";
+      mime = "audio/webm";
+    } else {
+      if (quadrosAAC.length === 0) return null;
+      const total = quadrosAAC.reduce((s, q) => s + q.length, 0);
+      if (total < 1024) return null;
+      const junto = new Uint8Array(total);
+      let off = 0;
+      for (const q of quadrosAAC) {
+        junto.set(q, off);
+        off += q.length;
+      }
+      blob = new Blob([junto], { type: "audio/aac" });
+      extensao = "aac";
+      mime = "audio/aac";
+    }
 
     aoProgredir?.("pronto", 95);
-    const blob = new Blob([buf], { type: "audio/webm" });
     if (blob.size >= file.size * 0.85) return null; // ganho pequeno: mantém original
     return {
       blob,
-      nome: `${nomeBase}.webm`,
+      nome: `${nomeBase}.${extensao}`,
+      mime,
       segundos: Math.round(quadros24k / 24000),
       economiaPct: Math.round((1 - blob.size / file.size) * 100),
     };

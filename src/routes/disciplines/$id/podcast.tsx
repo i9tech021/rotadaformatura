@@ -29,6 +29,7 @@ import {
   deletePodcast,
   subscribePodcasts,
   formatarDuracao,
+  LIMITE_UPLOAD_MB,
   type Podcast,
 } from "@/lib/podcastService";
 import {
@@ -190,7 +191,7 @@ function DisciplinePodcastPage() {
               });
             });
             if (leve) {
-              blobPronto = new File([leve.blob], leve.nome, { type: "audio/webm" });
+              blobPronto = new File([leve.blob], leve.nome, { type: leve.mime });
               economia = leve.economiaPct;
               marca(item.key, { blob: blobPronto, economia, status: `leve (${leve.economiaPct}% menor)` });
             } else {
@@ -201,6 +202,13 @@ function DisciplinePodcastPage() {
           }
         }
         if (blobPronto) arquivo = blobPronto as File;
+        else if (arquivo.size > LIMITE_UPLOAD_MB * 1024 * 1024) {
+          marca(item.key, {
+            erro: `Arquivo de ${(arquivo.size / 1048576).toFixed(0)}MB: o servidor aceita até ${LIMITE_UPLOAD_MB}MB. Liga a "Versão leve" para comprimir antes de enviar.`,
+            status: undefined,
+          });
+          continue;
+        }
 
         // 2) Upload com até 3 tentativas
         let result: Awaited<ReturnType<typeof uploadPodcast>> | null = null;
@@ -406,7 +414,7 @@ function DisciplinePodcastPage() {
                 ? "Selecionar áudios (pode escolher vários de uma vez)"
                 : "Adicionar mais áudios"}
             </button>
-            <p className="text-[9px] text-[#0A3D52]/40 font-medium">MP3, M4A, WAV, OGG — até 500MB cada.</p>
+            <p className="text-[9px] text-[#0A3D52]/40 font-medium">MP3, M4A, WAV, OGG, AAC — servidor aceita ~50MB (a Versão leve comprime).</p>
             <label className="flex items-center gap-3 bg-[#D4941E]/5 border border-[#D4941E]/15 rounded-xl px-4 py-3 cursor-pointer">
               <input
                 type="checkbox"
