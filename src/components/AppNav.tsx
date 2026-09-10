@@ -42,6 +42,7 @@ export const MENU_ITEMS: NavItem[] = [
 export const DESKTOP_ITEMS: NavItem[] = [
   { to: "/", label: "Dashboard", curto: "Dashboard", icon: LayoutDashboard },
   { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
+  { to: "/materials", label: "Materiais", curto: "Materiais", icon: FileText },
   { to: "/simulados", label: "Simulados", curto: "Simulados", icon: Sparkles },
   { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
@@ -52,8 +53,8 @@ export const DESKTOP_ITEMS: NavItem[] = [
 export const BOTTOM_ITEMS: NavItem[] = [
   { to: "/", label: "Dashboard", curto: "Inicio", icon: LayoutDashboard },
   { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
+  { to: "/materials", label: "Materiais", curto: "Materiais", icon: FileText },
   { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
-  { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
 ];
 
