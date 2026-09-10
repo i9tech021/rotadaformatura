@@ -290,7 +290,7 @@ function MetricasPage() {
                 {contribuidores.length > 0 && (
                   <span className="ml-auto text-[#D4941E]">
                     {contribuidores.length} pessoa{contribuidores.length !== 1 ? "s" : ""} •{" "}
-                    {pubs.length} material{pubs.length !== 1 ? "is" : ""}
+                    {pubs.length} {pubs.length !== 1 ? "materiais" : "material"}
                   </span>
                 )}
               </h3>
