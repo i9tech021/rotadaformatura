@@ -34,6 +34,7 @@ import { disciplinas, type Disciplina } from "@/data/disciplines";
 const disciplines = disciplinas;
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
 import { DisciplinaMateriais } from "@/components/DisciplinaMateriais";
+import { InstantQuiz } from "@/components/InstantQuiz";
 import { loadCheckpoints, saveCheckpoint, subscribeCheckpoints } from "@/lib/checkpoints";
 import { getSemanaAtual, getProgressoEsperado } from "@/lib/progresso";
 import { track } from "@/lib/metricas";
@@ -670,6 +671,9 @@ function DisciplinePage() {
                 </div>
               </div>
             </div>
+
+            {/* Quiz Rápido */}
+            <InstantQuiz disciplinaId={discipline.id} />
 
             {/* Critérios de Aprovação */}
             <div className="bg-[#F5F7FA] rounded-3xl p-6 border border-[#0A3D52]/5">
