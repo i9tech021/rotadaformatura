@@ -131,3 +131,4 @@ export async function lerMetricas(desdeISO?: string): Promise<Metrica[]> {
   const local = lerLocal();
   return desdeISO ? local.filter((m) => m.created_at >= desdeISO) : local;
 }
+// deploy 2026-09-10
