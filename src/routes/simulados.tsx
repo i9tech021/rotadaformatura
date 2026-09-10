@@ -9,6 +9,7 @@ import {
   FileText,
   GraduationCap,
   LayoutDashboard,
+  Loader2,
   Menu,
   RefreshCcw,
   Settings,
@@ -21,6 +22,7 @@ import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { disciplinas } from "@/data/disciplines";
+import { MATERIALS } from "@/data/materials";
 import {
   carregarRevisao,
   listarHistorico,
@@ -127,6 +129,10 @@ function SimuladosPage() {
       return;
     }
     setGerando(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const materiaisDisciplina = MATERIALS.filter((m) => m.disciplineId === disciplinaId)
+      .map((m) => m.title)
+      .join("; ");
     const r = await montarSimulado({
       autorLocalId: ident.autorLocalId,
       autorNome: ident.nome,
@@ -134,7 +140,12 @@ function SimuladosPage() {
       disciplinaId,
       disciplinaNome: disciplina?.nome ?? disciplinaId,
       tipo: etapa,
-      conteudo: disciplina?.guia?.objetivoGeral,
+      conteudo: [
+        disciplina?.guia?.objetivoGeral,
+        materiaisDisciplina ? `Materiais disponíveis: ${materiaisDisciplina}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
       quantidade: qtd,
     });
     setGerando(false);
@@ -193,6 +204,7 @@ function SimuladosPage() {
     setSessaoAtiva(null);
     setRevisao(r);
     toast.success(`Corrigido: nota ${r.nota.toFixed(1)} (${r.percentual}%)`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
     recarregar();
   };
 
@@ -242,14 +254,33 @@ function SimuladosPage() {
         <AppDesktopNav />
       </nav>
 
+      {gerando && (
+        <div className="fixed inset-0 z-50 bg-[#0A3D52]/80 flex flex-col items-center justify-center gap-4">
+          <Loader2 className="w-12 h-12 text-[#D4941E] animate-spin" />
+          <div className="text-center">
+            <p className="text-white font-black text-lg uppercase tracking-widest">
+              Montando seu simulado
+            </p>
+            <p className="text-white/60 text-sm mt-1 font-medium">
+              A IA está preparando questões personalizadas...
+            </p>
+          </div>
+          <div className="flex gap-1.5 mt-2">
+            <span className="w-2 h-2 bg-[#D4941E] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+            <span className="w-2 h-2 bg-[#D4941E] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+            <span className="w-2 h-2 bg-[#D4941E] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
+        </div>
+      )}
+
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold">Simulador de Prova</h2>
           <p className="text-[#0A3D52]/60 mt-1">
-            Questões reais extraídas de provas antigas do CEDERJ, selecionadas por IA para maximizar sua preparação.
+            Questões geradas por IA com base nos materiais e provas anteriores do CEDERJ.
           </p>
           <p className="text-[#0A3D52]/40 mt-2 text-sm">
-            Cada simulado tem 10 questões — 70% peso alto (teoria), 30% peso baixo (cálculo). Correção instantânea + revisão detalhada. Limite: 1 a cada 7 dias.
+            Correção instantânea + revisão detalhada. Funciona com ou sem provas antigas — a IA cria questões originais baseadas no conteúdo da disciplina.
           </p>
           {identidade ? (
             <p className="text-[10px] font-bold text-[#27AE60] mt-2 uppercase tracking-widest">
@@ -297,27 +328,23 @@ function SimuladosPage() {
           />
         ) : (
           <>
-            {/* Provas antigas — base real do simulado (mínimo 3) */}
+            {/* Provas antigas — opcional, melhora a qualidade do simulado */}
             <section className="mb-6">
               <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] flex items-center gap-2">
                     <FileText className="w-4 h-4 text-[#D4941E]" /> Provas antigas
                   </h3>
-                  <span
-                    className={cn(
-                      "text-[10px] font-black uppercase px-2 py-1 rounded-full",
-                      provas.length >= MIN_PROVAS
-                        ? "bg-[#27AE60]/10 text-[#27AE60]"
-                        : "bg-[#D4941E]/15 text-[#D4941E]",
-                    )}
-                  >
-                    {provas.length}/{MIN_PROVAS}
-                  </span>
+                  {provas.length > 0 && (
+                    <span className="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-[#27AE60]/10 text-[#27AE60]">
+                      {provas.length} {provas.length === 1 ? "prova" : "provas"}
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] text-[#0A3D52]/50 mb-4 font-medium">
-                  A IA gera o simulado a partir destas provas de {etapa}. Envie pelo menos{" "}
-                  {MIN_PROVAS} PDFs.
+                  {provas.length > 0
+                    ? "A IA usa estas provas como referência para gerar questões mais realistas."
+                    : "Envie provas anteriores para melhorar a qualidade do simulado. A IA também funciona sem elas."}
                 </p>
 
                 {provas.length > 0 && (
@@ -434,8 +461,8 @@ function SimuladosPage() {
 
                 <div
                   className={cn(
-                    "rounded-xl p-4 border text-center space-y-1",
-                    perm.pode && provas.length >= MIN_PROVAS
+                    "rounded-xl p-4 border text-center",
+                    perm.pode
                       ? "bg-[#F5F7FA] border-[#0A3D52]/10"
                       : "bg-[#D4941E]/10 border-[#D4941E]/30",
                   )}
@@ -451,16 +478,11 @@ function SimuladosPage() {
                       {perm.motivo}
                     </p>
                   )}
-                  {provas.length < MIN_PROVAS && (
-                    <p className="text-[10px] font-black uppercase tracking-widest text-[#E74C3C]">
-                      Faltam {MIN_PROVAS - provas.length} prova(s) de {etapa} acima
-                    </p>
-                  )}
                 </div>
 
                 <button
                   onClick={gerar}
-                  disabled={gerando || !perm.pode || provas.length < MIN_PROVAS}
+                  disabled={gerando || !perm.pode}
                   className="w-full bg-[#D4941E] text-[#0A3D52] py-3.5 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-[#D4941E]/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {gerando ? "Montando seu simulado..." : "Iniciar simulado"}

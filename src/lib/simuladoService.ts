@@ -18,6 +18,7 @@ import {
   type QuestaoGerada,
 } from "./questoesService";
 import { disciplinas } from "@/data/disciplines";
+import { listPublicacoes } from "./publicacoesService";
 
 export type { EtapaQuestao };
 export type { QuestaoBanco };
@@ -443,10 +444,17 @@ export async function montarSimulado(input: {
       .filter((a) => a.tipo === input.tipo)
       .map((a) => `${a.tipo} — ${a.conteudoCobrado}${a.observacoes ? ` (${a.observacoes})` : ""}`)
       .join("; ");
+    const pubs = await listPublicacoes(input.disciplinaId);
+    const pubsTitulos = pubs
+      .filter((p) => p.titulo)
+      .slice(0, 20)
+      .map((p) => p.titulo)
+      .join("; ");
     const conteudoEnriquecido = [
       input.conteudo,
       aulasStr ? `Aulas da disciplina: ${aulasStr}` : "",
       avaliacoesStr ? `Avaliações do tipo ${input.tipo}: ${avaliacoesStr}` : "",
+      pubsTitulos ? `Materiais compartilhados pela turma: ${pubsTitulos}` : "",
       disc?.guia?.observacoes?.length
         ? `Observações do coordenador: ${disc.guia.observacoes.join("; ")}`
         : "",
