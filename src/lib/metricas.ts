@@ -27,6 +27,7 @@ export interface Metrica {
 
 const LS_KEY = "rdf:metricas:local";
 const MAX_LOCAL = 500;
+const PAGEVIEW_DEDUP_MS = 2000;
 
 function rotaAtual(): string | null {
   if (typeof window === "undefined") return null;
@@ -57,9 +58,20 @@ function salvarLocal(m: Metrica): void {
   }
 }
 
+/** Dedup de pageviews: ignora mesma rota em intervalo curto. */
+let ultimoPageview: { rota: string; ts: number } | null = null;
+
 /** Registra um evento. Nunca lança exceção. */
 export function track(evento: EventoMetrica, detalhe?: Record<string, unknown>): void {
   try {
+    if (evento === "pageview") {
+      const rota = detalhe?.rota as string | undefined;
+      const now = Date.now();
+      if (rota && ultimoPageview?.rota === rota && now - ultimoPageview.ts < PAGEVIEW_DEDUP_MS) {
+        return; // ignora pageview duplicado
+      }
+      ultimoPageview = { rota: rota ?? "", ts: now };
+    }
     const ident = getIdentidade();
     const m: Metrica = {
       id: `met-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,

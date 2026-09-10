@@ -14,7 +14,7 @@ import {
   listPublicacoes,
   type Publicacao,
 } from "@/lib/publicacoesService";
-import { getOnlineFake } from "@/lib/presenca";
+import { getOnlineCount } from "@/lib/presenca";
 import { getUsoStorage, formatarBytes, COTA_BYTES, type UsoStorage } from "@/lib/armazenamento";
 import { cn } from "@/lib/utils";
 
@@ -51,8 +51,8 @@ function MetricasPage() {
   const [erro, setErro] = useState(false);
   const [dados, setDados] = useState<Metrica[]>([]);
   const [carregando, setCarregando] = useState(false);
-  // Número aparente de online (fake dinâmico por horário — ver presenca.ts)
-  const [onlineFake, setOnlineFake] = useState(() => getOnlineFake());
+  // Número real de online (Supabase Presence)
+  const [onlineCount, setOnlineCount] = useState(() => getOnlineCount());
   const [storage, setStorage] = useState<UsoStorage | null>(null);
   // Quem contribui: autores das publicações (nome + polo + contagem por tipo)
   const [pubs, setPubs] = useState<Publicacao[]>([]);
@@ -71,8 +71,8 @@ function MetricasPage() {
     listPublicacoes()
       .then(setPubs)
       .catch(() => {});
-    setOnlineFake(getOnlineFake());
-    const tick = setInterval(() => setOnlineFake(getOnlineFake()), 60 * 1000);
+    setOnlineCount(getOnlineCount());
+    const tick = setInterval(() => setOnlineCount(getOnlineCount()), 10 * 1000);
     return () => clearInterval(tick);
   }, [autorizado]);
 
@@ -258,30 +258,36 @@ function MetricasPage() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#27AE60]" />
               </span>
               <p className="text-[11px] font-bold text-[#0A3D52]/60">
-                <span className="font-black text-[#0A3D52]">{onlineFake}</span> online agora
+                <span className="font-black text-[#0A3D52]">{onlineCount}</span> online agora
               </p>
             </div>
 
             {/* KPIs */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { l: "Acessos hoje", v: String(resumo.acessosHoje) },
-                { l: "Usuários hoje", v: String(resumo.usuariosHoje) },
-                { l: "Áudios tocados", v: String(resumo.audiosTocados) },
-                { l: "Podcasts publicados", v: String(resumo.podcastsPublicados) },
-                { l: "Eventos (30d)", v: String(dados.length) },
-                { l: "Usuários únicos", v: String(resumo.usuariosUnicos) },
-                { l: "Simulados gerados", v: String(resumo.gerados) },
-                { l: "Taxa de correção", v: `${resumo.taxaCorrecao}%` },
+                { l: "Acessos hoje", v: String(resumo.acessosHoje), real: true },
+                { l: "Usuários hoje", v: String(resumo.usuariosHoje), real: true },
+                { l: "Áudios tocados", v: String(resumo.audiosTocados), real: true },
+                { l: "Podcasts publicados", v: String(resumo.podcastsPublicados), real: true },
+                { l: "Eventos (30d)", v: String(dados.length), real: true },
+                { l: "Usuários únicos", v: String(resumo.usuariosUnicos), real: true, note: "por navegador" },
+                { l: "Simulados gerados", v: String(resumo.gerados), real: true },
+                { l: "Taxa de correção", v: `${resumo.taxaCorrecao}%`, real: true },
               ].map((k) => (
                 <div key={k.l} className="bg-[#0A3D52] text-white rounded-2xl p-4 shadow-sm">
                   <p className="text-2xl font-black font-mono">{k.v}</p>
                   <p className="text-[9px] font-black uppercase tracking-widest text-white/50 mt-1">
                     {k.l}
                   </p>
+                  {k.note && (
+                    <p className="text-[8px] font-bold text-white/30 mt-0.5">{k.note}</p>
+                  )}
                 </div>
               ))}
             </div>
+            <p className="text-[9px] text-[#0A3D52]/30 font-medium text-center">
+              * Dados reais do Supabase. "Usuários" = navegadores distintos (sem login). "Acessos" = trocas de página.
+            </p>
 
             {/* Quem contribui (nomes de quem deu as informações) */}
             <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 shadow-sm">

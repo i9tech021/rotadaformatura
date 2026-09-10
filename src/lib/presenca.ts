@@ -129,35 +129,14 @@ export function getOnline(): PessoaOnline[] {
 }
 
 // ============================================================
-// Número APARENTE de online (fake, por enquanto).
-// Varia por horário + faixa de 10 min, para parecer movimento natural.
-// Depois trocamos por getOnline().length (real).
+// Contagem REAL de online via Presence.
+// Retorna a lista real quando Supabase está conectado.
+// Fallback local: 1 (só você) quando Supabase não configurado.
 // ============================================================
-function pseudoAleatorio(seed: number): number {
-  let t = seed + 0x6d2b79f5;
-  t = Math.imul(t ^ (t >>> 15), t | 1);
-  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-}
-
-/** Quantidade aparente de pessoas online (dinâmica por horário). */
-export function getOnlineFake(agora: Date = new Date()): number {
-  const h = agora.getHours();
-  let base: number, variacao: number;
-  if (h >= 0 && h < 6) {
-    base = 2;
-    variacao = 3; // madrugada: 2-4
-  } else if (h >= 6 && h < 12) {
-    base = 4;
-    variacao = 4; // manhã: 4-7
-  } else if (h >= 12 && h < 18) {
-    base = 6;
-    variacao = 5; // tarde: 6-10
-  } else {
-    base = 7;
-    variacao = 6; // noite (pico): 7-12
-  }
-  // muda sozinho a cada 10 minutos
-  const seed = Math.floor(agora.getTime() / (10 * 60 * 1000));
-  return base + Math.floor(pseudoAleatorio(seed) * variacao);
+export function getOnlineCount(): number {
+  const real = getOnline();
+  if (real.length > 0) return real.length;
+  if (typeof window === "undefined") return 0;
+  // Sem Supabase: só você está aqui
+  return 1;
 }
