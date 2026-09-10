@@ -19,6 +19,9 @@ import appCss from "../styles.css?url";
 const MiniPlayerGlobal = lazy(() =>
   import("@/components/MiniPlayerGlobal").then((m) => ({ default: m.MiniPlayerGlobal }))
 );
+const PomodoroTimer = lazy(() =>
+  import("@/components/PomodoroTimer").then((m) => ({ default: m.PomodoroTimer }))
+);
 
 function NotFoundComponent() {
   return (
@@ -214,6 +217,10 @@ function RootComponent() {
       {/* Player de áudio global — continua tocando entre páginas (lazy loaded) */}
       <Suspense fallback={null}>
         <MiniPlayerGlobal />
+      </Suspense>
+      {/* Timer Pomodoro — disponível em todas as páginas (lazy loaded) */}
+      <Suspense fallback={null}>
+        <PomodoroTimer />
       </Suspense>
     </QueryClientProvider>
   );
