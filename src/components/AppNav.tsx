@@ -34,7 +34,7 @@ export const MENU_ITEMS: NavItem[] = [
   { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
   { to: "/calculadora", label: "Calculadora", curto: "Calc", icon: Calculator },
   { to: "/calendar", label: "Calendario", curto: "Calendario", icon: CalendarIcon },
-  { to: "/materials", label: "Arquivos", curto: "Arquivos", icon: FileText },
+  { to: "/materials", label: "Materiais", curto: "Materiais", icon: FileText },
   { to: "/settings", label: "Configuracoes", curto: "Perfil", icon: Settings },
 ];
 
