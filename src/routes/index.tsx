@@ -43,7 +43,7 @@ export const Route = createFileRoute("/")({
         content:
           "Organize seus estudos do CEDERJ com a Rota da Formatura. Cronogramas, checklists e progresso em tempo real.",
       },
-      { property: "og:title", content: "Rota da Formatura | Seu Planner Universitário" },
+      { property: "og:title", content: "Rota da Formatura - CEDERJ" },
       {
         property: "og:description",
         content:
@@ -389,12 +389,12 @@ function AcademicDashboard() {
         {/* Welcome Section */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-[#0A3D52]">
-              {greeting}, {data.profile.name.split(" ")[0]}!
-            </h2>
-            <p className="text-[#0A3D52]/60 mt-1">
-              Seu progresso acadêmico atualizado em tempo real.
-            </p>
+<h2 className="text-3xl font-bold text-[#0A3D52]">
+               {greeting}, {data.profile.name.split(" ")[0]}!
+             </h2>
+             <p className="text-[#0A3D52]/60 mt-1">
+               Seu progresso acadêmico atualizado em tempo real. CEDERJ
+             </p>
           </div>
 
           {isSupabaseConfigured && (

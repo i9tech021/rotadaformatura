@@ -76,13 +76,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Rota da Formatura | Organização de estudos para a graduação CEDERJ" },
+      { title: "Rota da Formatura - CEDERJ | Organização de estudos para a graduação CEDERJ" },
       {
         name: "description",
         content:
           "Organize seus estudos da graduação CEDERJ. Cronograma, podcasts, simulados e calculadora de média em um só lugar. Gratuito para a turma.",
       },
-      { name: "author", content: "Rota da Formatura" },
+      { name: "author", content: "Rota da Formatura - CEDERJ" },
       { name: "theme-color", content: "#0A3D52" },
       { property: "og:title", content: "Rota da Formatura" },
       {

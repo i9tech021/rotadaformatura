@@ -14,6 +14,7 @@ import {
   Loader2,
   Play,
   Plus,
+  Share2,
   X,
 } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
@@ -352,7 +353,7 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Cabeçalho + progresso pessoal */}
+{/* Cabeçalho + progresso pessoal */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
           <FileText className="w-5 h-5 text-[#D4941E]" /> Materiais
@@ -362,13 +363,24 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
             </span>
           )}
         </h3>
-        <button
-          onClick={() => setFormAberto((v) => !v)}
-          className="inline-flex items-center gap-1.5 bg-[#D4941E] text-[#0A3D52] px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest cursor-pointer hover:scale-[1.03] transition-transform"
-        >
-          {formAberto ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-          {formAberto ? "Fechar" : "Enviar material"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFormAberto((v) => !v)}
+            className="inline-flex items-center gap-1.5 bg-[#D4941E] text-[#0A3D52] px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest cursor-hover:scale-[1.03] transition-transform"
+          >
+            {formAberto ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            {formAberto ? "Fechar" : "Enviar material"}
+          </button>
+          {totalItens > 0 && (
+            <button
+              onClick={() => window.open(`/publicacoes?tipo=podcast`, "_blank")}
+              className="inline-flex items-center gap-1.5 bg-[#7C3AED] text-white px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-colors"
+              aria-label="Compartilhar na comunidade"
+            >
+              <Share2 className="w-3.5 h-3.5" /> Compartilhar
+            </button>
+          )}
+        </div>
       </div>
 
       {totalItens > 0 && (
@@ -562,7 +574,33 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Oficiais (curados) */}
+          {/* 1. Áudios e Vídeos (em primeiro) */}
+          {/* Áudios dos episódios filtrados */}
+          {episodiosFiltrados.map((ep) => (
+            <CardEpisodio
+              key={ep.id}
+              ep={ep}
+              estudado={!!estudados[`pod:${ep.id}`]}
+              botaoCheck={botaoCheck(`pod:${ep.id}`, ep.titulo)}
+            />
+          ))}
+
+          {/* Áudios e Vídeos das publicações (kind = audio ou video) */}
+          {pubsFiltradas
+            .filter((p) => kindDaPublicacao(p) === "audio" || kindDaPublicacao(p) === "video")
+            .map((p) => (
+              <CardUpload
+                key={p.id}
+                pub={p}
+                estudado={!!estudados[p.id]}
+                botaoCheck={botaoCheck(p.id, p.titulo)}
+                ehAutor={!!identidade && p.autor_local_id === identidade.autorLocalId}
+                aoExcluir={() => handleExcluir(p)}
+                aoDenunciar={() => handleDenunciar(p)}
+              />
+            ))}
+
+          {/* 2. Oficiais (curados) */}
           {curadosFiltrados.map((material) => (
             <div
               key={material.id}
@@ -609,20 +647,22 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
             </div>
           ))}
 
-          {/* Uploads da turma */}
-          {pubsFiltradas.map((p) => (
-            <CardUpload
-              key={p.id}
-              pub={p}
-              estudado={!!estudados[p.id]}
-              botaoCheck={botaoCheck(p.id, p.titulo)}
-              ehAutor={!!identidade && p.autor_local_id === identidade.autorLocalId}
-              aoExcluir={() => handleExcluir(p)}
-              aoDenunciar={() => handleDenunciar(p)}
-            />
-          ))}
+          {/* 3. Uploads da turma (pdfs, imagens, notas, arquivos diversos) */}
+          {pubsFiltradas
+            .filter((p) => kindDaPublicacao(p) !== "audio" && kindDaPublicacao(p) !== "video")
+            .map((p) => (
+              <CardUpload
+                key={p.id}
+                pub={p}
+                estudado={!!estudados[p.id]}
+                botaoCheck={botaoCheck(p.id, p.titulo)}
+                ehAutor={!!identidade && p.autor_local_id === identidade.autorLocalId}
+                aoExcluir={() => handleExcluir(p)}
+                aoDenunciar={() => handleDenunciar(p)}
+              />
+            ))}
 
-          {/* Episódios de podcast da disciplina */}
+          {/* 4. Episódios de podcast da disciplina */}
           {episodiosFiltrados.map((ep) => (
             <CardEpisodio
               key={ep.id}
