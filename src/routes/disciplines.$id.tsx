@@ -117,9 +117,12 @@ function DisciplinePage() {
 
   const totalAulas = discipline?.aulas.length ?? 0;
   const feitas = Object.values(concluidas).filter(Boolean).length;
-  const progressoCheckpoints = totalAulas ? Math.round((feitas / totalAulas) * 100) : 0;
+  const progressoCheckpointsRaw = totalAulas ? Math.round((feitas / totalAulas) * 100) : 0;
   const semanaAtual = getSemanaAtual();
   const pctEsperado = discipline ? getProgressoEsperado(discipline) : 0;
+  // Se não há checkpoints, usa progresso esperado pelo cronograma
+  const hasCheckpoints = Object.keys(concluidas).length > 0;
+  const progressoCheckpoints = progressoCheckpointsRaw > 0 ? progressoCheckpointsRaw : (hasCheckpoints ? 0 : pctEsperado);
 
   // ============================================================
   // MODO AP: detecta se há prova próxima (≤14 dias)

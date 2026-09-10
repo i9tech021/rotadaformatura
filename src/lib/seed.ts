@@ -3,6 +3,7 @@
 import { getSupabase, isSupabaseConfigured } from "./supabase";
 import { disciplinas } from "@/data/disciplines";
 import { eventos as STATIC_EVENTOS } from "@/data/events";
+import { getProgressoEsperado } from "./progresso";
 
 export interface SeedResult {
   ok: boolean;
@@ -30,7 +31,7 @@ export async function seedDatabase(): Promise<SeedResult> {
     total_aulas: d.totalAulas,
     periodo: d.period ?? null,
     ch: d.ch ?? null,
-    progresso: d.progresso ?? 0,
+    progresso: d.progresso ?? getProgressoEsperado(d),
     guia_objetivo: d.guia?.objetivoGeral ?? null,
     guia_metodo: d.guia?.metodoEstudo ?? null,
     formula_n1: d.formulaNota?.n1 ?? null,

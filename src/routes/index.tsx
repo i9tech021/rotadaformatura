@@ -60,6 +60,7 @@ import { getEventosAcao, prazoDe, diasPara, type EventoAcademico } from "../data
 import { getEventosAcao as fetchEventosAcao, subscribeEventos } from "@/lib/eventsService";
 import { getDisciplinas, subscribeDisciplinas } from "@/lib/disciplinasService";
 import { countConcluidas, subscribeCheckpointsAll } from "@/lib/checkpoints";
+import { getProgressoEsperado } from "@/lib/progresso";
 import {
   getRanking,
   listarPolosRanking,
@@ -154,7 +155,9 @@ function AcademicDashboard() {
     await Promise.all(
       lista.map(async (d) => {
         const feitas = await countConcluidas(d.id);
-        map[d.id] = d.aulas.length ? Math.round((feitas / d.aulas.length) * 100) : 0;
+        const pctReal = d.aulas.length ? Math.round((feitas / d.aulas.length) * 100) : 0;
+        // Se não há checkpoints, usa progresso esperado pelo cronograma
+        map[d.id] = pctReal > 0 ? pctReal : getProgressoEsperado(d);
       }),
     );
     setProgressoMap(map);

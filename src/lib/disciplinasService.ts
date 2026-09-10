@@ -5,18 +5,33 @@
 // dinâmico. Mantém o app funcional sem banco (fallback) e com realtime.
 import { getSupabase } from "./supabase";
 import { disciplinas as STATIC_DISCIPLINAS, type Disciplina } from "@/data/disciplines";
+import { getProgressoEsperado } from "./progresso";
 
 export async function getDisciplinas(): Promise<Disciplina[]> {
   const sb = getSupabase();
-  if (!sb) return STATIC_DISCIPLINAS;
+  if (!sb) {
+    // Sem Supabase: retorna progresso esperado pelo cronograma
+    return STATIC_DISCIPLINAS.map((d) => ({
+      ...d,
+      progresso: getProgressoEsperado(d),
+    }));
+  }
   const { data, error } = await sb.from("disciplinas").select("id, progresso");
-  if (error || !data?.length) return STATIC_DISCIPLINAS;
+  if (error || !data?.length) {
+    return STATIC_DISCIPLINAS.map((d) => ({
+      ...d,
+      progresso: getProgressoEsperado(d),
+    }));
+  }
 
   const map = new Map<string, number>();
   for (const r of data as Array<{ id: string; progresso?: number }>) {
     if (typeof r.progresso === "number") map.set(r.id, r.progresso);
   }
-  return STATIC_DISCIPLINAS.map((d) => (map.has(d.id) ? { ...d, progresso: map.get(d.id)! } : d));
+  return STATIC_DISCIPLINAS.map((d) => ({
+    ...d,
+    progresso: map.has(d.id) ? map.get(d.id)! : getProgressoEsperado(d),
+  }));
 }
 
 /**
