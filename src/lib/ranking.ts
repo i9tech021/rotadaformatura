@@ -118,6 +118,28 @@ export async function listarPolosRanking(): Promise<string[]> {
   return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
+/** Inscreve-se em mudanças real-time nas tabelas de ranking (notas + simulados). */
+export function subscribeRanking(onChange: () => void): () => void {
+  const sb = getSupabase();
+  if (!sb) return () => {};
+  const channel = sb
+    .channel("rdf-ranking-realtime")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "notas" },
+      () => onChange(),
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "simulados_realizados" },
+      () => onChange(),
+    )
+    .subscribe();
+  return () => {
+    sb.removeChannel(channel);
+  };
+}
+
 /** Publica uma nota no ranking (usa identidade local). */
 export async function publicarNotaRanking(input: {
   disciplinaId: string;

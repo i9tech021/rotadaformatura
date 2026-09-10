@@ -56,6 +56,11 @@ function AcademicCalendarPage() {
   // Dispara notificações dos lembretes ativos dentro da janela de alerta (1x/dia)
   useEffect(() => {
     if (!("Notification" in window) || Notification.permission !== "granted") return;
+    // Respeita config de notificações do usuário
+    try {
+      const config = JSON.parse(localStorage.getItem("rdf:notifications") || "{}");
+      if (config.exams === false) return;
+    } catch { /* ignora */ }
     const devidos = verificarLembretes(CALENDAR_EVENTS);
     for (const ev of devidos) {
       try {
@@ -67,6 +72,39 @@ function AcademicCalendarPage() {
       }
     }
   }, []);
+
+  const exportarICS = () => {
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Rota da Formatura//CEDERJ 2026-2//PT",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "X-WR-CALNAME:Calendário CEDERJ 2026-2",
+      "X-WR-TIMEZONE:America/Sao_Paulo",
+    ];
+    for (const ev of CALENDAR_EVENTS) {
+      if (!ev.dataInicio) continue;
+      const start = new Date(ev.dataInicio);
+      const end = ev.dataFim ? new Date(ev.dataFim) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+      const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+      lines.push("BEGIN:VEVENT");
+      lines.push(`DTSTART:${fmt(start)}`);
+      lines.push(`DTEND:${fmt(end)}`);
+      lines.push(`SUMMARY:${ev.titulo}`);
+      lines.push(`DESCRIPTION:${ev.descricao ?? ""}`);
+      lines.push(`UID:${ev.id}@rotadaformatura`);
+      lines.push("END:VEVENT");
+    }
+    lines.push("END:VCALENDAR");
+    const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "cederj-2026-2.ics";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const alternarLembrete = (eventId: string, titulo: string) => {
     if (!("Notification" in window)) return;
@@ -133,7 +171,10 @@ function AcademicCalendarPage() {
 
           <AppDesktopNav />
 
-          <button className="bg-[#D4941E] text-[#0A3D52] px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider hover:scale-105 transition-all">
+          <button
+            onClick={exportarICS}
+            className="bg-[#D4941E] text-[#0A3D52] px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider hover:scale-105 transition-all"
+          >
             Sincronizar
           </button>
         </div>

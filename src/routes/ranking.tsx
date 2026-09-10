@@ -18,6 +18,7 @@ import {
   getRanking,
   listarPolosRanking,
   publicarNotaRanking,
+  subscribeRanking,
   type RankingAutor,
 } from "@/lib/ranking";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,15 @@ function RankingPage() {
       setLoading(false);
     }
     load();
+
+    // Real-time: atualiza ranking quando qualquer aluno publica nota ou termina simulado
+    const unsub = subscribeRanking(() => {
+      const filtros: Record<string, string> = {};
+      if (filtroDisciplina !== "global") filtros.disciplinaId = filtroDisciplina;
+      if (filtroPolo !== "todos") filtros.polo = filtroPolo;
+      getRanking(filtros).then(setRanking);
+    });
+    return unsub;
   }, [filtroDisciplina, filtroPolo]);
 
   const medalhas = [

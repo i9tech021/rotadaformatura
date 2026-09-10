@@ -155,7 +155,7 @@ function SettingsContent() {
     email: "",
   });
 
-  const [notifications, setNotifications] = useState({
+  const [notifications, setNotifications] = useLocalStorage("rdf:notifications", {
     exams: true,
     materials: false,
     aiTutor: true,

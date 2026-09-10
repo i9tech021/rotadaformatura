@@ -65,6 +65,7 @@ import {
   getRanking,
   listarPolosRanking,
   publicarNotaRanking,
+  subscribeRanking,
   type RankingAutor,
 } from "@/lib/ranking";
 import { seedDatabase, isSupabaseConfigured } from "@/lib/seed";
@@ -233,11 +234,13 @@ function AcademicDashboard() {
     return { hojeUrgente, proximo, depois };
   }, [eventosAcao]);
 
+  const identidade = getIdentidade();
   const profile = {
-    name: "Estudante CEDERJ",
+    name: identidade?.nome ?? "Estudante CEDERJ",
     course: "Administração",
     period: "2026-2",
     university: "UFRRJ/CEDERJ",
+    polo: identidade?.polo ?? "",
   };
 
   const disciplinesList = useMemo(() => {
@@ -854,9 +857,6 @@ function AcademicDashboard() {
         className="fixed bottom-6 right-6 w-14 h-14 bg-[#D4941E] text-[#0A3D52] rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 border-4 border-white"
       >
         <MessageCircle className="w-6 h-6" />
-        <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#E74C3C] border-2 border-white rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-pulse">
-          1
-        </span>
       </button>
 
       {/* Chat Interface (Assistente de Estudos com IA) */}
@@ -1097,6 +1097,17 @@ function RankingAlunos({
       vivo = false;
     };
   }, [filtro, disciplinaId, polo, refreshKey]);
+
+  // Real-time: atualiza ranking quando qualquer aluno publica nota ou termina simulado
+  useEffect(() => {
+    const unsub = subscribeRanking(() => {
+      getRanking({
+        disciplinaId: filtro === "disciplina" && disciplinaId ? disciplinaId : undefined,
+        polo: filtro === "polo" && polo ? polo : undefined,
+      }).then(setRankings);
+    });
+    return unsub;
+  }, [filtro, disciplinaId, polo]);
 
   return (
     <section className="mb-10">

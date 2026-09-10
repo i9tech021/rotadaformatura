@@ -46,6 +46,9 @@ function CommunityChat() {
   const [selectedRoomId, setSelectedRoomId] = useState(room || disciplinas[0]?.id || "");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("rdf:user_name") || getIdentidade()?.nome || "";
@@ -64,8 +67,18 @@ function CommunityChat() {
       subRef.current();
       subRef.current = null;
     }
-    const msgs = await loadMessages(roomId);
-    setMessages(msgs);
+    setLoading(true);
+    setError(null);
+    try {
+      const msgs = await loadMessages(roomId);
+      setMessages(msgs);
+    } catch (err) {
+      console.error("chat load error:", err);
+      setError("Erro ao carregar mensagens. Tente novamente.");
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
 
     const unsub = subscribeMessages(roomId, (msg) => {
       setMessages((prev) => {
@@ -102,12 +115,21 @@ function CommunityChat() {
       return;
     }
 
-    const msg = await sendMessage(selectedRoomId, userName, newMessage.trim());
-    setMessages((prev) => {
-      if (prev.some((m) => m.id === msg.id)) return prev;
-      return [...prev, msg];
-    });
-    setNewMessage("");
+    setSending(true);
+    setError(null);
+    try {
+      const msg = await sendMessage(selectedRoomId, userName, newMessage.trim());
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      setNewMessage("");
+    } catch (err) {
+      console.error("chat send error:", err);
+      setError("Erro ao enviar mensagem. Tente novamente.");
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleSetName = () => {
@@ -210,7 +232,25 @@ function CommunityChat() {
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F5F7FA]/30">
-            {messages.length === 0 ? (
+            {loading ? (
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <div className="w-8 h-8 border-2 border-[#0A3D52]/20 border-t-[#D4941E] rounded-full animate-spin mb-4" />
+                <p className="text-xs font-bold text-[#0A3D52]/40 uppercase tracking-wider">Carregando mensagens...</p>
+              </div>
+            ) : error ? (
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                  <MessageSquare className="w-6 h-6 text-red-400" />
+                </div>
+                <p className="text-sm font-bold text-red-500 mb-2">{error}</p>
+                <button
+                  onClick={() => loadAndSubscribe(selectedRoomId)}
+                  className="text-xs font-bold text-[#0A3D52] underline"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
                 <MessageSquare className="w-16 h-16 mb-4" />
                 <p className="font-black uppercase tracking-widest text-sm">Comece uma conversa!</p>
@@ -284,9 +324,14 @@ function CommunityChat() {
               />
               <button
                 onClick={handleSend}
-                className="bg-[#D4941E] text-[#0A3D52] p-3 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-md"
+                disabled={sending || !newMessage.trim()}
+                className="bg-[#D4941E] text-[#0A3D52] p-3 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Send className="w-5 h-5" />
+                {sending ? (
+                  <div className="w-5 h-5 border-2 border-[#0A3D52]/20 border-t-[#0A3D52] rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
               </button>
             </div>
           </div>
