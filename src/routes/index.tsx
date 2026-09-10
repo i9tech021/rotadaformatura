@@ -23,15 +23,19 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
-import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense, lazy, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AcademicChecklist } from "@/components/academic/AcademicChecklist";
-import { StudyAssistant } from "@/components/StudyAssistant";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getTarefasPorDia, type TarefaDiaria } from "@/data/studyPlan";
 import { ListChecks } from "lucide-react";
 import { toast } from "sonner";
+
+// Lazy load heavy AI assistant component
+const StudyAssistant = lazy(() =>
+  import("@/components/StudyAssistant").then((m) => ({ default: m.StudyAssistant }))
+);
 
 export const Route = createFileRoute("/")({
   component: AcademicDashboard,
@@ -880,7 +884,15 @@ function AcademicDashboard() {
             </div>
 
             <div className="flex-1 min-h-0 p-3">
-              <StudyAssistant contexto={contextoGlobal} disciplinaCor="#0A3D52" />
+              <Suspense
+                fallback={
+                  <div className="h-full flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-[#0A3D52]/20 border-t-[#D4941E] rounded-full animate-spin" />
+                  </div>
+                }
+              >
+                <StudyAssistant contexto={contextoGlobal} disciplinaCor="#0A3D52" />
+              </Suspense>
             </div>
           </div>
         </div>

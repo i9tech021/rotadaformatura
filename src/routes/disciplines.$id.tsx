@@ -29,12 +29,10 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense, lazy } from "react";
 import { disciplinas, type Disciplina } from "@/data/disciplines";
 const disciplines = disciplinas;
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
-import { StudyAssistant } from "@/components/StudyAssistant";
-import { GradesCalculator } from "@/components/GradesCalculator";
 import { DisciplinaMateriais } from "@/components/DisciplinaMateriais";
 import { loadCheckpoints, saveCheckpoint, subscribeCheckpoints } from "@/lib/checkpoints";
 import { getSemanaAtual, getProgressoEsperado } from "@/lib/progresso";
@@ -42,6 +40,14 @@ import { track } from "@/lib/metricas";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+// Lazy load heavy components
+const StudyAssistant = lazy(() =>
+  import("@/components/StudyAssistant").then((m) => ({ default: m.StudyAssistant }))
+);
+const GradesCalculator = lazy(() =>
+  import("@/components/GradesCalculator").then((m) => ({ default: m.GradesCalculator }))
+);
 
 export const Route = createFileRoute("/disciplines/$id")({
   component: DisciplinePage,
@@ -553,7 +559,15 @@ function DisciplinePage() {
 
               {activeTab === "notas" && (
                 <div className="space-y-6">
-                  <GradesCalculator disciplinaId={discipline.id} disciplinaCor={discipline.cor} />
+                  <Suspense
+                    fallback={
+                      <div className="h-40 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-[#0A3D52]/20 border-t-[#D4941E] rounded-full animate-spin" />
+                      </div>
+                    }
+                  >
+                    <GradesCalculator disciplinaId={discipline.id} disciplinaCor={discipline.cor} />
+                  </Suspense>
                 </div>
               )}
 
@@ -611,7 +625,15 @@ function DisciplinePage() {
                   </span>
                 )}
               </h3>
-              <StudyAssistant contexto={contextoDisciplina} disciplinaCor={discipline.cor} />
+              <Suspense
+                fallback={
+                  <div className="h-40 flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-[#0A3D52]/20 border-t-[#D4941E] rounded-full animate-spin" />
+                  </div>
+                }
+              >
+                <StudyAssistant contexto={contextoDisciplina} disciplinaCor={discipline.cor} />
+              </Suspense>
             </div>
           </div>
 

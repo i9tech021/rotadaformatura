@@ -12,4 +12,37 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            // Split vendor code into separate chunks for better caching
+            if (id.includes("node_modules")) {
+              // React core - rarely changes
+              if (id.includes("react-dom") || id.includes("react/")) {
+                return "vendor-react";
+              }
+              // TanStack Router - large but shared across routes
+              if (id.includes("@tanstack/react-router") || id.includes("@tanstack/router")) {
+                return "vendor-router";
+              }
+              // Supabase - only needed when DB is configured
+              if (id.includes("@supabase")) {
+                return "vendor-supabase";
+              }
+              // UI components (Radix)
+              if (id.includes("@radix-ui")) {
+                return "vendor-ui";
+              }
+              // date-fns - heavy date library
+              if (id.includes("date-fns")) {
+                return "vendor-dates";
+              }
+            }
+          },
+        },
+      },
+    },
+  },
 });

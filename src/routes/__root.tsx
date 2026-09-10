@@ -7,14 +7,18 @@ import {
   Scripts,
   useMatches,
 } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState, Suspense, lazy } from "react";
 import { temIdentidade } from "@/lib/auth";
 import { track } from "@/lib/metricas";
 import { Toaster } from "@/components/ui/sonner";
-import { MiniPlayerGlobal } from "@/components/MiniPlayerGlobal";
 import { iniciarPresenca, atualizarRotaPresenca } from "@/lib/presenca";
 
 import appCss from "../styles.css?url";
+
+// Lazy load heavy components that aren't needed on initial render
+const MiniPlayerGlobal = lazy(() =>
+  import("@/components/MiniPlayerGlobal").then((m) => ({ default: m.MiniPlayerGlobal }))
+);
 
 function NotFoundComponent() {
   return (
@@ -122,6 +126,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
+      // Resource hints for faster third-party connections
+      { rel: "preconnect", href: "https://pboacygsibfjivrdejcp.supabase.co" },
+      { rel: "preconnect", href: "https://openrouter.ai" },
+      { rel: "dns-prefetch", href: "https://pboacygsibfjivrdejcp.supabase.co" },
+      { rel: "dns-prefetch", href: "https://openrouter.ai" },
     ],
   }),
   shellComponent: RootShell,
@@ -185,8 +194,10 @@ function RootComponent() {
       <Outlet />
       {/* Avisos globais (toast) — sem isso nenhum toast aparece no app */}
       <Toaster position="top-center" richColors closeButton />
-      {/* Player de áudio global — continua tocando entre páginas */}
-      <MiniPlayerGlobal />
+      {/* Player de áudio global — continua tocando entre páginas (lazy loaded) */}
+      <Suspense fallback={null}>
+        <MiniPlayerGlobal />
+      </Suspense>
     </QueryClientProvider>
   );
 }
