@@ -13,20 +13,32 @@ const PRIMARY_MODEL =
 const FALLBACK_MODEL = "inclusionai/ling-3.0-flash-sante:free";
 export const AI_MODEL = PRIMARY_MODEL;
 
-const SYSTEM_PROMPT = `Você é o "Tutor Rota da Formatura", assistente acadêmico de alunos do curso de Administração a distância do CEDERJ (semestre 2026-2).
+const SYSTEM_PROMPT = `E aí, beleza! 😎 Sou o Tutor da Rota da Formatura, o cara mais descolado do CEDERJ pra te ajudar a passar de ano!
 
-Você ajuda o aluno a:
-1. TIRAR DÚVIDAS SOBRE A MATÉRIA: explique conceitos do conteúdo de forma didática, com exemplos simples, como um monitor presencial.
-2. ENTENDER O CRONOGRAMA: informe quais ADs/APs/questionários vêm aí, datas e conteúdo cobrado (use SOMENTE o que está no contexto).
-3. DECIDIR O QUE ESTUDAR AGORA: com base nas próximas avaliações e no que já foi concluído (checkpoints), indique a próxima aula/atividade a fazer.
-4. COMO ESTUDAR: sugira uma rotina (leitura do caderno didático, resolução dos EPs, revisão) ancorada no método de estudo da disciplina.
+**Quem sou eu:**
+Sou um assistente acadêmico criado pelos alunos do curso de Administração do CEDERJ/UFRRJ. Fiz parte de um projeto de Iniciação Científica (IC/PIBIC) e hoje atendo milhares de alunos em 43 polos pelo Rio de Janeiro!
 
-Regras:
-- Responda em português, tom acolhedor e objetivo.
-- Use SOMENTE disciplinas, datas, aulas e conteúdos que o aluno fornece no contexto. NÃO invente datas nem prazos.
-- Para explicar conceitos específicos, você pode usar conhecimento geral, mas ancore sempre em "Aula X — Título" e nas páginas indicadas quando disponíveis.
-- Se não souber uma data, diga "consulte o cronograma oficial na plataforma CEDERJ".
-- Seja conciso e prático: prefira tópicos e passos a parágrafos longos.`;
+**O que sei sobre a plataforma:**
+- 📚 **Disciplinas**: Administração Geral, Economia Brasileira Contemporânea, Sociologia das Organizações, Métodos Determinísticos I, Contabilidade Geral I, Funções Financeiras e Normativas, e mais
+- 🎯 **Simulados**: Questões geradas por IA com base nas provas reais da turma
+- 🎙️ **Podcasts**: Áudios e resumos criados por alunos e professores
+- 📖 **Materiais**: PDFs, videos, links curados por disciplina
+- 🧮 **Calculadora**: Calcule sua média em tempo real
+- 🏆 **Ranking**: Compare seu desempenho com outros polos
+- 📅 **Cronograma**: Todas as datas de ADs, APs, matrículas e ENADE
+- 🤖 **Tutor IA**: Eu! Pronto pra tirar suas dúvidas 24h
+
+**Como falo:**
+De forma descolada, como um colega mais velho que já passou pelo que você tá passando. Mas sempre com respaldo técnico e indicando os materiais da plataforma!
+
+**Regras importantes:**
+- Responda em português, tom descontraído mas educado
+- SEMPRE indique os materiais da plataforma quando relevante ("Dá uma olhada no material de [disciplina] lá na plataforma!")
+- Use SOMENTE disciplinas, datas, aulas e conteúdos que o aluno fornece no contexto. NÃO invente datas nem prazos
+- Se não souber uma data, diga "olha, confere o cronograma oficial na plataforma que lá tá tudo certinho"
+- Seja conciso: prefira tópicos e passos práticos
+- Quando explicar conceitos, use exemplos do dia a dia
+- Finalize sempre com uma dica motivacional ou indicando material da plataforma`;
 
 const inputSchema = z.object({
   question: z.string().min(1),
@@ -54,19 +66,27 @@ export async function askAcademicAI(input: AskAcademicAIInput): Promise<{ answer
   const baseUrl = env.VITE_AI_BASE_URL || "https://openrouter.ai/api/v1";
   const apiKey = env.VITE_AI_API_KEY;
 
-  const erroConfig =
-    "A IA não está configurada. Defina a variável de ambiente VITE_AI_API_KEY (e, opcionalmente, VITE_AI_MODEL) no projeto.";
-  const erroConexao =
-    "Erro de conexão com a IA. Verifique sua internet e tente novamente em instantes.";
-  const erroLimite =
-    "Limite de requisições da IA atingido. Aguarde alguns instantes e tente novamente.";
+  // Respostas offline quando a IA não está disponível
+  const offlineResponses: Record<string, string> = {
+    default: `E aí! 👋 Tô aqui mas a IA tá temporariamente fora do ar. Enquanto isso, dá uma olhada nos materiais da plataforma que tem tudo organizadinho!\n\n📚 Acesse: Disciplinas → [sua disciplina] → Materiais\n🎯 Teste seus conhecimentos: Simulados\n🎙️ Ouça os podcasts no caminho!\n\nQualquer dúvida, volta daqui a pouco que eu volto mais forte! 💪`,
+    "quem criou": `Esse projeto foi criado por alunos do curso de Administração do CEDERJ/UFRRJ,specificamente do Polo São Fidélis! 🎓\n\nFaz parte de um projeto de Iniciação Científica (IC/PIBIC) onde a gente desenvolveu uma plataforma pra ajudar os colegas a se organizarem melhor.\n\nO legal? É 100% gratuito, open source, e feito com muito carinho pra turma! ❤️\n\nQuer saber mais? Dá uma olhada na landing page: rotadaformatura.vercel.app/landingpage`,
+    "como funciona": `A Rota da Formatura é um dashboard acadêmico completo! Aqui você tem:\n\n📅 Cronograma com todas as datas\n📚 Materiais organizados por disciplina\n🎙️ Podcasts e resumos\n🎯 Simulados com IA\n🧮 Calculadora de média\n🏆 Ranking da turma\n🤖 Tutor IA (eu!) pra tirar dúvidas\n\nÉ simples: entra, escolhe sua disciplina e starta os estudos! 🚀`,
+  };
+
+  // Check for specific questions
+  const questionLower = question.toLowerCase();
+  if (questionLower.includes("quem criou") || questionLower.includes("quem fez") || questionLower.includes("projeto")) {
+    return { answer: offlineResponses["quem criou"] };
+  }
+  if (questionLower.includes("como funciona") || questionLower.includes("o que é") || questionLower.includes("plataforma")) {
+    return { answer: offlineResponses["como funciona"] };
+  }
 
   if (!apiKey) {
-    return { answer: erroConfig };
+    return { answer: offlineResponses.default };
   }
 
   // Detecta a disciplina pela pergunta e inclui o guia de estudo correspondente
-  const questionLower = question.toLowerCase();
   const disciplinaMap: Record<string, string> = {
     "economia": "EBC", "ebc": "EBC", "milagre": "EBC", "pnd": "EBC",
     "plano cruzado": "EBC", "collor": "EBC", "petróleo": "EBC",
@@ -125,8 +145,8 @@ ${guide.exerciciosTipicos.map((e) => `- ${e}`).join("\n")}`;
     /(lightning|nemotron-3\.5|nemotron-3-ultra|reasoning|think|r1|o3|o4)/i.test(AI_MODEL);
   const body: Record<string, unknown> = {
     messages,
-    temperature: 0.5,
-    max_tokens: 600,
+    temperature: 0.7,
+    max_tokens: 800,
   };
   if (isReasoningModel) body["reasoning"] = { enabled: false };
 
@@ -153,14 +173,14 @@ ${guide.exerciciosTipicos.map((e) => `- ${e}`).join("\n")}`;
       // Se 429 ou erro do servidor, tenta o próximo modelo
       if (res.status === 429 || res.status >= 500) continue;
       // Outros erros (400, 401) → retorna mensagem de erro
-      return { answer: res.status === 429 ? erroLimite : erroConexao };
+      return { answer: offlineResponses.default };
     } catch {
       // Timeout/rede → tenta o próximo modelo
       continue;
     }
   }
 
-  return { answer: erroConexao };
+  return { answer: offlineResponses.default };
 }
 
 /**

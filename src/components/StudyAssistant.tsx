@@ -19,7 +19,7 @@ interface StudyAssistantProps {
 const WELCOME: ChatMessage = {
   role: "assistant",
   content:
-    "Olá! Sou o Tutor da Rota da Formatura. Posso tirar dúvidas sobre a matéria, explicar conceitos, ajudar a se preparar para ADs e APs, e orientar sobre o cronograma. Pergunte o que quiser!",
+    "E aí, beleza! 😎 Sou o Tutor da Rota da Formatura! Posso te ajudar com:\n\n📚 Dúvidas sobre as matérias\n📅 Cronograma e provas\n🎯 Dicas pra se preparar\n📖 Indicar materiais da plataforma\n\nPergunta o que quiser! Tô aqui pra te ajudar a passar de ano! 🚀",
 };
 
 export function StudyAssistant({ contexto, disciplinaCor = "#0A3D52" }: StudyAssistantProps) {
@@ -61,7 +61,8 @@ export function StudyAssistant({ contexto, disciplinaCor = "#0A3D52" }: StudyAss
         ...m,
         {
           role: "assistant",
-          content: "Erro de conexão com a IA. Tente novamente em instantes.",
+          content:
+            "Ops! 😅 Tive um problemazinho aqui. Mas relaxa, dá uma olhada nos materiais da plataforma que lá tá tudo organizado! Tenta de novo daqui a pouco.",
         },
       ]);
     } finally {
@@ -83,10 +84,10 @@ export function StudyAssistant({ contexto, disciplinaCor = "#0A3D52" }: StudyAss
         </div>
         <div>
           <h3 className="font-black text-sm uppercase tracking-wider text-[#0A3D52]">
-            Assistente de Estudos
+            Tutor IA
           </h3>
           <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-widest">
-            Tutor IA • contexto local
+            Rota da Formatura • Online
           </p>
         </div>
       </div>
@@ -162,7 +163,7 @@ export function StudyAssistant({ contexto, disciplinaCor = "#0A3D52" }: StudyAss
             }
           }}
           rows={1}
-          placeholder="Pergunte sobre a disciplina..."
+          placeholder="Pergunta o que quiser..."
           className="flex-1 resize-none bg-[#F5F7FA] rounded-xl px-3.5 py-2.5 text-sm text-[#0A3D52] placeholder:text-[#0A3D52]/30 outline-none focus:ring-2 focus:ring-[#D4941E]/40 max-h-28"
         />
         <button
