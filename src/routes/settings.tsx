@@ -24,11 +24,14 @@ import {
   Key,
   BarChart3,
   Lock,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useState, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useTheme } from "@/hooks/useTheme";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
@@ -58,6 +61,7 @@ function SettingsPage() {
   const [autorizado, setAutorizado] = useState(() => temAcessoDev());
   const [senha, setSenha] = useState("");
   const [senhaErro, setSenhaErro] = useState(false);
+  const { theme, toggleTheme, isDark } = useTheme();
 
   const tentarEntrar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -391,6 +395,30 @@ function SettingsContent() {
                     setNotifications({ ...notifications, materials: !notifications.materials })
                   }
                 />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-sm">Modo Escuro</h4>
+                  <p className="text-[10px] text-[#0A3D52]/50 font-bold uppercase">
+                    Tema para estudo noturno
+                  </p>
+                </div>
+                <button
+                  onClick={toggleTheme}
+                  className={cn(
+                    "w-12 h-6 rounded-full transition-colors relative",
+                    isDark ? "bg-[#D4941E]" : "bg-[#0A3D52]/20"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 flex items-center justify-center",
+                      isDark ? "translate-x-6" : "translate-x-0.5"
+                    )}
+                  >
+                    {isDark ? <Moon className="w-3 h-3 text-[#D4941E]" /> : <Sun className="w-3 h-3 text-[#0A3D52]" />}
+                  </span>
+                </button>
               </div>
             </div>
           </section>
