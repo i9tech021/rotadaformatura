@@ -544,6 +544,11 @@ export async function montarSimulado(input: {
     modo,
     qtd: todas.length,
   });
+
+  // Registra atividade pro streak
+  const { registrarAtividade } = await import("./streak");
+  registrarAtividade();
+
   return {
     ok: true,
     sessao: { ...row, questoesCompletas: todas },

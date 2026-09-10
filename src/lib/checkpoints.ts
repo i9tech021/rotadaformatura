@@ -2,6 +2,7 @@
 // Progresso de aulas (checkpoints). Grava no Supabase quando configurado,
 // e sempre espelha no localStorage como fallback (app funciona sem banco).
 import { getSupabase } from "./supabase";
+import { registrarAtividade } from "./streak";
 
 const lsKey = (disciplinaId: string) => `rdf:checkpoints:${disciplinaId}`;
 
@@ -46,6 +47,10 @@ export async function saveCheckpoint(disciplinaId: string, aulaId: string, concl
       .upsert({ aula_id: aulaId, disciplina_id: disciplinaId, concluido });
   }
   saveLocal(disciplinaId, aulaId, concluido);
+  // Registra atividade pro streak (só quando marca como concluído)
+  if (concluido) {
+    registrarAtividade();
+  }
 }
 
 /**

@@ -31,6 +31,7 @@ import { ptBR } from "date-fns/locale";
 import { getTarefasPorDia, type TarefaDiaria } from "@/data/studyPlan";
 import { ListChecks } from "lucide-react";
 import { toast } from "sonner";
+import { StreakDisplay } from "@/components/StreakDisplay";
 
 // Lazy load heavy AI assistant component
 const StudyAssistant = lazy(() =>
@@ -399,37 +400,40 @@ function AcademicDashboard() {
         {/* Welcome Section */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-<h2 className="text-3xl font-bold text-[#0A3D52]">
-               {greeting}, {data.profile.name.split(" ")[0]}!
-             </h2>
-             <p className="text-[#0A3D52]/60 mt-1">
-               Seu progresso acadêmico atualizado em tempo real. CEDERJ
-             </p>
+            <h2 className="text-3xl font-bold text-[#0A3D52]">
+              {greeting}, {data.profile.name.split(" ")[0]}!
+            </h2>
+            <p className="text-[#0A3D52]/60 mt-1">
+              Seu progresso acadêmico atualizado em tempo real. CEDERJ
+            </p>
           </div>
 
-          {isSupabaseConfigured && (
-            <div className="flex flex-col items-end gap-1">
-              <button
-                onClick={async () => {
-                  setSeeding(true);
-                  setSeedMsg(null);
-                  const r = await seedDatabase();
-                  setSeedMsg(r.message);
-                  setSeeding(false);
-                  if (r.ok) fetchEventosAcao().then(setEventosAcao);
-                }}
-                disabled={seeding}
-                className="text-[10px] font-black uppercase tracking-widest bg-[#0A3D52] text-white px-4 py-2 rounded-xl hover:bg-[#0A3D52]/90 disabled:opacity-50 transition-colors"
-              >
-                {seeding ? "Semando..." : "Seed Database"}
-              </button>
-              {seedMsg && (
-                <span className="text-[10px] font-bold text-[#0A3D52]/50 max-w-[220px] text-right">
-                  {seedMsg}
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            <StreakDisplay compact />
+            {isSupabaseConfigured && (
+              <div className="flex flex-col items-end gap-1">
+                <button
+                  onClick={async () => {
+                    setSeeding(true);
+                    setSeedMsg(null);
+                    const r = await seedDatabase();
+                    setSeedMsg(r.message);
+                    setSeeding(false);
+                    if (r.ok) fetchEventosAcao().then(setEventosAcao);
+                  }}
+                  disabled={seeding}
+                  className="text-[10px] font-black uppercase tracking-widest bg-[#0A3D52] text-white px-4 py-2 rounded-xl hover:bg-[#0A3D52]/90 disabled:opacity-50 transition-colors"
+                >
+                  {seeding ? "Semando..." : "Seed Database"}
+                </button>
+                {seedMsg && (
+                  <span className="text-[10px] font-bold text-[#0A3D52]/50 max-w-[220px] text-right">
+                    {seedMsg}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Resumo Cards Dinâmicos */}
