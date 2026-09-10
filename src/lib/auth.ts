@@ -14,6 +14,9 @@ const STORAGE_KEY = "rdf:identidade";
 export const CODIGO_TURMA_PADRAO = "turma2026";
 const CODIGOS_TURMA = [CODIGO_TURMA_PADRAO];
 
+// Senha da área do desenvolvedor (configurações, métricas, exclusões admin).
+export const SENHA_DEV = "rota123";
+
 export function getCodigoTurmaValido(): string[] {
   return CODIGOS_TURMA;
 }

@@ -6,9 +6,52 @@ import { getSupabase, isSupabaseConfigured } from "./supabase";
 
 export type TipoPublicacao = "podcast" | "pdf" | "nota";
 
-export type EtapaPublicacao = "Geral" | "AD1" | "AP1" | "AD2" | "AP2";
+export type EtapaPublicacao = "Geral" | "AD1" | "AP1" | "AD2" | "AP2" | "AP3";
 
-export const ETAPAS: EtapaPublicacao[] = ["Geral", "AD1", "AP1", "AD2", "AP2"];
+export const ETAPAS: EtapaPublicacao[] = ["Geral", "AD1", "AP1", "AD2", "AP2", "AP3"];
+
+/** Teto real do servidor por arquivo (~50MB). */
+export const LIMITE_ARQUIVO_MB = 50;
+
+/**
+ * Classificação fina para exibição. O `tipo` do banco é restrito
+ * (podcast|pdf|nota) — o detalhe (vídeo, imagem, arquivo) vai nas tags.
+ */
+export type KindMaterial = "audio" | "video" | "pdf" | "imagem" | "arquivo" | "nota";
+
+/** Classifica um arquivo pelo MIME (cai para extensão quando vazio). */
+export function kindDoArquivo(file: File): KindMaterial {
+  const t = (file.type || "").toLowerCase();
+  if (t.startsWith("video/")) return "video";
+  if (t.startsWith("audio/")) return "audio";
+  if (t.startsWith("image/")) return "imagem";
+  if (t === "application/pdf") return "pdf";
+  const ext = (file.name.split(".").pop() || "").toLowerCase();
+  if (["mp4", "mov", "webm", "mkv", "avi", "3gp"].includes(ext)) return "video";
+  if (["mp3", "m4a", "wav", "ogg", "oga", "opus", "aac", "wma", "amr", "flac"].includes(ext))
+    return "audio";
+  if (["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(ext)) return "imagem";
+  if (["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "txt", "rtf", "odt", "csv"].includes(ext))
+    return "pdf";
+  return "arquivo";
+}
+
+/** Classifica uma publicação salva (usa tags; cai para extensão da URL). */
+export function kindDaPublicacao(p: Publicacao): KindMaterial {
+  if (p.tipo === "podcast") return "audio";
+  if (p.tipo === "pdf") return "pdf";
+  if (p.tags.includes("video")) return "video";
+  if (p.tags.includes("imagem")) return "imagem";
+  if (p.tags.includes("arquivo")) return "arquivo";
+  if (p.url) {
+    const ext = (p.url.split("?")[0] ?? "").split(".").pop()?.toLowerCase() ?? "";
+    if (["mp4", "mov", "webm", "mkv", "3gp"].includes(ext)) return "video";
+    if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) return "imagem";
+    if (["mp3", "m4a", "wav", "ogg", "oga", "opus", "aac"].includes(ext)) return "audio";
+    return "arquivo";
+  }
+  return "nota";
+}
 
 export interface Publicacao {
   id: string;
@@ -100,7 +143,7 @@ export async function listPublicacoes(disciplinaId?: string): Promise<Publicacao
 
 async function uploadArquivo(
   arquivo: File,
-  dir: "audio" | "pdf",
+  dir: string,
   pubId: string,
 ): Promise<string | null> {
   const sb = getSupabase();
@@ -108,7 +151,7 @@ async function uploadArquivo(
     // fallback local: URL temporária (sessão atual)
     return URL.createObjectURL(arquivo);
   }
-  const ext = arquivo.name.split(".").pop() || "bin";
+  const ext = (arquivo.name.split(".").pop() || "bin").toLowerCase();
   const path = `${dir}/${pubId}.${ext}`;
   const { error } = await sb.storage
     .from("publicacoes")
@@ -202,6 +245,57 @@ export async function publicarPdf(
     saveLocal(local);
   }
   return { ok: true, publicacao: pub };
+}
+
+/**
+ * Publica QUALQUER arquivo (vídeo, imagem, slides, doc, áudio...).
+ * - áudio → vira episódio de podcast (entra no player da disciplina);
+ * - pdf/docs → tipo "pdf";
+ * - vídeo/imagem/outros → tipo "nota" com a URL + tag do kind
+ *   (o `tipo` do banco só aceita podcast|pdf|nota).
+ * O arquivo deve chegar aqui já pronto (áudio já comprimido no aparelho).
+ */
+export async function publicarArquivo(
+  base: PublicarBase,
+  arquivo: File,
+): Promise<{ ok: boolean; error?: string; publicacao?: Publicacao; kind?: KindMaterial }> {
+  const kind = kindDoArquivo(arquivo);
+  if (kind === "audio") {
+    const r = await publicarPodcast(base, arquivo);
+    return { ...r, kind };
+  }
+  const sb = getSupabase();
+  const id = `pub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const url = await uploadArquivo(arquivo, "arquivos", id);
+  if (!url) return { ok: false, error: "Falha ao subir o arquivo.", kind };
+
+  const tipo: TipoPublicacao = kind === "pdf" ? "pdf" : "nota";
+  const pub: Publicacao = {
+    id,
+    tipo,
+    disciplina_id: base.disciplinaId,
+    titulo: base.titulo,
+    descricao: base.descricao,
+    url,
+    conteudo: null,
+    autor_nome: base.ident.nome,
+    autor_polo: base.ident.polo,
+    autor_local_id: base.ident.autorLocalId,
+    etapa: base.etapa ?? "Geral",
+    tags: [kind],
+    criado_em: new Date().toISOString(),
+  };
+
+  if (sb) {
+    const { error } = await sb.from("publicacoes").insert([pub]);
+    if (error) return { ok: false, error: error.message, kind };
+  } else {
+    const local = loadLocal();
+    local.unshift(pub);
+    saveLocal(local);
+  }
+  return { ok: true, publicacao: pub, kind };
 }
 
 /** Publica uma nota de texto (sem upload). */

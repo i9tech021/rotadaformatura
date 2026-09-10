@@ -128,16 +128,54 @@ class Reamostrador {
   }
 }
 
+function copiarPlano(ad: AudioData, plano: number, n: number): Float32Array {
+  const fmt = ad.format;
+  const tam = ad.allocationSize({ planeIndex: plano, format: fmt });
+  const buf = new ArrayBuffer(tam);
+  ad.copyTo(buf, { planeIndex: plano, format: fmt });
+  const dv = new DataView(buf);
+  const base = fmt.replace("-planar", "");
+  const passo = base === "u8" ? 1 : base === "s16" ? 2 : base === "f64" ? 8 : 4;
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const o = i * passo;
+    if (o + passo > dv.byteLength) break;
+    let s = 0;
+    if (base === "u8") s = (dv.getUint8(o) - 128) / 128;
+    else if (base === "s16") s = dv.getInt16(o, true) / 32768;
+    else if (base === "s32") s = dv.getInt32(o, true) / 2147483648;
+    else if (base === "f32") s = dv.getFloat32(o, true);
+    else s = dv.getFloat64(o, true);
+    out[i] = s;
+  }
+  return out;
+}
+
+// Converte QUALQUER formato de saída do decodificador (planar ou intercalado,
+// u8/s16/s32/f32/f64) para mono. Antes assumia f32-planar e quebrava
+// silenciosamente em vários aparelhos/arquivos (allocationSize lançava,
+// o catch retornava null e o app enviava o original sem comprimir).
 function audioDataParaMono(ad: AudioData): { mono: Float32Array; taxa: number } {
   const canais = ad.numberOfChannels;
   const quadros = ad.numberOfFrames;
-  const planos: Float32Array[] = [];
-  for (let c = 0; c < canais; c++) {
-    const buf = new Float32Array(ad.allocationSize({ planeIndex: c, format: "f32-planar" }));
-    ad.copyTo(buf, { planeIndex: c, format: "f32-planar" });
-    planos.push(buf.subarray(0, quadros));
+  const planar = ad.format.includes("planar");
+  const mono = new Float32Array(quadros);
+  if (planar) {
+    for (let c = 0; c < canais; c++) {
+      const arr = copiarPlano(ad, c, quadros);
+      for (let i = 0; i < quadros; i++) mono[i] = (mono[i] ?? 0) + (arr[i] ?? 0);
+    }
+    for (let i = 0; i < quadros; i++) mono[i] = (mono[i] ?? 0) / canais;
+  } else {
+    // intercalado: plano 0 contém os canais alternados
+    const arr = copiarPlano(ad, 0, quadros * canais);
+    for (let i = 0; i < quadros; i++) {
+      let s = 0;
+      for (let c = 0; c < canais; c++) s += arr[i * canais + c] ?? 0;
+      mono[i] = s / canais;
+    }
   }
-  return { mono: paraMono(planos), taxa: ad.sampleRate };
+  return { mono, taxa: ad.sampleRate };
 }
 
 // ---------- entrada: WAV ----------
@@ -251,11 +289,11 @@ function fatiarMP3(bytes: Uint8Array): QuadroMP3[] | null {
       i++;
       continue;
     }
-    // valida o próximo sync antes de aceitar
+    // valida o próximo sync antes de aceitar; se falhar, avança 1 byte e
+    // continua coletando (NÃO quebra a cadeia — MP3 VBR real tem frames
+    // fora do padrão no meio do arquivo; antes isso zerava tudo)
     const j = i + tam;
     if (j + 1 < bytes.length && !(bytes[j] === 0xff && ((bytes[j + 1] ?? 0) & 0xe0) === 0xe0)) {
-      // tolera 1 falha (pode ser tag no meio)
-      if (quadros.length > 0) break;
       i++;
       continue;
     }
@@ -331,7 +369,20 @@ async function extrairAAC(
     const total: number = track.nb_samples ?? 0;
     const amostras: AmostraAAC[] = [];
     await new Promise<void>((resolve) => {
-      const timer = setTimeout(() => resolve(), 20000);
+      let idle: ReturnType<typeof setTimeout> | null = null;
+      const teto = setTimeout(() => {
+        if (idle) clearTimeout(idle);
+        resolve();
+      }, 20000);
+      const concluir = () => {
+        if (idle) clearTimeout(idle);
+        clearTimeout(teto);
+        resolve();
+      };
+      const armaIdle = () => {
+        if (idle) clearTimeout(idle);
+        idle = setTimeout(concluir, 1500);
+      };
       box.onSamples = (_id: unknown, _u: unknown, samps: Array<Record<string, unknown>>) => {
         for (const s of samps) {
           const dados = s["data"] as Uint8Array | undefined;
@@ -343,15 +394,13 @@ async function extrairAAC(
             chave: Boolean(s["is_sync"]),
           });
         }
-        if (total > 0 && amostras.length >= total) {
-          clearTimeout(timer);
-          resolve();
-        }
+        if (total > 0 && amostras.length >= total) concluir();
+        else armaIdle();
       };
       box.setExtractionOptions(track.id, null, { nbSamples: 1000 });
       box.start();
       box.flush();
-      if (!total) setTimeout(() => resolve(), 3000);
+      armaIdle();
     });
     try {
       box.stop();
@@ -382,6 +431,39 @@ function quadroADTS(aac: Uint8Array, canais = 1): Uint8Array {
   return out;
 }
 
+// ---------- fallback: WebAudio decodeAudioData ----------
+// Cobre arquivos que o caminho WebCodecs não digere (ex.: m4a com
+// estrutura que o extrator não entende). Limitado a 40MB p/ não estourar memória.
+async function decodificarViaWebAudio(file: File): Promise<{ mono: Float32Array; taxa: number } | null> {
+  try {
+    if (file.size > 40 * 1024 * 1024) return null;
+    const w = window as unknown as Record<string, unknown>;
+    const Ctor = w["AudioContext"] as new () => AudioContext | undefined;
+    if (!Ctor) return null;
+    const ctx = new Ctor();
+    try {
+      const buf = await ctx.decodeAudioData(await file.arrayBuffer());
+      if (!buf || buf.length === 0) return null;
+      const canais = buf.numberOfChannels;
+      const mono = new Float32Array(buf.length);
+      for (let c = 0; c < canais; c++) {
+        const d = buf.getChannelData(c);
+        for (let i = 0; i < d.length; i++) mono[i] = (mono[i] ?? 0) + (d[i] ?? 0);
+      }
+      for (let i = 0; i < mono.length; i++) mono[i] = (mono[i] ?? 0) / canais;
+      return { mono, taxa: buf.sampleRate };
+    } finally {
+      try {
+        await ctx.close();
+      } catch {
+        // ignora
+      }
+    }
+  } catch {
+    return null;
+  }
+}
+
 // ---------- pipeline principal ----------
 
 export async function otimizarAudio(
@@ -409,12 +491,22 @@ export async function otimizarAudio(
     } else if (ext === "mp3") {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const quadros = fatiarMP3(bytes);
-      if (!quadros) return null;
-      entrada = { kind: "mp3", quadros };
+      if (!quadros) {
+        const wb = await decodificarViaWebAudio(file);
+        if (!wb) return null;
+        entrada = { kind: "pcm", mono: wb.mono, taxa: wb.taxa };
+      } else {
+        entrada = { kind: "mp3", quadros };
+      }
     } else if (["m4a", "mp4", "aac"].includes(ext)) {
       const pac = await extrairAAC(file);
-      if (!pac) return null;
-      entrada = { kind: "aac", pac };
+      if (!pac) {
+        const wb = await decodificarViaWebAudio(file);
+        if (!wb) return null;
+        entrada = { kind: "pcm", mono: wb.mono, taxa: wb.taxa };
+      } else {
+        entrada = { kind: "aac", pac };
+      }
     } else {
       return null; // ogg/opus/webm já são leves
     }
@@ -457,6 +549,7 @@ export async function otimizarAudio(
               numberOfChannels: entrada.pac.canais,
               description: entrada.pac.asc,
             };
+      let erroDecode = false;
       const dec = new AudioDecoder({
         output: (ad: AudioData) => {
           try {
@@ -466,8 +559,9 @@ export async function otimizarAudio(
             ad.close();
           }
         },
+        // marca e segue: jogar exceção aqui travaria o flush para sempre
         error: () => {
-          throw new Error("decode");
+          erroDecode = true;
         },
       });
       dec.configure(cfg);
@@ -475,9 +569,15 @@ export async function otimizarAudio(
         let ts = 0;
         const total = entrada.quadros.length;
         for (let i = 0; i < total; i++) {
+          if (erroDecode) break;
           const q = entrada.quadros[i]!;
           const dur = (q.amostras / q.taxa) * 1e6;
-          dec.decode(new EncodedAudioChunk({ type: "key", timestamp: ts, duration: dur, data: q.dados }));
+          try {
+            dec.decode(new EncodedAudioChunk({ type: "key", timestamp: ts, duration: dur, data: q.dados }));
+          } catch {
+            erroDecode = true;
+            break;
+          }
           ts += dur;
           if (i % 500 === 0) {
             aoProgredir?.("decodificando", 20 + Math.round((i / total) * 30));
@@ -487,18 +587,42 @@ export async function otimizarAudio(
       } else {
         const total = entrada.pac.amostras.length;
         for (let i = 0; i < total; i++) {
+          if (erroDecode) break;
           const s = entrada.pac.amostras[i]!;
-          dec.decode(
-            new EncodedAudioChunk({ type: s.chave ? "key" : "delta", timestamp: s.ts, duration: s.dur, data: s.dados }),
-          );
+          try {
+            dec.decode(
+              new EncodedAudioChunk({ type: s.chave ? "key" : "delta", timestamp: s.ts, duration: s.dur, data: s.dados }),
+            );
+          } catch {
+            erroDecode = true;
+            break;
+          }
           if (i % 500 === 0) {
             aoProgredir?.("decodificando", 20 + Math.round((i / total) * 30));
             await new Promise((r) => setTimeout(r, 0));
           }
         }
       }
-      await dec.flush();
-      dec.close();
+      // flush com teto: decoder travado não pode pendurar o upload
+      await Promise.race([dec.flush(), new Promise((r) => setTimeout(r, 90000))]);
+      try {
+        dec.close();
+      } catch {
+        // ignora
+      }
+      if (erroDecode) {
+        // última chance: WebAudio decodifica quase tudo
+        aoProgredir?.("decodificando", 45);
+        const wb = await decodificarViaWebAudio(file);
+        if (!wb) return null;
+        blocos24k.length = 0;
+        quadros24k = 0;
+        const CHF = 44100 * 30;
+        for (let o = 0; o < wb.mono.length; o += CHF) {
+          empurrarMono(wb.mono.subarray(o, o + CHF), wb.taxa);
+        }
+        if (quadros24k < 24000) return null;
+      }
     }
 
     if (quadros24k < 24000) return null; // menos de 1s: não vale
@@ -509,14 +633,19 @@ export async function otimizarAudio(
     const muxer = ehOpus
       ? new Muxer({
           target: new ArrayBufferTarget(),
-          audio: { codec: "O", sampleRate: 24000, numberOfChannels: 1 },
+          audio: { codec: "A_OPUS", sampleRate: 24000, numberOfChannels: 1 },
         })
       : null;
     const quadrosAAC: Uint8Array[] = [];
+    let erroEncode = false;
     const enc = new AudioEncoder({
       output: (chunk, meta) => {
         if (muxer) {
-          muxer.addAudioChunk(chunk, meta);
+          try {
+            muxer.addAudioChunk(chunk, meta);
+          } catch {
+            erroEncode = true;
+          }
         } else {
           // AAC cru -> empacota em ADTS
           const buf = new Uint8Array(chunk.byteLength);
@@ -525,7 +654,7 @@ export async function otimizarAudio(
         }
       },
       error: () => {
-        throw new Error("encode");
+        erroEncode = true;
       },
     });
     enc.configure(
@@ -541,15 +670,21 @@ export async function otimizarAudio(
     let processados = 0;
     const totalBlocos = fonte.length;
     const enviaFatia = (fatia: Float32Array) => {
+      if (erroEncode) return;
       const ad = new AudioData({
         format: "f32-planar",
         sampleRate: 24000,
+        numberOfChannels: 1,
         numberOfFrames: fatia.length,
         timestamp: tsOut,
         data: fatia,
       });
       tsOut += (fatia.length / 24000) * 1e6;
-      enc.encode(ad);
+      try {
+        enc.encode(ad);
+      } catch {
+        erroEncode = true;
+      }
       ad.close();
     };
     while (fonte.length > 0 || resto.length >= TAM) {
@@ -579,8 +714,13 @@ export async function otimizarAudio(
         enviaFatia(cheio);
       }
     }
-    await enc.flush();
-    enc.close();
+    await Promise.race([enc.flush(), new Promise((r) => setTimeout(r, 90000))]);
+    try {
+      enc.close();
+    } catch {
+      // ignora
+    }
+    if (erroEncode) return null;
     let blob: Blob;
     let extensao: string;
     let mime: string;

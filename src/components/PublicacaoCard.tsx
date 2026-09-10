@@ -1,12 +1,13 @@
 // src/components/PublicacaoCard.tsx
 // Card unificado de publicação — renderiza conforme tipo (podcast | pdf | nota).
-import { FileText, Flag, Headphones, MapPin, Trash2, User } from "lucide-react";
+import { FileText, Flag, Headphones, MapPin, Trash2, User, Clapperboard, Image } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
 import type { Publicacao } from "@/lib/publicacoesService";
+import { kindDaPublicacao } from "@/lib/publicacoesService";
+import { SENHA_DEV as ADMIN_SENHA } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const WHATSAPP_DENUNCIA = "5521996235681";
-const ADMIN_SENHA = "cederj2026";
 
 interface Props {
   publicacao: Publicacao;
@@ -26,6 +27,19 @@ export function PublicacaoCard({
   aoDenunciar,
 }: Props) {
   const assunto = publicacao.titulo || publicacao.descricao || "Sem título";
+  const kind = kindDaPublicacao(publicacao);
+  const rotuloTipo =
+    publicacao.tipo === "podcast"
+      ? "Podcast"
+      : publicacao.tipo === "pdf"
+        ? "PDF"
+        : kind === "video"
+          ? "Vídeo"
+          : kind === "imagem"
+            ? "Imagem"
+            : kind === "arquivo"
+              ? "Arquivo"
+              : "Nota";
 
   const handleDenunciar = () => {
     const msg = encodeURIComponent(
@@ -64,6 +78,10 @@ export function PublicacaoCard({
           <Headphones className="w-5 h-5" />
         ) : publicacao.tipo === "pdf" ? (
           <FileText className="w-5 h-5" />
+        ) : kind === "video" ? (
+          <Clapperboard className="w-5 h-5" />
+        ) : kind === "imagem" ? (
+          <Image className="w-5 h-5" />
         ) : (
           <FileText className="w-5 h-5" />
         )}
@@ -84,7 +102,7 @@ export function PublicacaoCard({
               publicacao.tipo === "nota" && "bg-[#27AE60]/10 text-[#27AE60]",
             )}
           >
-            {publicacao.tipo === "podcast" ? "Podcast" : publicacao.tipo === "pdf" ? "PDF" : "Nota"}
+            {rotuloTipo}
           </span>
           {publicacao.etapa && publicacao.etapa !== "Geral" && (
             <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#D4941E]/15 text-[#D4941E]">
@@ -183,7 +201,58 @@ export function PublicacaoCard({
         </div>
       )}
 
+      {/* Anexo de nota (vídeo, imagem ou arquivo enviado pela central de materiais) */}
+      {publicacao.tipo === "nota" && publicacao.url && (
+        <NotaAnexo url={publicacao.url} titulo={publicacao.titulo} />
+      )}
+
       {autor}
+    </div>
+  );
+}
+
+function NotaAnexo({ url, titulo }: { url: string; titulo: string }) {
+  const kind = kindDaPublicacao({
+    tipo: "nota",
+    url,
+    tags: [],
+  } as unknown as Publicacao);
+  if (kind === "video") {
+    return (
+      <div className="mt-3">
+        <video src={url} controls playsInline preload="metadata" className="w-full rounded-xl bg-black aspect-video" />
+      </div>
+    );
+  }
+  if (kind === "imagem") {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="block mt-3">
+        <img
+          src={url}
+          alt={titulo}
+          loading="lazy"
+          className="w-full rounded-xl max-h-72 object-cover bg-[#F5F7FA]"
+        />
+      </a>
+    );
+  }
+  const Icon = kind === "audio" ? Headphones : kind === "video" ? Clapperboard : FileText;
+  return (
+    <div className="mt-3">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 bg-[#F5F7FA] rounded-xl p-3 border border-[#0A3D52]/5 hover:border-[#D4941E]/40 transition-all"
+      >
+        <div className="w-9 h-9 rounded-lg bg-[#D4941E]/10 flex items-center justify-center shrink-0">
+          <Icon className="w-4 h-4 text-[#D4941E]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold truncate">{titulo || "Anexo"}</p>
+          <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase">Abrir anexo</p>
+        </div>
+      </a>
     </div>
   );
 }

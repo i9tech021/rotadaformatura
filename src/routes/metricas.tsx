@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useEffect, useMemo, useState } from "react";
 import { lerMetricas, type Metrica } from "@/lib/metricas";
+import { SENHA_DEV } from "@/lib/auth";
 import { getOnlineFake } from "@/lib/presenca";
 import { getUsoStorage, formatarBytes, COTA_BYTES, type UsoStorage } from "@/lib/armazenamento";
 import { cn } from "@/lib/utils";
@@ -19,7 +20,6 @@ export const Route = createFileRoute("/metricas")({
   }),
 });
 
-const ADMIN_SENHA = "cederj2026";
 const LS_ADMIN = "rdf:metricas-admin";
 
 const ROTULOS: Record<string, string> = {
@@ -122,7 +122,7 @@ function MetricasPage() {
 
   const entrar = (e: React.FormEvent) => {
     e.preventDefault();
-    if (senha === ADMIN_SENHA) {
+    if (senha === SENHA_DEV) {
       sessionStorage.setItem(LS_ADMIN, "1");
       setAutorizado(true);
       setErro(false);

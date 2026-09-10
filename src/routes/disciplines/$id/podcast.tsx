@@ -175,11 +175,11 @@ function DisciplinePodcastPage() {
         marca(item.key, { erro: undefined, status: "preparando..." });
         setUploadProgress({ atual: i + 1, total, pct: Math.round((i / total) * 100) });
 
-        // 1) Versão leve
+        // 1) Versão leve (otimizarAudio detecta suporte sozinho)
         let arquivo: File = item.file;
         let economia: number | undefined = item.economia;
         let blobPronto = item.blob;
-        if (otimizar && otimSuportado && !blobPronto && item.file.size >= 3 * 1024 * 1024) {
+        if (otimizar && otimSuportado !== false && !blobPronto && item.file.size >= 3 * 1024 * 1024) {
           marca(item.key, { status: "otimizando (deixando mais leve)..." });
           try {
             const leve = await otimizarAudio(item.file, (_fase, pct) => {

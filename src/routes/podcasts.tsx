@@ -25,7 +25,6 @@ import {
 import { PodcastCard } from "@/components/PodcastCard";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { track } from "@/lib/metricas";
-import { getUsoStorage, formatarBytes, COTA_BYTES } from "@/lib/armazenamento";
 import { otimizarAudio, suportaOtimizacao } from "@/lib/audioLeve";
 import { LIMITE_UPLOAD_MB } from "@/lib/podcastService";
 import { cn } from "@/lib/utils";
@@ -85,7 +84,6 @@ function PodcastsPage() {
   const [disciplinaForm, setDisciplinaForm] = useState(disciplinas[0]?.id ?? "");
   const [progressoLote, setProgressoLote] = useState<{ atual: number; total: number; pct: number } | null>(null);
   const [abertas, setAbertas] = useState<Record<string, boolean>>({});
-  const [espacoUsado, setEspacoUsado] = useState<number | null>(null);
   // Versão leve: comprime antes de enviar (desliga se o aparelho não suportar)
   const [otimizar, setOtimizar] = useState(true);
   const [otimSuportado, setOtimSuportado] = useState<boolean | null>(null);
@@ -99,9 +97,6 @@ function PodcastsPage() {
 
   useEffect(() => {
     recarregar();
-    getUsoStorage()
-      .then((u) => setEspacoUsado(u.totalBytes))
-      .catch(() => {});
     suportaOtimizacao()
       .then(setOtimSuportado)
       .catch(() => setOtimSuportado(false));
@@ -201,12 +196,12 @@ function PodcastsPage() {
       marca(item.key, { erro: undefined, status: "preparando..." });
       setProgressoLote({ atual: i + 1, total, pct: Math.round((i / total) * 100) });
 
-      // 1) Versão leve (se ligada, suportada e ainda não otimizado)
+      // 1) Versão leve (se ligada e ainda não otimizado; otimizarAudio detecta suporte sozinho)
       let arquivo: File = item.file;
       let nomeEnvio = item.file.name;
       let economia: number | undefined = item.economia;
       let blobPronto = item.blob;
-      if (otimizar && otimSuportado && !blobPronto && item.file.size >= 3 * 1024 * 1024) {
+      if (otimizar && otimSuportado !== false && !blobPronto && item.file.size >= 3 * 1024 * 1024) {
         marca(item.key, { status: "otimizando (deixando mais leve)..." });
         try {
           const leve = await otimizarAudio(item.file, (_fase, pct) => {
@@ -292,9 +287,6 @@ function PodcastsPage() {
       else toast.success(`${ok} áudio(s) publicado(s)!`);
       // remove os que subiram, mantém os que falharam (com o motivo visível)
       setLote((l) => l.filter((a) => !chavesOk.has(a.key)));
-      getUsoStorage()
-        .then((u) => setEspacoUsado(u.totalBytes))
-        .catch(() => {});
       recarregar();
     } else if (fila.length > 0) {
       toast.error("Nenhum áudio subiu. Veja o motivo em cada item.");
@@ -469,11 +461,6 @@ function PodcastsPage() {
               <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase tracking-widest mt-1">
                 MP3, M4A, WAV, OGG, AAC — servidor aceita ~{LIMITE_UPLOAD_MB}MB (a Versão leve comprime)
               </p>
-              {espacoUsado !== null && (
-                <p className="text-[10px] font-bold text-[#0A3D52]/40 mt-2">
-                  Espaço usado: {formatarBytes(espacoUsado)} de {formatarBytes(COTA_BYTES)}
-                </p>
-              )}
             </button>
 
             {/* Versão leve */}

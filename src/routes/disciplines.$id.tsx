@@ -542,7 +542,7 @@ function DisciplinePage() {
                 </div>
               )}
 
-              {activeTab === "materiais" && <DisciplinaMateriais disciplinaId={discipline.id} />}
+              {activeTab === "materiais" && <DisciplinaMateriais disciplinaId={discipline.id} disciplinaNome={discipline.nome} />}
 
               {activeTab === "provas" && (
                 <div className="space-y-4">

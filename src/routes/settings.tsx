@@ -23,6 +23,7 @@ import {
   Loader2,
   Key,
   BarChart3,
+  Lock,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
@@ -32,7 +33,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
 import { disciplinas as DISCIPLINAS_STATICAS } from "@/data/disciplines";
-import { getIdentidade, limparIdentidade } from "@/lib/auth";
+import { getIdentidade, limparIdentidade, SENHA_DEV } from "@/lib/auth";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -41,7 +42,111 @@ export const Route = createFileRoute("/settings")({
   }),
 });
 
+// Área do desenvolvedor — acesso com senha (não é área de estudo).
+// (senha centralizada em lib/auth.ts → SENHA_DEV)
+const LS_DEV = "rdf:settings-dev";
+
+export function temAcessoDev(): boolean {
+  try {
+    return sessionStorage.getItem(LS_DEV) === "1";
+  } catch {
+    return false;
+  }
+}
+
 function SettingsPage() {
+  const [autorizado, setAutorizado] = useState(() => temAcessoDev());
+  const [senha, setSenha] = useState("");
+  const [senhaErro, setSenhaErro] = useState(false);
+
+  const tentarEntrar = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (senha.trim() === SENHA_DEV) {
+      try {
+        sessionStorage.setItem(LS_DEV, "1");
+      } catch {
+        // ignora
+      }
+      setAutorizado(true);
+      setSenhaErro(false);
+    } else {
+      setSenhaErro(true);
+    }
+  };
+
+  if (!autorizado) {
+    return (
+      <div className="min-h-screen bg-[#F5F7FA] text-[#0A3D52] pb-20">
+        <nav className="bg-[#0A3D52] text-white px-4 py-4 shadow-md sticky top-0 z-40">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Link to="/" className="hover:bg-white/10 p-2 rounded-full transition-colors">
+                  <ArrowLeft className="w-5 h-5" />
+                </Link>
+                <h1 className="font-bold text-lg uppercase tracking-tight hidden min-[420px]:inline">
+                  Ajustes
+                </h1>
+              </div>
+            </div>
+            <AppDesktopNav />
+          </div>
+        </nav>
+        <main className="max-w-sm mx-auto px-4 py-12">
+          <form
+            onSubmit={tentarEntrar}
+            className="bg-white rounded-3xl border border-[#0A3D52]/10 shadow-sm p-8 space-y-5 text-center"
+          >
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-[#0A3D52]/5 flex items-center justify-center">
+              <Lock className="w-6 h-6 text-[#D4941E]" />
+            </div>
+            <div>
+              <h2 className="font-black text-sm uppercase tracking-[0.2em]">Área restrita</h2>
+              <p className="text-xs text-[#0A3D52]/50 font-medium mt-1">
+                Configurações do desenvolvedor. Digite a senha de acesso.
+              </p>
+            </div>
+            <input
+              type="password"
+              autoFocus
+              value={senha}
+              onChange={(e) => {
+                setSenha(e.target.value);
+                setSenhaErro(false);
+              }}
+              placeholder="Senha"
+              className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm font-bold text-[#0A3D52] text-center focus:ring-2 focus:ring-[#D4941E] outline-none"
+            />
+            {senhaErro && (
+              <p className="text-xs text-red-500 font-bold">Senha incorreta.</p>
+            )}
+            <button
+              type="submit"
+              className="w-full bg-[#0A3D52] text-white py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] cursor-pointer"
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                limparIdentidade();
+                window.location.href = "/login";
+              }}
+              className="text-[#E74C3C]/60 hover:text-[#E74C3C] font-black text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
+            >
+              Sair da plataforma
+            </button>
+          </form>
+        </main>
+        <AppBottomNav />
+      </div>
+    );
+  }
+
+  return <SettingsContent />;
+}
+
+function SettingsContent() {
   const identidade = getIdentidade();
   const [profile, setProfile] = useLocalStorage("academic_profile", {
     name: identidade?.nome ?? "Estudante",
