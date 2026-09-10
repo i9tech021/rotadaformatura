@@ -233,6 +233,18 @@ export function SimuladoPlayer({ sessao, disciplinaNome, onConcluido, minutos = 
   );
 }
 
+function fraseMotivacional(percentual: number): string {
+  if (percentual >= 90)
+    return "Incrível! Você está arrasando. Continue assim e a aprovação é certeza!";
+  if (percentual >= 75)
+    return "Muito bom! Está no caminho certo. Só reforçar os pontos fracos.";
+  if (percentual >= 60)
+    return "Passável! Mas dá pra melhorar. Revise os erros e tente de novo.";
+  if (percentual >= 40)
+    return "Não desanima! Cada erro é uma chance de aprender. Estude e refaça.";
+  return "Foco! Identifique seus pontos fracos e dedique mais tempo a eles.";
+}
+
 function ResultadoCard({
   resultado,
   onRefazer,
@@ -261,8 +273,11 @@ function ResultadoCard({
       <p className={cn("text-sm font-bold mb-2", cor)}>
         {aprovado ? "Você iria passar! (estilo CEDERJ)" : "Não atingiu os 60% ainda"}
       </p>
-      <p className="text-sm text-[#0A3D52]/60 mb-6 font-medium">
+      <p className="text-sm text-[#0A3D52]/60 mb-4 font-medium">
         {resultado.acertos} de {resultado.total} questões corretas
+      </p>
+      <p className="text-sm font-bold text-[#D4941E] italic mb-6">
+        {fraseMotivacional(resultado.percentual)}
       </p>
 
       <button

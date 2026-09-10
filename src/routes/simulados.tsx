@@ -143,9 +143,10 @@ function SimuladosPage() {
       if (r.bloqueado) recarregar();
       return;
     }
-    if (r.modo === "offline") toast.info("Banco vazio + IA indisponível: revisão das aulas.");
-    else if (r.modo === "banco") toast.success("Simulado montado do banco de questões!");
-    else toast.success(`Simulado inédito gerado a partir de ${r.provasUsadas} provas! Boa sorte.`);
+    if (r.modo === "offline") toast.info("Simulado criado com questões de revisão das aulas. Boa sorte!");
+    else if (r.modo === "banco") toast.success("Simulado montado do banco de questões! Boa sorte.");
+    else if (r.provasUsadas > 0) toast.success(`Simulado gerado a partir de ${r.provasUsadas} prova(s) antiga(s)! Boa sorte.`);
+    else toast.success("Simulado inédito gerado pela IA! Boa sorte.");
     setSessaoAtiva(r.sessao);
     setRevisao(null);
     recarregar();

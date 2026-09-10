@@ -312,21 +312,79 @@ function gerarOffline(
     usadas.add(conceito);
   }
 
-  // 5. Questões de revisão genéricas (preenchedor)
-  while (geradas.length < qtd) {
-    geradas.push({
-      enunciado: `Para se preparar para uma avaliação de ${disciplinaNome}, qual estratégia é mais eficaz?`,
+  // 5. Questões de estudo e estratégia (preenchedor variado)
+  const frasesEstudo = [
+    {
+      enunciado: `Em ${disciplinaNome}, qual a melhor estratégia para revisar o conteúdo antes de uma AP?`,
       alternativas: [
-        "A) Revisar as anotações das aulas anteriores",
-        "B) Resolver exercícios práticos de provas anteriores",
-        "C) Ler o caderno didático e fazer resumos",
-        "D) Todas as anteriores combinadas",
+        "A) Reler o caderno didático inteiro sem anotar nada",
+        "B) Fazer resumos dos tópicos principais e resolver exercícios",
+        "C) Assistir aulas no YouTube sobre o tema",
+        "D) Memorizar fórmulas sem entender a aplicação",
       ],
-      resposta_correta: 3,
+      resposta_correta: 1,
       explicacao:
-        "A combinação de revisão, exercícios e leitura é a estratégia mais eficaz para provas.",
+        "Fazer resumos ativos e resolver exercícios consolida o aprendizado de forma mais eficaz.",
       dificuldade: "facil",
-    });
+    },
+    {
+      enunciado: `Em uma prova presencial de ${disciplinaNome}, qual atitude ajuda mais a evitar erros?`,
+      alternativas: [
+        "A) Marcar rapidamente as respostas que vieram à mente primeiro",
+        "B) Ler todas as alternativas antes de marcar, mesmo quando parece óbvio",
+        "C) Deixar as questões difíceis para o final sem anotar nada",
+        "D) Copiar a resposta do colega ao lado",
+      ],
+      resposta_correta: 1,
+      explicacao:
+        "Ler todas as alternativas evita cair em pegadinhas e aumenta as chances de acerto.",
+      dificuldade: "facil",
+    },
+    {
+      enunciado: `Ao estudar para uma AD de ${disciplinaNome}, o que mais contribui para um bom desempenho?`,
+      alternativas: [
+        "A) Estudar tudo na última noite antes do prazo",
+        "B) Distribuir o estudo ao longo das semanas e revisar com regularidade",
+        "C) Copiar respostas de fontes online sem entender",
+        "D) Ignorar os exercícios práticos e focar só na teoria",
+      ],
+      resposta_correta: 1,
+      explicacao:
+        "Estudo distribuído ao longo do tempo é comprovadamente mais eficaz que a decoreba de última hora.",
+      dificuldade: "medio",
+    },
+    {
+      enunciado: `Qual a importância dos Exercícios Práticos (EPs) em ${disciplinaNome}?`,
+      alternativas: [
+        "A) São apenas complementares e podem ser ignorados",
+        "B) Reforçam o aprendizado e são frequentemente cobrados nas provas",
+        "C) Servem apenas para aquecer antes da aula",
+        "D) Não têm relação com o conteúdo avaliado",
+      ],
+      resposta_correta: 1,
+      explicacao:
+        "Os EPs são fundamentais para fixar o conteúdo e costumam ser a base das questões de prova.",
+      dificuldade: "medio",
+    },
+    {
+      enunciado: `Em ${disciplinaNome}, como identificar se um conceito foi realmente compreendido?`,
+      alternativas: [
+        "A) Consegue repetir a definição de memória",
+        "B) Consegue explicar com suas próprias palavras e aplicar a situações práticas",
+        "C) Já leu sobre o tema uma vez no caderno",
+        "D) Marcou todas as alternativas iguais nas questões anteriores",
+      ],
+      resposta_correta: 1,
+      explicacao:
+        "A capacidade de explicar e aplicar um conceito demonstra compreensão profunda, não apenas memorização.",
+      dificuldade: "medio",
+    },
+  ];
+  let idxFrase = 0;
+  while (geradas.length < qtd) {
+    const frase = frasesEstudo[idxFrase % frasesEstudo.length];
+    idxFrase++;
+    geradas.push({ ...frase });
   }
 
   return geradas.slice(0, qtd);
@@ -377,11 +435,29 @@ export async function montarSimulado(input: {
   // 2. Complementa com IA baseada nas provas reais
   if (todas.length < qtd) {
     const faltam = qtd - todas.length;
+    const disc = disciplinas.find((d) => d.id === input.disciplinaId);
+    const aulasStr = (disc?.aulas ?? [])
+      .map((a) => `Aula ${a.numero}: ${a.titulo}`)
+      .join("; ");
+    const avaliacoesStr = (disc?.avaliacoes ?? [])
+      .filter((a) => a.tipo === input.tipo)
+      .map((a) => `${a.tipo} — ${a.conteudoCobrado}${a.observacoes ? ` (${a.observacoes})` : ""}`)
+      .join("; ");
+    const conteudoEnriquecido = [
+      input.conteudo,
+      aulasStr ? `Aulas da disciplina: ${aulasStr}` : "",
+      avaliacoesStr ? `Avaliações do tipo ${input.tipo}: ${avaliacoesStr}` : "",
+      disc?.guia?.observacoes?.length
+        ? `Observações do coordenador: ${disc.guia.observacoes.join("; ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
     const r = await gerarQuestoesIA({
       disciplinaId: input.disciplinaId,
       disciplinaNome: input.disciplinaNome,
       tipo: input.tipo,
-      conteudo: input.conteudo,
+      conteudo: conteudoEnriquecido || input.conteudo,
       quantidade: faltam,
       contextoProvas,
     });

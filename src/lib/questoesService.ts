@@ -363,8 +363,11 @@ export async function gerarQuestoesIA(input: {
       ? "atividade a distância (objetiva, para fazer em casa)"
       : "prova presencial (conteúdo cobrado em prova, nível de AP real)";
 
-  const prompt = `Você é um professor do CEDERJ (Administração). Gere ${qtd} questões INÉDITAS de múltipla escolha para ${input.tipo} (${etapaLabel}) da disciplina "${input.disciplinaNome}".${input.conteudo ? `\nConteúdo cobrado: ${input.conteudo}` : ""}
-${input.contextoProvas ? `\nPROVAS ANTIGAS REAIS DE REFERÊNCIA (baseie-se no estilo, nos temas e no nível destas provas — NÃO copie questões inteiras, crie variações inéditas):\n${input.contextoProvas}` : ""}
+  const temProvas = Boolean(input.contextoProvas);
+
+  const prompt = `Você é um professor do CEDERJ (Administração). Gere ${qtd} questões INÉDITAS de múltipla escolha para ${input.tipo} (${etapaLabel}) da disciplina "${input.disciplinaNome}".
+${input.conteudo ? `\nCONTEÚDO E PLANO DE ESTUDOS:\n${input.conteudo}` : ""}
+${temProvas ? `\nPROVAS ANTIGAS REAIS DE REFERÊNCIA (baseie-se no estilo, nos temas e no nível — NÃO copie questões inteiras, crie variações inéditas):\n${input.contextoProvas}` : `\nNÃO há provas antigas disponíveis. Crie questões ORIGINAIS e REALISTAS baseadas no conteúdo da disciplina. Use temas e conceitos típicos de um curso de Administração do CEDERJ. As questões devem parecer provas reais, com situações práticas e aplicáveis.`}
 
 Responda SOMENTE com JSON válido, sem markdown, sem texto antes ou depois, neste formato exato:
 {"questoes":[{"enunciado":"...","alternativas":["A) ...","B) ...","C) ...","D) ..."],"resposta_correta":0,"explicacao":"...","dificuldade":"medio"}]}
@@ -374,7 +377,9 @@ Regras obrigatórias:
 - "resposta_correta" é o índice 0-3 da alternativa certa.
 - "dificuldade" é "facil", "medio" ou "dificil" (misture: ~30% facil, ~50% medio, ~20% dificil).
 - Questões práticas no nível de prova real do CEDERJ, sem pegadinhas de enunciado ambíguo.
-- Explicação objetiva em 1-2 frases.
+- Cada questão deve testar um conceito diferente da disciplina.
+- Evite repetir o mesmo tema em questões diferentes.
+- Explicação objetiva em 1-2 frases, explicando por que a resposta está correta.
 - Exemplo de UMA questão no formato exato:
 {"enunciado":"Quanto é 2+2?","alternativas":["A) 3","B) 4","C) 5","D) 6"],"resposta_correta":1,"explicacao":"2+2=4.","dificuldade":"facil"}`;
 
