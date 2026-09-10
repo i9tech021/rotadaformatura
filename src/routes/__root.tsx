@@ -153,7 +153,7 @@ function RootComponent() {
   // Rotas públicas (links compartilháveis abrem sem login)
   const isLoginPage = matches.some((m) => m.pathname === "/login");
   const isRotaPublica =
-    pathname === "/podcasts" || /^\/disciplines\/[^/]+\/podcast$/.test(pathname);
+    pathname === "/landingpage" || pathname === "/podcasts" || /^\/disciplines\/[^/]+\/podcast$/.test(pathname);
 
   // Auth guard: redireciona para /login se não tiver identidade
   useEffect(() => {

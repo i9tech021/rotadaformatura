@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CalculadoraRouteImport } from './routes/calculadora'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as DisciplinesRouteImport } from './routes/disciplines'
+import { Route as LandingpageRouteImport } from './routes/landingpage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as MetricasRouteImport } from './routes/metricas'
@@ -47,6 +48,11 @@ const CalendarRoute = CalendarRouteImport.update({
 const DisciplinesRoute = DisciplinesRouteImport.update({
   id: '/disciplines',
   path: '/disciplines',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LandingpageRoute = LandingpageRouteImport.update({
+  id: '/landingpage',
+  path: '/landingpage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
+  '/landingpage': typeof LandingpageRoute
   '/login': typeof LoginRoute
   '/materials': typeof MaterialsRouteWithChildren
   '/metricas': typeof MetricasRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
+  '/landingpage': typeof LandingpageRoute
   '/login': typeof LoginRoute
   '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
+  '/landingpage': typeof LandingpageRoute
   '/login': typeof LoginRoute
   '/materials': typeof MaterialsRouteWithChildren
   '/metricas': typeof MetricasRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/calculadora'
     | '/calendar'
     | '/disciplines'
+    | '/landingpage'
     | '/login'
     | '/materials'
     | '/metricas'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculadora'
     | '/calendar'
+    | '/landingpage'
     | '/login'
     | '/metricas'
     | '/podcasts'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/calculadora'
     | '/calendar'
     | '/disciplines'
+    | '/landingpage'
     | '/login'
     | '/materials'
     | '/metricas'
@@ -256,6 +268,7 @@ export interface RootRouteChildren {
   CalculadoraRoute: typeof CalculadoraRoute
   CalendarRoute: typeof CalendarRoute
   DisciplinesRoute: typeof DisciplinesRouteWithChildren
+  LandingpageRoute: typeof LandingpageRoute
   LoginRoute: typeof LoginRoute
   MaterialsRoute: typeof MaterialsRouteWithChildren
   MetricasRoute: typeof MetricasRoute
@@ -296,6 +309,13 @@ declare module '@tanstack/react-router' {
       path: '/disciplines'
       fullPath: '/disciplines'
       preLoaderRoute: typeof DisciplinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/landingpage': {
+      id: '/landingpage'
+      path: '/landingpage'
+      fullPath: '/landingpage'
+      preLoaderRoute: typeof LandingpageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -451,6 +471,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalculadoraRoute: CalculadoraRoute,
   CalendarRoute: CalendarRoute,
   DisciplinesRoute: DisciplinesRouteWithChildren,
+  LandingpageRoute: LandingpageRoute,
   LoginRoute: LoginRoute,
   MaterialsRoute: MaterialsRouteWithChildren,
   MetricasRoute: MetricasRoute,
