@@ -119,11 +119,12 @@ function SimuladosPage() {
   };
 
   const gerar = async () => {
-    const ident = identidade;
-    if (!ident) {
-      setModalAberto(true);
-      return;
-    }
+    const ident = identidade ?? {
+      nome: "Anônimo",
+      polo: "",
+      turma: "turma2026",
+      autorLocalId: `anon-${crypto.randomUUID()}`,
+    };
     if (!perm.pode) {
       toast.error(perm.motivo ?? "Limite semanal atingido");
       return;
@@ -287,8 +288,8 @@ function SimuladosPage() {
               ✓ {identidade.nome} • {identidade.polo}
             </p>
           ) : (
-            <p className="text-[10px] font-bold text-[#D4941E] mt-2 uppercase tracking-widest">
-              Identifique-se (nome + polo) para gerar seu simulado
+            <p className="text-[10px] font-bold text-[#0A3D52]/30 mt-2 uppercase tracking-widest">
+              Identificação opcional
             </p>
           )}
         </div>
@@ -470,8 +471,8 @@ function SimuladosPage() {
                   {perm.pode ? (
                     <p className="text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50">
                       {identidade
-                        ? "Disponível: 1 simulado a cada 7 dias"
-                        : "Identifique-se para liberar sua geração semanal"}
+                        ? `Olá, ${identidade.nome}! 1 simulado a cada 7 dias`
+                        : "Identificação opcional — o simulado funciona sem nome"}
                     </p>
                   ) : (
                     <p className="text-[10px] font-black uppercase tracking-widest text-[#D4941E]">
