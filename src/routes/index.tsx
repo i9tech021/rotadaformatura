@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   BookOpen,
   Calendar as CalendarIcon,
@@ -67,6 +67,8 @@ import {
   type RankingAutor,
 } from "@/lib/ranking";
 import { seedDatabase, isSupabaseConfigured } from "@/lib/seed";
+import { listPodcasts } from "@/lib/podcastService";
+import { listPublicacoes } from "@/lib/publicacoesService";
 import {
   getStatusEvento,
   getProximaEtapa,
@@ -97,6 +99,31 @@ function useAgora(intervalMs = 30000) {
 
 function AcademicDashboard() {
   const agora = useAgora();
+  const navigate = useNavigate();
+
+  // Conteúdo por disciplina (áudios + docs) — deixa o card clicável e informativo
+  const [conteudoMap, setConteudoMap] = useState<Record<string, { audio: number; docs: number }>>(
+    {},
+  );
+  useEffect(() => {
+    Promise.all([listPodcasts().catch(() => []), listPublicacoes().catch(() => [])]).then(
+      ([pods, pubs]) => {
+        const map: Record<string, { audio: number; docs: number }> = {};
+        for (const p of pods) {
+          const m = map[p.disciplina_id] ?? { audio: 0, docs: 0 };
+          m.audio++;
+          map[p.disciplina_id] = m;
+        }
+        for (const p of pubs) {
+          const m = map[p.disciplina_id] ?? { audio: 0, docs: 0 };
+          if (p.tipo === "podcast") m.audio++;
+          else m.docs++;
+          map[p.disciplina_id] = m;
+        }
+        setConteudoMap(map);
+      },
+    );
+  }, []);
 
   const [eventosAcao, setEventosAcao] = useState<EventoAcademico[]>(() => getEventosAcao());
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
@@ -536,10 +563,13 @@ function AcademicDashboard() {
                             cls: "bg-[#0A3D52]/5 text-[#0A3D52]/60",
                           };
                 return (
-                  <div
+                  <Link
                     key={e.id}
+                    to="/disciplines/$id"
+                    params={{ id: e.disciplinaId }}
+                    search={{ tab: "materiais" }}
                     className={cn(
-                      "bg-white rounded-xl border p-3 flex items-center justify-between gap-3 transition-all",
+                      "bg-white rounded-xl border p-3 flex items-center justify-between gap-3 transition-all hover:border-[#D4941E]/50 hover:shadow-md",
                       isProxima
                         ? "border-[#D4941E]/30 shadow-md ring-1 ring-[#D4941E]/10"
                         : "border-[#0A3D52]/10 opacity-60",
@@ -572,7 +602,7 @@ function AcademicDashboard() {
                     >
                       {badge.label}
                     </span>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -705,13 +735,14 @@ function AcademicDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.disciplines.map((item) => (
-              <Link
+            {data.disciplines.map((item) => {
+              const conteudo = conteudoMap[item.id] ?? { audio: 0, docs: 0 };
+              return (
+              <div
                 key={item.id}
-                to="/disciplines/$id"
-                params={{ id: item.id }}
+                onClick={() => navigate({ to: "/disciplines/$id", params: { id: item.id } })}
                 className={cn(
-                  "bg-[#F5F7FA] rounded-xl border border-[#0A3D52]/10 p-5 hover:shadow-md transition-shadow group flex flex-col justify-between",
+                  "bg-[#F5F7FA] rounded-xl border border-[#0A3D52]/10 p-5 hover:shadow-md hover:border-[#D4941E]/40 transition-all group flex flex-col justify-between cursor-pointer",
                   item.status === "urgent" && "border-l-4 border-l-[#E74C3C]",
                   item.status === "warning" && "border-l-4 border-l-[#D4941E]",
                 )}
@@ -719,8 +750,17 @@ function AcademicDashboard() {
                 <div>
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-2xl">{item.icone}</span>
-                    <div className="p-1 hover:bg-[#0A3D52]/5 rounded-md text-[#0A3D52]/30">
-                      <MoreVertical className="w-5 h-5" />
+                    <div className="flex items-center gap-1.5">
+                      {conteudo.audio > 0 && (
+                        <span className="text-[9px] font-black bg-[#7C3AED]/10 text-[#7C3AED] px-1.5 py-0.5 rounded-full">
+                          🎧 {conteudo.audio}
+                        </span>
+                      )}
+                      {conteudo.docs > 0 && (
+                        <span className="text-[9px] font-black bg-[#0A3D52]/10 text-[#0A3D52]/60 px-1.5 py-0.5 rounded-full">
+                          📄 {conteudo.docs}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <h4 className="font-bold text-lg leading-tight mb-1 group-hover:text-[#D4941E] transition-colors">
@@ -756,12 +796,42 @@ function AcademicDashboard() {
                         : "Aguardando cronograma"}
                     </span>
                   </div>
-                  <div className="text-[#0A3D52] hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
+                  <div className="text-[#0A3D52] group-hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
                     Entrar na Rota <ArrowRight className="w-3 h-3" />
                   </div>
                 </div>
-              </Link>
-            ))}
+
+                {/* Ações rápidas — vão direto ao conteúdo */}
+                <div
+                  className="grid grid-cols-3 gap-2 mt-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Link
+                    to="/disciplines/$id"
+                    params={{ id: item.id }}
+                    search={{ tab: "materiais" }}
+                    className="inline-flex items-center justify-center gap-1 bg-white border border-[#0A3D52]/10 rounded-xl py-2 text-[10px] font-black uppercase tracking-wider text-[#0A3D52] hover:border-[#D4941E] hover:text-[#D4941E] transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Materiais
+                  </Link>
+                  <Link
+                    to="/disciplines/$id/podcast"
+                    params={{ id: item.id }}
+                    className="inline-flex items-center justify-center gap-1 bg-white border border-[#0A3D52]/10 rounded-xl py-2 text-[10px] font-black uppercase tracking-wider text-[#7C3AED] hover:border-[#7C3AED] transition-colors"
+                  >
+                    <Headphones className="w-3.5 h-3.5" /> Podcasts
+                  </Link>
+                  <Link
+                    to="/simulados"
+                    search={{ disciplina: item.id }}
+                    className="inline-flex items-center justify-center gap-1 bg-[#0A3D52] rounded-xl py-2 text-[10px] font-black uppercase tracking-wider text-white hover:bg-[#0A3D52]/90 transition-colors"
+                  >
+                    <Target className="w-3.5 h-3.5" /> Simular
+                  </Link>
+                </div>
+              </div>
+              );
+            })}
           </div>
         </section>
 
@@ -859,7 +929,12 @@ function UrgenciaCard({ e, agora }: { e: EventoAcademico; agora: Date }) {
         : formatDistanceToNow(prazo, { locale: ptBR, addSuffix: true });
 
   return (
-    <div className="bg-white p-4 rounded-2xl border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/30 transition-all gap-3">
+    <Link
+      to="/disciplines/$id"
+      params={{ id: e.disciplinaId }}
+      search={{ tab: "materiais" }}
+      className="bg-white p-4 rounded-2xl border border-[#0A3D52]/10 shadow-sm flex items-center justify-between group hover:border-[#D4941E]/40 hover:shadow-md transition-all gap-3"
+    >
       <div className="flex items-center gap-4 min-w-0">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-white text-xs"
@@ -898,7 +973,7 @@ function UrgenciaCard({ e, agora }: { e: EventoAcademico; agora: Date }) {
       >
         {statusLabel}
       </span>
-    </div>
+    </Link>
   );
 }
 

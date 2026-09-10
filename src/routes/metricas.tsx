@@ -3,12 +3,17 @@
 // volume por evento, por dia, rotas mais usadas, funil do simulado.
 // Acesso com a senha de admin (mesma das exclusões). Sem Supabase, lê o log local.
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, BarChart3, Lock, Menu, Database } from "lucide-react";
+import { ArrowLeft, BarChart3, Lock, Menu, Database, Users } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useEffect, useMemo, useState } from "react";
 import { lerMetricas, type Metrica } from "@/lib/metricas";
 import { SENHA_DEV } from "@/lib/auth";
+import {
+  kindDaPublicacao,
+  listPublicacoes,
+  type Publicacao,
+} from "@/lib/publicacoesService";
 import { getOnlineFake } from "@/lib/presenca";
 import { getUsoStorage, formatarBytes, COTA_BYTES, type UsoStorage } from "@/lib/armazenamento";
 import { cn } from "@/lib/utils";
@@ -49,6 +54,8 @@ function MetricasPage() {
   // Número aparente de online (fake dinâmico por horário — ver presenca.ts)
   const [onlineFake, setOnlineFake] = useState(() => getOnlineFake());
   const [storage, setStorage] = useState<UsoStorage | null>(null);
+  // Quem contribui: autores das publicações (nome + polo + contagem por tipo)
+  const [pubs, setPubs] = useState<Publicacao[]>([]);
 
   useEffect(() => {
     if (!autorizado) return;
@@ -60,6 +67,9 @@ function MetricasPage() {
       .finally(() => setCarregando(false));
     getUsoStorage()
       .then(setStorage)
+      .catch(() => {});
+    listPublicacoes()
+      .then(setPubs)
       .catch(() => {});
     setOnlineFake(getOnlineFake());
     const tick = setInterval(() => setOnlineFake(getOnlineFake()), 60 * 1000);
@@ -120,8 +130,52 @@ function MetricasPage() {
     };
   }, [dados]);
 
-  const entrar = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Quem contribui: agrupa publicações por autor (nome + polo)
+  const contribuidores = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        nome: string;
+        polo: string;
+        total: number;
+        audio: number;
+        video: number;
+        pdf: number;
+        imagem: number;
+        arquivo: number;
+        nota: number;
+        ultima: string;
+      }
+    >();
+    for (const p of pubs) {
+      const chave = p.autor_local_id || `${p.autor_nome}|${p.autor_polo}`;
+      const atual = map.get(chave) ?? {
+        nome: p.autor_nome || "Anônimo",
+        polo: p.autor_polo || "—",
+        total: 0,
+        audio: 0,
+        video: 0,
+        pdf: 0,
+        imagem: 0,
+        arquivo: 0,
+        nota: 0,
+        ultima: "",
+      };
+      atual.total++;
+      const kind = kindDaPublicacao(p);
+      if (kind === "audio") atual.audio++;
+      else if (kind === "video") atual.video++;
+      else if (kind === "pdf") atual.pdf++;
+      else if (kind === "imagem") atual.imagem++;
+      else if (kind === "arquivo") atual.arquivo++;
+      else atual.nota++;
+      if (!atual.ultima || p.criado_em > atual.ultima) atual.ultima = p.criado_em;
+      map.set(chave, atual);
+    }
+    return [...map.values()].sort((a, b) => b.total - a.total);
+  }, [pubs]);
+
+  const entrar = (e: React.FormEvent) => {    e.preventDefault();
     if (senha === SENHA_DEV) {
       sessionStorage.setItem(LS_ADMIN, "1");
       setAutorizado(true);
@@ -227,6 +281,59 @@ function MetricasPage() {
                   </p>
                 </div>
               ))}
+            </div>
+
+            {/* Quem contribui (nomes de quem deu as informações) */}
+            <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 shadow-sm">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0A3D52]/40 mb-4 flex items-center gap-2">
+                <Users className="w-3.5 h-3.5 text-[#D4941E]" /> Quem contribui
+                {contribuidores.length > 0 && (
+                  <span className="ml-auto text-[#D4941E]">
+                    {contribuidores.length} pessoa{contribuidores.length !== 1 ? "s" : ""} •{" "}
+                    {pubs.length} material{pubs.length !== 1 ? "is" : ""}
+                  </span>
+                )}
+              </h3>
+              {contribuidores.length === 0 ? (
+                <p className="text-[10px] font-bold uppercase text-[#0A3D52]/30">
+                  Ninguém publicou ainda — os nomes aparecem aqui quando a turma compartilhar.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {contribuidores.map((c) => (
+                    <div
+                      key={`${c.nome}|${c.polo}`}
+                      className="flex items-center gap-3 bg-[#F5F7FA] rounded-xl px-3 py-2.5"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-[#0A3D52] text-white flex items-center justify-center font-black text-xs shrink-0">
+                        {(c.nome.trim()[0] ?? "?").toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm truncate">{c.nome}</p>
+                        <p className="text-[10px] text-[#0A3D52]/40 font-bold uppercase truncate">
+                          {c.polo}
+                          {[
+                            c.audio > 0 ? `🎧 ${c.audio}` : "",
+                            c.video > 0 ? `🎬 ${c.video}` : "",
+                            c.pdf > 0 ? `📄 ${c.pdf}` : "",
+                            c.imagem > 0 ? `🖼️ ${c.imagem}` : "",
+                            c.arquivo > 0 ? `📎 ${c.arquivo}` : "",
+                            c.nota > 0 ? `📝 ${c.nota}` : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-black text-sm font-mono">{c.total}</p>
+                        <p className="text-[9px] font-bold uppercase text-[#0A3D52]/40">
+                          {c.total === 1 ? "material" : "materiais"}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Armazenamento (Supabase Storage) */}

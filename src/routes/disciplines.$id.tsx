@@ -61,7 +61,19 @@ function DisciplinePage() {
   if (isPodcastRoute) {
     return <Outlet />;
   }
-  const [activeTab, setActiveTab] = useState<TabType>("cronograma");
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    // deep-link: /disciplines/$id?tab=materiais (usado pelo dashboard)
+    if (typeof window === "undefined") return "cronograma";
+    const t = new URLSearchParams(window.location.search).get("tab");
+    return t === "guia" ||
+      t === "cronograma" ||
+      t === "notas" ||
+      t === "materiais" ||
+      t === "provas" ||
+      t === "simulados"
+      ? t
+      : "cronograma";
+  });
 
   const discipline = useMemo(() => disciplines.find((d) => d.id === id), [id]);
   const events = useMemo(() => CALENDAR_EVENTS.filter((e: any) => e.disciplinaId === id), [id]);

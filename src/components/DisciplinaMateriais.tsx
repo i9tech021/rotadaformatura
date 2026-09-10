@@ -32,6 +32,12 @@ import {
   type KindMaterial,
   type Publicacao,
 } from "@/lib/publicacoesService";
+import {
+  formatarDuracao,
+  listPodcasts,
+  subscribePodcasts,
+  type Podcast,
+} from "@/lib/podcastService";
 import { otimizarAudio, suportaOtimizacao } from "@/lib/audioLeve";
 import { playAudio } from "@/lib/audioContext";
 import { MATERIALS, type Material } from "@/data/materials";
@@ -74,6 +80,17 @@ function objetivoDoTitulo(titulo: string): EtapaPublicacao {
   return "Geral";
 }
 
+/** Objetivo da etapa de um episódio de podcast (AP1/AP2/...; resto vira Geral). */
+function objetivoDoEpisodio(objetivo?: string): EtapaPublicacao {
+  const m = (objetivo || "").toUpperCase().match(/\b(AP3|AP2|AP1|AD2|AD1)\b/);
+  if (m?.[1] === "AP1") return "AP1";
+  if (m?.[1] === "AP2") return "AP2";
+  if (m?.[1] === "AP3") return "AP3";
+  if (m?.[1] === "AD1") return "AD1";
+  if (m?.[1] === "AD2") return "AD2";
+  return "Geral";
+}
+
 const ROTULO_KIND: Record<KindMaterial, string> = {
   audio: "Áudio",
   video: "Vídeo",
@@ -107,6 +124,7 @@ function iconeCurado(type: Material["type"]): string {
 
 export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
   const [publicacoes, setPublicacoes] = useState<Publicacao[]>([]);
+  const [episodios, setEpisodios] = useState<Podcast[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [filtroObjetivo, setFiltroObjetivo] = useState<FiltroObjetivo>("todas");
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
@@ -141,15 +159,24 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
   );
 
   const recarregar = useCallback(async () => {
-    const lista = await listPublicacoes(disciplinaId);
+    const [lista, eps] = await Promise.all([
+      listPublicacoes(disciplinaId),
+      listPodcasts(disciplinaId).catch(() => [] as Podcast[]),
+    ]);
     setPublicacoes(lista);
+    setEpisodios(eps);
     setCarregando(false);
   }, [disciplinaId]);
 
   useEffect(() => {
     setCarregando(true);
     recarregar();
-    return subscribePublicacoes(recarregar);
+    const unsubPub = subscribePublicacoes(recarregar);
+    const unsubPod = subscribePodcasts(recarregar);
+    return () => {
+      unsubPub();
+      unsubPod();
+    };
   }, [recarregar]);
 
   const alternarEstudado = useCallback(
@@ -174,6 +201,16 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
     });
   }, [publicacoes, filtroObjetivo, filtroTipo]);
 
+  // Episódios de podcast da disciplina (tabela podcasts) — entram na central como áudio
+  const episodiosFiltrados = useMemo(() => {
+    return episodios.filter((ep) => {
+      if (filtroObjetivo !== "todas" && objetivoDoEpisodio(ep.objetivo) !== filtroObjetivo)
+        return false;
+      if (filtroTipo !== "todos" && filtroTipo !== "audio") return false;
+      return true;
+    });
+  }, [episodios, filtroObjetivo, filtroTipo]);
+
   const curadosFiltrados = useMemo(() => {
     return materiaisCurados.filter((m) => {
       if (filtroObjetivo !== "todas" && objetivoDoTitulo(m.title) !== filtroObjetivo) return false;
@@ -190,21 +227,23 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
       ETAPAS.filter(
         (et) =>
           publicacoes.some((p) => (p.etapa ?? "Geral") === et) ||
+          episodios.some((ep) => objetivoDoEpisodio(ep.objetivo) === et) ||
           materiaisCurados.some((m) => objetivoDoTitulo(m.title) === et),
       ),
-    [publicacoes, materiaisCurados],
+    [publicacoes, episodios, materiaisCurados],
   );
 
-  const totalItens = materiaisCurados.length + publicacoes.length;
+  const totalItens = materiaisCurados.length + publicacoes.length + episodios.length;
   const totalEstudados = useMemo(() => {
     const ids = new Set([
       ...materiaisCurados.map((m) => m.id),
       ...publicacoes.map((p) => p.id),
+      ...episodios.map((ep) => `pod:${ep.id}`),
     ]);
     let n = 0;
     for (const id of ids) if (estudados[id]) n++;
     return n;
-  }, [materiaisCurados, publicacoes, estudados]);
+  }, [materiaisCurados, publicacoes, episodios, estudados]);
 
   const handleExcluir = async (p: Publicacao) => {
     const r = await excluirPublicacao(p);
@@ -441,6 +480,7 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
               et === "todas"
                 ? totalItens
                 : publicacoes.filter((p) => (p.etapa ?? "Geral") === et).length +
+                  episodios.filter((ep) => objetivoDoEpisodio(ep.objetivo) === et).length +
                   materiaisCurados.filter((m) => objetivoDoTitulo(m.title) === et).length;
             if (et !== "todas" && qtd === 0) return null;
             return (
@@ -502,7 +542,9 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
             </div>
           ))}
         </div>
-      ) : curadosFiltrados.length === 0 && pubsFiltradas.length === 0 ? (
+      ) : curadosFiltrados.length === 0 &&
+        pubsFiltradas.length === 0 &&
+        episodiosFiltrados.length === 0 ? (
         <div className="bg-[#F5F7FA] p-8 rounded-3xl border border-dashed border-[#0A3D52]/10 text-center">
           <FileText className="w-10 h-10 mx-auto mb-3 text-[#0A3D52]/20" />
           <p className="font-bold text-xs uppercase tracking-widest text-[#0A3D52]/40">
@@ -519,13 +561,13 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Oficiais (curados) */}
           {curadosFiltrados.map((material) => (
             <div
               key={material.id}
               className={cn(
-                "bg-white rounded-2xl border p-4 transition-all",
+                "bg-white rounded-2xl border p-4 transition-all flex flex-col",
                 estudados[material.id]
                   ? "border-[#27AE60]/40 bg-[#27AE60]/[0.03]"
                   : "border-[#0A3D52]/10",
@@ -579,8 +621,82 @@ export function DisciplinaMateriais({ disciplinaId, disciplinaNome }: Props) {
               aoDenunciar={() => handleDenunciar(p)}
             />
           ))}
+
+          {/* Episódios de podcast da disciplina */}
+          {episodiosFiltrados.map((ep) => (
+            <CardEpisodio
+              key={ep.id}
+              ep={ep}
+              estudado={!!estudados[`pod:${ep.id}`]}
+              botaoCheck={botaoCheck(`pod:${ep.id}`, ep.titulo)}
+            />
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------- card de episódio (podcast da disciplina, com check local) ----------
+function CardEpisodio({
+  ep,
+  estudado,
+  botaoCheck,
+}: {
+  ep: Podcast;
+  estudado: boolean;
+  botaoCheck: ReactNode;
+}) {
+  const dataFmt = (() => {
+    try {
+      return new Date(ep.criado_em).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  })();
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border p-4 transition-all flex flex-col bg-gradient-to-br from-[#7C3AED]/[0.07] to-white",
+        estudado ? "border-[#27AE60]/40" : "border-[#7C3AED]/20",
+      )}
+    >
+      <div className="flex items-start gap-3 mb-2">
+        <div className="w-10 h-10 rounded-xl bg-[#7C3AED]/15 flex items-center justify-center text-lg shrink-0">
+          🎧
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+            <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[#7C3AED]/15 text-[#7C3AED]">
+              Episódio
+            </span>
+            <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[#D4941E]/15 text-[#D4941E]">
+              {objetivoDoEpisodio(ep.objetivo)}
+            </span>
+            {dataFmt && (
+              <span className="text-[9px] font-bold text-[#0A3D52]/30">{dataFmt}</span>
+            )}
+            {ep.duracao_seg ? (
+              <span className="text-[9px] font-bold text-[#0A3D52]/30">
+                {formatarDuracao(ep.duracao_seg)}
+              </span>
+            ) : null}
+          </div>
+          <h4 className="font-bold text-sm text-[#0A3D52] leading-tight">{ep.titulo}</h4>
+          {ep.descricao ? (
+            <p className="text-xs text-[#0A3D52]/50 font-medium mt-0.5 line-clamp-2">
+              {ep.descricao}
+            </p>
+          ) : null}
+        </div>
+        {botaoCheck}
+      </div>
+      <div className="mt-auto pt-1">
+        <AudioPlayer url={ep.url} cor="#7C3AED" />
+      </div>
     </div>
   );
 }
@@ -617,7 +733,7 @@ function CardUpload({
   return (
     <div
       className={cn(
-        "bg-white rounded-2xl border p-4 transition-all",
+        "bg-white rounded-2xl border p-4 transition-all flex flex-col",
         estudado ? "border-[#27AE60]/40 bg-[#27AE60]/[0.03]" : "border-[#0A3D52]/10",
       )}
     >
@@ -710,7 +826,7 @@ function CardUpload({
       )}
 
       {/* Ações discretas */}
-      <div className="flex items-center justify-end gap-3 mt-2">
+      <div className="flex items-center justify-end gap-3 mt-auto pt-2">
         {!ehAutor ? (
           <button
             onClick={aoDenunciar}
