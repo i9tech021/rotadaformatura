@@ -25,6 +25,7 @@ import { Route as CommunityIndexRouteImport } from './routes/community/index'
 import { Route as CommunityChatRouteImport } from './routes/community/chat'
 import { Route as DisciplinesIndexRouteImport } from './routes/disciplines.index'
 import { Route as DisciplinesIdRouteImport } from './routes/disciplines.$id'
+import { Route as MaterialsIndexRouteImport } from './routes/materials.index'
 import { Route as MaterialsIdRouteImport } from './routes/materials/$id'
 import { Route as DisciplinesIdPodcastRouteImport } from './routes/disciplines/$id/podcast'
 
@@ -108,6 +109,11 @@ const DisciplinesIdRoute = DisciplinesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => DisciplinesRoute,
 } as any)
+const MaterialsIndexRoute = MaterialsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MaterialsRoute,
+} as any)
 const MaterialsIdRoute = MaterialsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/materials/$id': typeof MaterialsIdRoute
   '/community/': typeof CommunityIndexRoute
   '/disciplines/': typeof DisciplinesIndexRoute
+  '/materials/': typeof MaterialsIndexRoute
   '/disciplines/$id/podcast': typeof DisciplinesIdPodcastRoute
 }
 export interface FileRoutesByTo {
@@ -144,7 +151,6 @@ export interface FileRoutesByTo {
   '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
   '/login': typeof LoginRoute
-  '/materials': typeof MaterialsRouteWithChildren
   '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
   '/publicacoes': typeof PublicacoesRoute
@@ -156,6 +162,7 @@ export interface FileRoutesByTo {
   '/materials/$id': typeof MaterialsIdRoute
   '/community': typeof CommunityIndexRoute
   '/disciplines': typeof DisciplinesIndexRoute
+  '/materials': typeof MaterialsIndexRoute
   '/disciplines/$id/podcast': typeof DisciplinesIdPodcastRoute
 }
 export interface FileRoutesById {
@@ -177,6 +184,7 @@ export interface FileRoutesById {
   '/materials/$id': typeof MaterialsIdRoute
   '/community/': typeof CommunityIndexRoute
   '/disciplines/': typeof DisciplinesIndexRoute
+  '/materials/': typeof MaterialsIndexRoute
   '/disciplines/$id/podcast': typeof DisciplinesIdPodcastRoute
 }
 export interface FileRouteTypes {
@@ -199,6 +207,7 @@ export interface FileRouteTypes {
     | '/materials/$id'
     | '/community/'
     | '/disciplines/'
+    | '/materials/'
     | '/disciplines/$id/podcast'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -206,7 +215,6 @@ export interface FileRouteTypes {
     | '/calculadora'
     | '/calendar'
     | '/login'
-    | '/materials'
     | '/metricas'
     | '/podcasts'
     | '/publicacoes'
@@ -218,6 +226,7 @@ export interface FileRouteTypes {
     | '/materials/$id'
     | '/community'
     | '/disciplines'
+    | '/materials'
     | '/disciplines/$id/podcast'
   id:
     | '__root__'
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/materials/$id'
     | '/community/'
     | '/disciplines/'
+    | '/materials/'
     | '/disciplines/$id/podcast'
   fileRoutesById: FileRoutesById
 }
@@ -372,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DisciplinesIdRouteImport
       parentRoute: typeof DisciplinesRoute
     }
+    '/materials/': {
+      id: '/materials/'
+      path: '/'
+      fullPath: '/materials/'
+      preLoaderRoute: typeof MaterialsIndexRouteImport
+      parentRoute: typeof MaterialsRoute
+    }
     '/materials/$id': {
       id: '/materials/$id'
       path: '/$id'
@@ -417,10 +434,12 @@ const DisciplinesRouteWithChildren = DisciplinesRoute._addFileChildren(
 
 interface MaterialsRouteChildren {
   MaterialsIdRoute: typeof MaterialsIdRoute
+  MaterialsIndexRoute: typeof MaterialsIndexRoute
 }
 
 const MaterialsRouteChildren: MaterialsRouteChildren = {
   MaterialsIdRoute: MaterialsIdRoute,
+  MaterialsIndexRoute: MaterialsIndexRoute,
 }
 
 const MaterialsRouteWithChildren = MaterialsRoute._addFileChildren(
