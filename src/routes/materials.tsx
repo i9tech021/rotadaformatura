@@ -7,19 +7,16 @@ import {
   BookOpen,
   FileText,
   Headphones,
-  Loader2,
   Menu,
   Search,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MATERIALS } from "@/data/materials";
 import { disciplinas } from "@/data/disciplines";
-import { listPublicacoes } from "@/lib/publicacoesService";
-import { listPodcasts } from "@/lib/podcastService";
-import { useQuery } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
+import { listPublicacoes, type Publicacao } from "@/lib/publicacoesService";
+import { listPodcasts, type Podcast } from "@/lib/podcastService";
 
 export const Route = createFileRoute("/materials")({
   component: MaterialsGrid,
@@ -30,16 +27,18 @@ export const Route = createFileRoute("/materials")({
 
 function MaterialsGrid() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [publicacoes, setPublicacoes] = useState<Publicacao[]>([]);
+  const [episodios, setEpisodios] = useState<Podcast[]>([]);
 
-  const { data: publicacoes = [] } = useQuery({
-    queryKey: ["publicacoes"],
-    queryFn: () => listPublicacoes(),
-  });
-
-  const { data: episodios = [] } = useQuery({
-    queryKey: ["podcasts"],
-    queryFn: () => listPodcasts(),
-  });
+  useEffect(() => {
+    Promise.all([
+      listPublicacoes().catch(() => [] as Publicacao[]),
+      listPodcasts().catch(() => [] as Podcast[]),
+    ]).then(([pubs, pods]) => {
+      setPublicacoes(pubs);
+      setEpisodios(pods);
+    });
+  }, []);
 
   // Contagem de materiais por disciplina
   const contadores = useMemo(() => {
@@ -48,22 +47,16 @@ function MaterialsGrid() {
       map[d.id] = { curados: 0, pubs: 0, pods: 0, total: 0 };
     }
     for (const m of MATERIALS) {
-      if (map[m.disciplineId]) {
-        map[m.disciplineId].curados++;
-        map[m.disciplineId].total++;
-      }
+      const c = map[m.disciplineId];
+      if (c) { c.curados++; c.total++; }
     }
     for (const p of publicacoes) {
-      if (map[p.disciplina_id]) {
-        map[p.disciplina_id].pubs++;
-        map[p.disciplina_id].total++;
-      }
+      const c = map[p.disciplina_id];
+      if (c) { c.pubs++; c.total++; }
     }
     for (const ep of episodios) {
-      if (map[ep.disciplina_id]) {
-        map[ep.disciplina_id].pods++;
-        map[ep.disciplina_id].total++;
-      }
+      const c = map[ep.disciplina_id];
+      if (c) { c.pods++; c.total++; }
     }
     return map;
   }, [publicacoes, episodios]);
@@ -135,7 +128,7 @@ function MaterialsGrid() {
         {/* Grid de cards de disciplinas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {disciplinasFiltradas.map((d) => {
-            const c = contadores[d.id];
+            const c = contadores[d.id] ?? { curados: 0, pubs: 0, pods: 0, total: 0 };
             return (
               <Link
                 key={d.id}
