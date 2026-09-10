@@ -65,7 +65,7 @@ let ultimoPageview: { rota: string; ts: number } | null = null;
 export function track(evento: EventoMetrica, detalhe?: Record<string, unknown>): void {
   try {
     if (evento === "pageview") {
-      const rota = detalhe?.rota as string | undefined;
+      const rota = (detalhe?.["rota"] as string | undefined) ?? null;
       const now = Date.now();
       if (rota && ultimoPageview?.rota === rota && now - ultimoPageview.ts < PAGEVIEW_DEDUP_MS) {
         return; // ignora pageview duplicado
