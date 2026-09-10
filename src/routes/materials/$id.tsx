@@ -438,7 +438,19 @@ function DisciplineMaterials() {
           <div className="flex items-center gap-2">
             <AppDesktopNav />
             <button
-              onClick={() => window.open(`/publicacoes?tipo=podcast`, "_blank")}
+              onClick={() => {
+                const url = `${window.location.origin}/materials/${id}`;
+                if (navigator.share) {
+                  navigator.share({
+                    title: `Materiais — ${disciplina.codigo}`,
+                    text: `Veja os materiais de ${disciplina.nome} no Rota da Formatura!`,
+                    url,
+                  }).catch(() => {});
+                } else {
+                  navigator.clipboard.writeText(url);
+                  toast.success("Link copiado! Compartilhe com a turma.");
+                }
+              }}
               className="flex items-center gap-1.5 bg-white/20 text-white px-3 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/30 transition-colors cursor-pointer"
             >
               <Share2 className="w-3.5 h-3.5" /> Compartilhar
