@@ -7,12 +7,14 @@ import {
   ArrowLeft,
   Check,
   ChevronDown,
+  Copy,
   Download,
   ExternalLink,
   FileText,
   FileUp,
   Loader2,
   Menu,
+  MessageCircle,
   Play,
   Plus,
   Search,
@@ -101,10 +103,14 @@ function objetivoDoEpisodio(objetivo?: string): EtapaPublicacao {
 
 function iconeCurado(type: Material["type"]): string {
   switch (type) {
-    case "pdf": return "📄";
-    case "doc": return "📝";
-    case "image": return "🖼️";
-    default: return "🔗";
+    case "pdf":
+      return "📄";
+    case "doc":
+      return "📝";
+    case "image":
+      return "🖼️";
+    default:
+      return "🔗";
   }
 }
 
@@ -148,7 +154,9 @@ function lerEstudados(disciplinaId: string): Record<string, boolean> {
 function salvarEstudados(disciplinaId: string, map: Record<string, boolean>) {
   try {
     localStorage.setItem(`rdf:estudado:${disciplinaId}`, JSON.stringify(map));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 // ============================================================
@@ -158,8 +166,35 @@ export const Route = createFileRoute("/materials/$id")({
   component: DisciplineMaterials,
   head: ({ params }) => {
     const d = disciplinas.find((x) => x.id === params.id);
+    const nome = d?.nome || "Materiais";
+    const desc = d
+      ? `Materiais de ${d.nome} (${d.codigo}) compartilhados pela turma do CEDERJ: PDFs, áudios, vídeos e resumos. Gratuito, sem conta.`
+      : "Materiais compartilhados pela turma do CEDERJ. Gratuito, sem conta.";
+    const url = `https://rotadaformatura.vercel.app/materials/${params.id}`;
     return {
-      meta: [{ title: `${d?.nome || "Materiais"} | Rota da Formatura` }],
+      title: `${nome} | Rota da Formatura`,
+      meta: [
+        { name: "description", content: desc },
+        { property: "og:title", content: `${nome} · Rota da Formatura` },
+        { property: "og:description", content: desc },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: url },
+        { property: "og:site_name", content: "Rota da Formatura" },
+        {
+          property: "og:image",
+          content: "https://rotadaformatura.vercel.app/og-cover.png",
+        },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: `${nome} · Rota da Formatura` },
+        { name: "twitter:description", content: desc },
+        {
+          name: "twitter:image",
+          content: "https://rotadaformatura.vercel.app/og-cover.png",
+        },
+      ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
 });
@@ -184,6 +219,7 @@ function DisciplineMaterials() {
 
   // Formulário
   const [formAberto, setFormAberto] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [objetivo, setObjetivo] = useState<EtapaPublicacao>("Geral");
   const [descricao, setDescricao] = useState("");
@@ -194,7 +230,9 @@ function DisciplineMaterials() {
   const [versaoLeve, setVersaoLeve] = useState(true);
 
   useEffect(() => {
-    suportaOtimizacao().then(setOtimSuportado).catch(() => setOtimSuportado(false));
+    suportaOtimizacao()
+      .then(setOtimSuportado)
+      .catch(() => setOtimSuportado(false));
   }, []);
 
   useEffect(() => {
@@ -216,7 +254,10 @@ function DisciplineMaterials() {
     recarregar();
     const unsubPub = subscribePublicacoes(recarregar);
     const unsubPod = subscribePodcasts(recarregar);
-    return () => { unsubPub(); unsubPod(); };
+    return () => {
+      unsubPub();
+      unsubPod();
+    };
   }, [recarregar]);
 
   // ---- Agregar todos os materiais ----
@@ -264,10 +305,13 @@ function DisciplineMaterials() {
     // 3. Oficiais curados / links externos (por último)
     for (const m of MATERIALS.filter((m) => m.disciplineId === id)) {
       const kind: ItemMaterial["kind"] =
-        m.type === "pdf" ? "pdf" :
-        m.type === "doc" ? "pdf" :
-        m.type === "image" ? "imagem" :
-        "link";
+        m.type === "pdf"
+          ? "pdf"
+          : m.type === "doc"
+            ? "pdf"
+            : m.type === "image"
+              ? "imagem"
+              : "link";
       itens.push({
         id: m.id,
         titulo: m.title,
@@ -287,10 +331,12 @@ function DisciplineMaterials() {
     const lista = todosItens.filter((item) => {
       if (filtroObjetivo !== "todas" && item.etapa !== filtroObjetivo) return false;
       if (filtroTipo === "oficiais" && item.tipo !== "curado") return false;
-      if (filtroTipo !== "todos" && filtroTipo !== "oficiais" && item.kind !== filtroTipo) return false;
+      if (filtroTipo !== "todos" && filtroTipo !== "oficiais" && item.kind !== filtroTipo)
+        return false;
       if (busca) {
         const s = busca.toLowerCase();
-        if (!item.titulo.toLowerCase().includes(s) && !(item.autor || "").toLowerCase().includes(s)) return false;
+        if (!item.titulo.toLowerCase().includes(s) && !(item.autor || "").toLowerCase().includes(s))
+          return false;
       }
       return true;
     });
@@ -386,7 +432,12 @@ function DisciplineMaterials() {
         // 1. Comprime primeiro (áudio e vídeo grandes viram poucos MB)
         let final: File = original;
         const podeComprimir = versaoLeve;
-        if (kind === "audio" && podeComprimir && otimSuportado !== false && original.size >= 3 * 1024 * 1024) {
+        if (
+          kind === "audio" &&
+          podeComprimir &&
+          otimSuportado !== false &&
+          original.size >= 3 * 1024 * 1024
+        ) {
           setStatusEnvio(`Arquivo${rotulo}: deixando o áudio mais leve...`);
           const leve = await otimizarAudio(original, (_f, pct) =>
             setStatusEnvio(`Arquivo${rotulo}: comprimindo áudio... ${pct}%`),
@@ -459,7 +510,9 @@ function DisciplineMaterials() {
     return (
       <div className="min-h-screen bg-[#F5F7FA] flex items-center justify-center">
         <div className="text-center">
-          <p className="font-bold text-[#0A3D52]/40 uppercase tracking-widest">Disciplina não encontrada</p>
+          <p className="font-bold text-[#0A3D52]/40 uppercase tracking-widest">
+            Disciplina não encontrada
+          </p>
           <Link to="/materials" className="text-[#D4941E] text-sm font-bold mt-2 inline-block">
             ← Voltar
           </Link>
@@ -471,7 +524,10 @@ function DisciplineMaterials() {
   return (
     <div className="min-h-screen bg-[#F5F7FA] text-[#0A3D52] pb-24 md:pb-8">
       {/* Header */}
-      <nav className="text-white px-4 py-4 shadow-md sticky top-0 z-40" style={{ background: disciplina.cor }}>
+      <nav
+        className="text-white px-4 py-4 shadow-md sticky top-0 z-40"
+        style={{ background: disciplina.cor }}
+      >
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Sheet>
@@ -485,7 +541,10 @@ function DisciplineMaterials() {
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-3">
-              <Link to="/materials" className="hover:bg-white/10 p-2 rounded-full transition-colors">
+              <Link
+                to="/materials"
+                className="hover:bg-white/10 p-2 rounded-full transition-colors"
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
@@ -504,19 +563,7 @@ function DisciplineMaterials() {
           <div className="flex items-center gap-2">
             <AppDesktopNav />
             <button
-              onClick={() => {
-                const url = `${window.location.origin}/materials/${id}`;
-                if (navigator.share) {
-                  navigator.share({
-                    title: `Materiais — ${disciplina.codigo}`,
-                    text: `Veja os materiais de ${disciplina.nome} no Rota da Formatura!`,
-                    url,
-                  }).catch(() => {});
-                } else {
-                  navigator.clipboard.writeText(url);
-                  toast.success("Link copiado! Compartilhe com a turma.");
-                }
-              }}
+              onClick={() => setShowShare(true)}
               className="flex items-center gap-1.5 bg-white/20 text-white px-3 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/30 transition-colors cursor-pointer"
             >
               <Share2 className="w-3.5 h-3.5" /> Compartilhar
@@ -531,7 +578,9 @@ function DisciplineMaterials() {
           <div className="bg-white rounded-2xl border border-[#0A3D52]/10 px-4 py-3 mb-4">
             <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50 mb-1.5">
               <span>Meu progresso</span>
-              <span>{totalEstudados} de {todosItens.length} estudados</span>
+              <span>
+                {totalEstudados} de {todosItens.length} estudados
+              </span>
             </div>
             <div className="h-2 rounded-full bg-[#0A3D52]/10 overflow-hidden">
               <div
@@ -559,7 +608,10 @@ function DisciplineMaterials() {
 
         {/* Formulário */}
         {formAberto && (
-          <div className="bg-white rounded-2xl border-2 border-dashed p-4 space-y-3 mb-4" style={{ borderColor: `${disciplina.cor}40` }}>
+          <div
+            className="bg-white rounded-2xl border-2 border-dashed p-4 space-y-3 mb-4"
+            style={{ borderColor: `${disciplina.cor}40` }}
+          >
             <p className="text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50">
               Compartilhar com a turma · {disciplina.nome}
             </p>
@@ -582,7 +634,9 @@ function DisciplineMaterials() {
                   className="bg-transparent font-black text-[#0A3D52] outline-none flex-1 cursor-pointer"
                 >
                   {ETAPAS.map((et) => (
-                    <option key={et} value={et}>{et === "Geral" ? "Geral" : et}</option>
+                    <option key={et} value={et}>
+                      {et === "Geral" ? "Geral" : et}
+                    </option>
                   ))}
                 </select>
                 <ChevronDown className="w-3.5 h-3.5 shrink-0" />
@@ -671,9 +725,8 @@ function DisciplineMaterials() {
         {/* Filtros por objetivo */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3">
           {(["todas", ...ETAPAS] as const).map((et) => {
-            const qtd = et === "todas"
-              ? todosItens.length
-              : todosItens.filter((i) => i.etapa === et).length;
+            const qtd =
+              et === "todas" ? todosItens.length : todosItens.filter((i) => i.etapa === et).length;
             if (et !== "todas" && qtd === 0) return null;
             return (
               <button
@@ -695,15 +748,17 @@ function DisciplineMaterials() {
 
         {/* Filtros por tipo */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-2">
-          {([
-            { v: "todos", l: "Todos" },
-            { v: "oficiais", l: "📚 Oficiais" },
-            { v: "audio", l: "🎧 Áudio" },
-            { v: "video", l: "🎬 Vídeo" },
-            { v: "pdf", l: "📄 Docs" },
-            { v: "imagem", l: "🖼️ Imagens" },
-            { v: "nota", l: "📝 Notas" },
-          ] as const).map((t) => (
+          {(
+            [
+              { v: "todos", l: "Todos" },
+              { v: "oficiais", l: "📚 Oficiais" },
+              { v: "audio", l: "🎧 Áudio" },
+              { v: "video", l: "🎬 Vídeo" },
+              { v: "pdf", l: "📄 Docs" },
+              { v: "imagem", l: "🖼️ Imagens" },
+              { v: "nota", l: "📝 Notas" },
+            ] as const
+          ).map((t) => (
             <button
               key={t.v}
               onClick={() => setFiltroTipo(t.v)}
@@ -751,7 +806,10 @@ function DisciplineMaterials() {
         {carregando ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-[#0A3D52]/10 p-4 animate-pulse">
+              <div
+                key={i}
+                className="bg-white rounded-2xl border border-[#0A3D52]/10 p-4 animate-pulse"
+              >
                 <div className="h-3 bg-[#0A3D52]/10 rounded w-1/3 mb-2" />
                 <div className="h-3 bg-[#0A3D52]/10 rounded w-2/3" />
               </div>
@@ -774,12 +832,160 @@ function DisciplineMaterials() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {itensFiltrados.map((item) => (
-              <CardMaterial key={item.id} item={item} cor={disciplina.cor} estudados={estudados} alternarEstudado={alternarEstudado} onExcluir={handleExcluir} identidade={identidade} />
+              <CardMaterial
+                key={item.id}
+                item={item}
+                cor={disciplina.cor}
+                estudados={estudados}
+                alternarEstudado={alternarEstudado}
+                onExcluir={handleExcluir}
+                identidade={identidade}
+              />
             ))}
           </div>
         )}
       </main>
       <AppBottomNav />
+
+      {showShare && (
+        <CompartilharModal
+          disciplinaNome={disciplina.nome}
+          disciplinaCodigo={disciplina.codigo}
+          disciplinaIcone={disciplina.icone}
+          disciplinaCor={disciplina.cor}
+          totalMateriais={todosItens.length}
+          disciplinaId={id}
+          onFechar={() => setShowShare(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Modal compartilhar (WhatsApp, link, nativo) com card explicativo
+// ============================================================
+function CompartilharModal({
+  disciplinaNome,
+  disciplinaCodigo,
+  disciplinaIcone,
+  disciplinaCor,
+  totalMateriais,
+  disciplinaId,
+  onFechar,
+}: {
+  disciplinaNome: string;
+  disciplinaCodigo: string;
+  disciplinaIcone: string;
+  disciplinaCor: string;
+  totalMateriais: number;
+  disciplinaId: string;
+  onFechar: () => void;
+}) {
+  const url =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/materials/${disciplinaId}`
+      : `https://rotadaformatura.vercel.app/materials/${disciplinaId}`;
+  const texto = `📚 ${disciplinaNome} (${disciplinaCodigo}) no Rota da Formatura: ${totalMateriais} materiais da turma (PDFs, áudios, vídeos). Grátis, sem conta. Entra aí: ${url}`;
+
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copiado! Cola no grupo do WhatsApp.");
+      return;
+    } catch {
+      // fallback para navegadores sem Clipboard API (textarea + execCommand)
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+      toast.success("Link copiado! Cola no grupo do WhatsApp.");
+    } catch {
+      toast.error("Não foi possível copiar.");
+    }
+  };
+
+  const compartilharNativo = () => {
+    if (navigator.share) {
+      navigator
+        .share({ title: `Materiais — ${disciplinaCodigo}`, text: texto, url })
+        .catch(() => {});
+    } else {
+      copiar();
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+      onClick={onFechar}
+    >
+      <div
+        className="bg-white rounded-3xl w-full max-w-md p-6 space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-black">Compartilhar com a turma</h2>
+          <button
+            onClick={onFechar}
+            className="p-2 hover:bg-[#F5F7FA] rounded-xl transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Card explicativo (prévia do que o grupo vai ver) */}
+        <div className="rounded-2xl border border-[#0A3D52]/10 overflow-hidden">
+          <div className="p-4 flex items-center gap-3" style={{ background: disciplinaCor }}>
+            <span className="text-3xl">{disciplinaIcone}</span>
+            <div className="text-white">
+              <p className="font-black text-sm leading-tight">
+                {disciplinaNome} ({disciplinaCodigo})
+              </p>
+              <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">
+                Rota da Formatura · CEDERJ
+              </p>
+            </div>
+          </div>
+          <div className="p-4 bg-[#F5F7FA]">
+            <p className="text-xs text-[#0A3D52]/80 font-medium">
+              {totalMateriais} materiais da turma: PDFs, áudios, vídeos e resumos. Grátis, sem conta
+              — é só abrir o link.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(texto)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#25D366] text-white font-black text-xs uppercase tracking-[0.2em]"
+          >
+            <MessageCircle className="w-4 h-4" /> Enviar no WhatsApp
+          </a>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={compartilharNativo}
+              className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#0A3D52] text-white font-black text-xs uppercase tracking-widest"
+            >
+              <Share2 className="w-4 h-4" /> App
+            </button>
+            <button
+              onClick={copiar}
+              className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-[#0A3D52]/20 font-black text-xs uppercase tracking-widest"
+            >
+              <Copy className="w-4 h-4" /> Copiar link
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -823,19 +1029,28 @@ function CardMaterial({
     >
       {/* Cabeçalho */}
       <div className="flex items-start gap-3 mb-2">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0" style={{ background: `${cor}10` }}>
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0"
+          style={{ background: `${cor}10` }}
+        >
           {isAudio ? "🎧" : isVideo ? "🎬" : isPdf ? "📄" : isImagem ? "🖼️" : "🔗"}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-            <span className={cn(
-              "text-[9px] font-black uppercase px-1.5 py-0.5 rounded",
-              isAudio ? "bg-[#7C3AED]/15 text-[#7C3AED]" :
-              isVideo ? "bg-[#2563EB]/10 text-[#2563EB]" :
-              isPdf ? "bg-[#059669]/10 text-[#059669]" :
-              isImagem ? "bg-[#EC4899]/10 text-[#EC4899]" :
-              "bg-[#D4941E]/10 text-[#D4941E]",
-            )}>
+            <span
+              className={cn(
+                "text-[9px] font-black uppercase px-1.5 py-0.5 rounded",
+                isAudio
+                  ? "bg-[#7C3AED]/15 text-[#7C3AED]"
+                  : isVideo
+                    ? "bg-[#2563EB]/10 text-[#2563EB]"
+                    : isPdf
+                      ? "bg-[#059669]/10 text-[#059669]"
+                      : isImagem
+                        ? "bg-[#EC4899]/10 text-[#EC4899]"
+                        : "bg-[#D4941E]/10 text-[#D4941E]",
+              )}
+            >
               {EMOJI_KIND[item.kind]} {ROTULO_KIND[item.kind]}
             </span>
             {item.tipo === "curado" && (
@@ -921,12 +1136,27 @@ function CardMaterial({
       {/* Vídeo */}
       {isVideo && item.url && (
         <div className="mt-1">
-          <video src={item.url} controls playsInline preload="metadata" className="w-full rounded-xl bg-black aspect-video" />
+          <video
+            src={item.url}
+            controls
+            playsInline
+            preload="metadata"
+            className="w-full rounded-xl bg-black aspect-video"
+          />
           <div className="flex gap-2 mt-2">
-            <a href={item.url} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#0A3D52] text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest">
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#0A3D52] text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest"
+            >
               <ExternalLink className="w-3.5 h-3.5" /> Abrir
             </a>
-            <a href={item.url} download className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#F5F7FA] text-[#0A3D52] py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border border-[#0A3D52]/10">
+            <a
+              href={item.url}
+              download
+              className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#F5F7FA] text-[#0A3D52] py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border border-[#0A3D52]/10"
+            >
               <Download className="w-3.5 h-3.5" /> Baixar
             </a>
           </div>
@@ -937,7 +1167,12 @@ function CardMaterial({
       {isImagem && item.url && (
         <div className="mt-1">
           <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
-            <img src={item.url} alt={item.titulo} loading="lazy" className="w-full rounded-xl max-h-64 object-cover bg-[#F5F7FA]" />
+            <img
+              src={item.url}
+              alt={item.titulo}
+              loading="lazy"
+              className="w-full rounded-xl max-h-64 object-cover bg-[#F5F7FA]"
+            />
           </a>
           {item.tipo !== "curado" && (
             <a
@@ -954,10 +1189,19 @@ function CardMaterial({
       {/* PDF/Arquivo */}
       {isPdf && item.url && (
         <div className="flex gap-2 mt-2">
-          <a href={item.url} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#0A3D52] text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest">
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#0A3D52] text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest"
+          >
             <ExternalLink className="w-3.5 h-3.5" /> Abrir
           </a>
-          <a href={item.url} download className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#F5F7FA] text-[#0A3D52] py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border border-[#0A3D52]/10">
+          <a
+            href={item.url}
+            download
+            className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#F5F7FA] text-[#0A3D52] py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border border-[#0A3D52]/10"
+          >
             <Download className="w-3.5 h-3.5" /> Baixar
           </a>
         </div>
@@ -965,11 +1209,18 @@ function CardMaterial({
 
       {/* Nota */}
       {item.kind === "nota" && item.conteudo && (
-        <p className="text-xs text-[#0A3D52]/60 font-medium mt-1 whitespace-pre-wrap line-clamp-4">{item.conteudo}</p>
+        <p className="text-xs text-[#0A3D52]/60 font-medium mt-1 whitespace-pre-wrap line-clamp-4">
+          {item.conteudo}
+        </p>
       )}
       {item.kind === "nota" && !item.conteudo && item.url && (
         <div className="flex items-center gap-3 mt-1">
-          <a href={item.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#D4941E]">
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#D4941E]"
+          >
             <ExternalLink className="w-3 h-3" /> Abrir anexo
           </a>
           <a
