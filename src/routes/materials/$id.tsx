@@ -596,21 +596,18 @@ function DisciplineMaterials() {
                     {a.name.length > 32 ? "…" : ""}
                   </p>
                 ))}
-                <p className="text-[10px] font-bold text-[#27AE60]/80 uppercase">
-                  Áudios e vídeos grandes são comprimidos automaticamente antes de subir
-                </p>
-                <label className="flex items-center gap-2 text-[11px] font-bold text-[#0A3D52]/70 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={versaoLeve}
-                    onChange={(e) => setVersaoLeve(e.target.checked)}
-                    disabled={enviando}
-                    className="w-4 h-4 accent-[#27AE60]"
-                  />
-                  Versão leve (recomendado: voz continua nítida, arquivo até 90% menor)
-                </label>
               </div>
             )}
+            <label className="flex items-center gap-2 text-[11px] font-bold text-[#0A3D52]/70 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={versaoLeve}
+                onChange={(e) => setVersaoLeve(e.target.checked)}
+                disabled={enviando}
+                className="w-4 h-4 accent-[#27AE60]"
+              />
+              Versão leve (recomendado: voz continua nítida, arquivo até 90% menor)
+            </label>
             <textarea
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
