@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
+  BarChart3,
   Trophy,
   Menu,
   Medal,
@@ -145,7 +146,7 @@ function RankingPage() {
           </div>
         </div>
 
-        {/* Tabs Alunos / Polos */}
+        {/* Tabs Alunos / Polos / Estatísticas */}
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setAba("alunos")}
@@ -171,6 +172,13 @@ function RankingPage() {
             <Trophy className="w-4 h-4 inline mr-2" />
             Polos
           </button>
+          <Link
+            to="/estatisticas"
+            className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-colors bg-white text-[#0A3D52] border border-[#0A3D52]/10 text-center"
+          >
+            <BarChart3 className="w-4 h-4 inline mr-2" />
+            Estatísticas
+          </Link>
         </div>
 
         {/* Filtros */}

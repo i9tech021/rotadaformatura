@@ -26,7 +26,7 @@ import {
   Filter,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu, HubTabs } from "@/components/AppNav";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import {
@@ -318,12 +318,6 @@ function FAQPage() {
               <h1 className="font-bold text-lg uppercase tracking-tight hidden sm:inline">
                 Perguntas Frequentes
               </h1>
-              {nuvem && (
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-[#27AE60]/20 rounded-full text-[9px] font-black uppercase text-[#7CFC9A]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#27AE60] animate-pulse" />
-                  Ao vivo
-                </span>
-              )}
             </div>
           </div>
           <AppDesktopNav />
@@ -331,6 +325,13 @@ function FAQPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
+        <HubTabs
+          items={[
+            { to: "/publicacoes", label: "Publicações" },
+            { to: "/feed", label: "Feed" },
+            { to: "/faq", label: "Dúvidas" },
+          ]}
+        />
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-white p-4 rounded-2xl border border-[#0A3D52]/10 text-center">

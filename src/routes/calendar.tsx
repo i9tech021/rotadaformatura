@@ -19,7 +19,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu, HubTabs } from "@/components/AppNav";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
 import { disciplinas } from "@/data/disciplines";
@@ -60,7 +60,9 @@ function AcademicCalendarPage() {
     try {
       const config = JSON.parse(localStorage.getItem("rdf:notifications") || "{}");
       if (config.exams === false) return;
-    } catch { /* ignora */ }
+    } catch {
+      /* ignora */
+    }
     const devidos = verificarLembretes(CALENDAR_EVENTS);
     for (const ev of devidos) {
       try {
@@ -86,8 +88,14 @@ function AcademicCalendarPage() {
     for (const ev of CALENDAR_EVENTS) {
       if (!ev.dataInicio) continue;
       const start = new Date(ev.dataInicio);
-      const end = ev.dataFim ? new Date(ev.dataFim) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
-      const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+      const end = ev.dataFim
+        ? new Date(ev.dataFim)
+        : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+      const fmt = (d: Date) =>
+        d
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .replace(/\.\d{3}/, "");
       lines.push("BEGIN:VEVENT");
       lines.push(`DTSTART:${fmt(start)}`);
       lines.push(`DTEND:${fmt(end)}`);
@@ -181,6 +189,12 @@ function AcademicCalendarPage() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
+        <HubTabs
+          items={[
+            { to: "/calendar", label: "Acadêmico" },
+            { to: "/calendariocoletivo", label: "Coletivo" },
+          ]}
+        />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Calendar Grid */}
           <div className="lg:col-span-3">

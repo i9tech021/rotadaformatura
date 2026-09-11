@@ -15,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu, HubTabs } from "@/components/AppNav";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { disciplinas } from "@/data/disciplines";
@@ -121,9 +121,7 @@ function PublicacoesPage() {
     const maxBytes = 50 * 1024 * 1024;
     if (file.size > maxBytes) {
       toast.error(
-        tipoForm === "podcast"
-          ? "Máximo de 50MB por áudio (servidor)."
-          : "Máximo de 50MB por PDF.",
+        tipoForm === "podcast" ? "Máximo de 50MB por áudio (servidor)." : "Máximo de 50MB por PDF.",
       );
       return;
     }
@@ -243,6 +241,13 @@ function PublicacoesPage() {
       </nav>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
+        <HubTabs
+          items={[
+            { to: "/publicacoes", label: "Publicações" },
+            { to: "/feed", label: "Feed" },
+            { to: "/faq", label: "Dúvidas" },
+          ]}
+        />
         <div className="mb-6">
           <h2 className="text-3xl font-bold">Comunidade de Estudos</h2>
           <p className="text-[#0A3D52]/60 mt-1">

@@ -25,7 +25,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu, HubTabs } from "@/components/AppNav";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   listEventosColetivos,
@@ -263,12 +263,6 @@ function CalendarioColetivoPage() {
               <h1 className="font-bold text-lg uppercase tracking-tight hidden sm:inline">
                 Calendário Coletivo
               </h1>
-              {nuvem && (
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-[#27AE60]/20 rounded-full text-[9px] font-black uppercase text-[#7CFC9A]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#27AE60] animate-pulse" />
-                  Ao vivo
-                </span>
-              )}
             </div>
           </div>
           <AppDesktopNav />
@@ -276,6 +270,12 @@ function CalendarioColetivoPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
+        <HubTabs
+          items={[
+            { to: "/calendar", label: "Acadêmico" },
+            { to: "/calendariocoletivo", label: "Coletivo" },
+          ]}
+        />
         <button
           onClick={() => setShowSugerir(true)}
           className="w-full bg-[#D4941E] text-[#0A3D52] py-3 rounded-2xl font-black text-sm uppercase tracking-wider hover:scale-[1.02] transition-all flex items-center justify-center gap-2 mb-6"

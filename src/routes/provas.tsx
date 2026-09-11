@@ -243,12 +243,6 @@ function ProvasPage() {
               <h1 className="font-bold text-lg uppercase tracking-tight hidden sm:inline">
                 Provas Anteriores
               </h1>
-              {nuvem && (
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-[#27AE60]/20 rounded-full text-[9px] font-black uppercase text-[#7CFC9A]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#27AE60] animate-pulse" />
-                  Ao vivo
-                </span>
-              )}
             </div>
           </div>
 

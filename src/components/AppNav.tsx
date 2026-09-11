@@ -3,8 +3,6 @@
 // Edite aqui para atualizar o menu do app inteiro.
 import { Link } from "@tanstack/react-router";
 import {
-  Activity,
-  BarChart3,
   BookOpen,
   Calculator,
   Calendar as CalendarIcon,
@@ -12,13 +10,11 @@ import {
   FileText,
   GraduationCap,
   Headphones,
-  HelpCircle,
   LayoutDashboard,
   Settings,
   Sparkles,
   Trophy,
   Users,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -35,16 +31,6 @@ export const MENU_ITEMS: NavItem[] = [
   { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
   { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
   { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
-  { to: "/estatisticas", label: "Estatísticas", curto: "Estatísticas", icon: BarChart3 },
-  { to: "/feed", label: "Feed", curto: "Feed", icon: Activity },
-  { to: "/faq", label: "FAQ", curto: "FAQ", icon: HelpCircle },
-  {
-    to: "/calendariocoletivo",
-    label: "Calendário Coletivo",
-    curto: "Calendário",
-    icon: CalendarIcon,
-  },
-  { to: "/desafio", label: "Desafio da Semana", curto: "Desafio", icon: Zap },
   { to: "/resumos", label: "Resumos", curto: "Resumos", icon: ClipboardList },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
   { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
@@ -62,8 +48,6 @@ export const DESKTOP_ITEMS: NavItem[] = [
   { to: "/materials", label: "Materiais", curto: "Materiais", icon: FileText },
   { to: "/simulados", label: "Simulados", curto: "Simulados", icon: Sparkles },
   { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
-  { to: "/estatisticas", label: "Estatísticas", curto: "Estatísticas", icon: BarChart3 },
-  { to: "/desafio", label: "Desafio da Semana", curto: "Desafio", icon: Zap },
   { to: "/resumos", label: "Resumos", curto: "Resumos", icon: ClipboardList },
   { to: "/provas", label: "Provas Anteriores", curto: "Provas", icon: FileText },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
@@ -78,6 +62,25 @@ export const BOTTOM_ITEMS: NavItem[] = [
   { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
 ];
+
+/** Abas de hub — navegação entre páginas agrupadas (ex: Calendário > Acadêmico/Coletivo). */
+export function HubTabs({ items }: { items: { to: string; label: string }[] }) {
+  return (
+    <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+      {items.map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          activeProps={{ className: "bg-[#0A3D52] text-white border-[#0A3D52]" }}
+          inactiveProps={{ className: "bg-white text-[#0A3D52]/70 border-[#0A3D52]/10" }}
+          className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border whitespace-nowrap transition-colors"
+        >
+          {item.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
 
 /** Conteúdo do menu lateral (dentro do Sheet de cada página). */
 export function AppMobileMenu() {

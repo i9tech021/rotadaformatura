@@ -26,7 +26,7 @@ import {
   Award,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu, HubTabs } from "@/components/AppNav";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import {
@@ -305,12 +305,6 @@ function DesafioPage() {
               <h1 className="font-bold text-lg uppercase tracking-tight hidden sm:inline">
                 Desafio da Semana
               </h1>
-              {nuvem && (
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-[#27AE60]/20 rounded-full text-[9px] font-black uppercase text-[#7CFC9A]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#27AE60] animate-pulse" />
-                  Ao vivo
-                </span>
-              )}
             </div>
           </div>
           <AppDesktopNav />
@@ -318,6 +312,12 @@ function DesafioPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
+        <HubTabs
+          items={[
+            { to: "/simulados", label: "Simulados" },
+            { to: "/desafio", label: "Desafio" },
+          ]}
+        />
         {/* Banner do Desafio */}
         <div className="bg-gradient-to-r from-[#D4941E] to-[#D4941E]/80 rounded-2xl p-6 mb-8 text-[#0A3D52]">
           <div className="flex items-center justify-between">

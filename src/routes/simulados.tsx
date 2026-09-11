@@ -5,6 +5,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Calculator,
   Calendar as CalendarIcon,
+  ChevronRight,
   ClipboardCheck,
   FileText,
   GraduationCap,
@@ -16,9 +17,10 @@ import {
   Sparkles,
   Target,
   Trophy,
+  Zap,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu, HubTabs } from "@/components/AppNav";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { disciplinas } from "@/data/disciplines";
@@ -40,7 +42,12 @@ import {
   type ProvaAntiga,
 } from "@/lib/provasService";
 import { ETAPAS_QUESTAO, type EtapaQuestao } from "@/lib/questoesService";
-import { CODIGO_TURMA_PADRAO, getIdentidade, salvarIdentidade, type Identidade } from "@/lib/publicacoesService";
+import {
+  CODIGO_TURMA_PADRAO,
+  getIdentidade,
+  salvarIdentidade,
+  type Identidade,
+} from "@/lib/publicacoesService";
 import { IdentidadeModal } from "@/components/IdentidadeModal";
 import {
   RevisePorQuestao,
@@ -55,7 +62,8 @@ export const Route = createFileRoute("/simulados")({
     meta: [{ title: "Simulados | Rota da Formatura" }],
   }),
   validateSearch: (search: Record<string, unknown>) => ({
-    disciplina: typeof search["disciplina"] === "string" ? (search["disciplina"] as string) : undefined,
+    disciplina:
+      typeof search["disciplina"] === "string" ? (search["disciplina"] as string) : undefined,
   }),
 });
 
@@ -155,9 +163,11 @@ function SimuladosPage() {
       if (r.bloqueado) recarregar();
       return;
     }
-    if (r.modo === "offline") toast.info("Simulado criado com questões de revisão das aulas. Boa sorte!");
+    if (r.modo === "offline")
+      toast.info("Simulado criado com questões de revisão das aulas. Boa sorte!");
     else if (r.modo === "banco") toast.success("Simulado montado do banco de questões! Boa sorte.");
-    else if (r.provasUsadas > 0) toast.success(`Simulado gerado a partir de ${r.provasUsadas} prova(s) antiga(s)! Boa sorte.`);
+    else if (r.provasUsadas > 0)
+      toast.success(`Simulado gerado a partir de ${r.provasUsadas} prova(s) antiga(s)! Boa sorte.`);
     else toast.success("Simulado inédito gerado pela IA! Boa sorte.");
     setSessaoAtiva(r.sessao);
     setRevisao(null);
@@ -267,21 +277,55 @@ function SimuladosPage() {
             </p>
           </div>
           <div className="flex gap-1.5 mt-2">
-            <span className="w-2 h-2 bg-[#D4941E] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-            <span className="w-2 h-2 bg-[#D4941E] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-            <span className="w-2 h-2 bg-[#D4941E] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+            <span
+              className="w-2 h-2 bg-[#D4941E] rounded-full animate-bounce"
+              style={{ animationDelay: "0ms" }}
+            />
+            <span
+              className="w-2 h-2 bg-[#D4941E] rounded-full animate-bounce"
+              style={{ animationDelay: "150ms" }}
+            />
+            <span
+              className="w-2 h-2 bg-[#D4941E] rounded-full animate-bounce"
+              style={{ animationDelay: "300ms" }}
+            />
           </div>
         </div>
       )}
 
       <main className="max-w-4xl mx-auto px-4 py-8">
+        <HubTabs
+          items={[
+            { to: "/simulados", label: "Simulados" },
+            { to: "/desafio", label: "Desafio" },
+          ]}
+        />
+        <Link
+          to="/desafio"
+          className="block bg-gradient-to-r from-[#D4941E] to-[#D4941E]/80 rounded-2xl p-5 mb-8 text-[#0A3D52] hover:scale-[1.01] transition-transform"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+              <Zap className="w-6 h-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-70">
+                Toda semana • com a turma
+              </p>
+              <p className="font-black text-lg leading-tight">Desafio da Semana</p>
+              <p className="text-xs opacity-70">5 questões, ranking coletivo, valendo destaque</p>
+            </div>
+            <ChevronRight className="w-5 h-5 shrink-0" />
+          </div>
+        </Link>
         <div className="mb-8">
           <h2 className="text-3xl font-bold">Simulador de Prova</h2>
           <p className="text-[#0A3D52]/60 mt-1">
             Questões geradas por IA com base nos materiais e provas anteriores do CEDERJ.
           </p>
           <p className="text-[#0A3D52]/40 mt-2 text-sm">
-            Correção instantânea + revisão detalhada. Funciona com ou sem provas antigas — a IA cria questões originais baseadas no conteúdo da disciplina.
+            Correção instantânea + revisão detalhada. Funciona com ou sem provas antigas — a IA cria
+            questões originais baseadas no conteúdo da disciplina.
           </p>
           {identidade ? (
             <p className="text-[10px] font-bold text-[#27AE60] mt-2 uppercase tracking-widest">
