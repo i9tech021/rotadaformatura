@@ -659,7 +659,7 @@ export async function otimizarAudio(
     });
     enc.configure(
       ehOpus
-        ? { codec: "opus", sampleRate: 24000, numberOfChannels: 1, bitrate: 24000 }
+        ? { codec: "opus", sampleRate: 24000, numberOfChannels: 1, bitrate: 32000 }
         : { codec: "mp4a.40.2", sampleRate: 24000, numberOfChannels: 1, bitrate: 32000 },
     );
     const TAM = ehOpus ? 5760 : 1024; // AAC exige múltiplos de 1024

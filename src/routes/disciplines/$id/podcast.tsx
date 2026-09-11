@@ -45,6 +45,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { track } from "@/lib/metricas";
+import { validarSenhaDelete } from "@/lib/auth";
 import { otimizarAudio, suportaOtimizacao } from "@/lib/audioLeve";
 
 export const Route = createFileRoute("/disciplines/$id/podcast")({
@@ -123,7 +124,7 @@ function DisciplinePodcastPage() {
         rejeitados++;
         continue;
       }
-      const validExts = /\.(mp3|m4a|wav|ogg|oga|opus|aac|wma|mp4|3gp|amr)$/i;
+      const validExts = /\.(mp3|m4a|m4b|wav|ogg|oga|opus|aac|flac|wma|aif|aiff|mp4|3gp|amr)$/i;
       const mimeOk = f.type === "" || f.type.startsWith("audio/");
       if (!mimeOk && !validExts.test(f.name)) {
         rejeitados++;
@@ -269,6 +270,11 @@ function DisciplinePodcastPage() {
 
   const handleDelete = async (podcast: Podcast) => {
     if (!confirm("Tem certeza que deseja excluir este podcast?")) return;
+    const senha = prompt("Digite a senha para excluir:");
+    if (!validarSenhaDelete(senha)) {
+      if (senha !== null) toast.error("Senha incorreta.");
+      return;
+    }
     const r = await deletePodcast(podcast);
     if (r.ok) {
       toast.success("Podcast excluido.");

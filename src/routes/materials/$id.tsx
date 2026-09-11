@@ -47,8 +47,9 @@ import {
   type Podcast,
 } from "@/lib/podcastService";
 import { otimizarAudio, suportaOtimizacao } from "@/lib/audioLeve";
+import { otimizarVideo, videoSuportado, LIMITE_VIDEO_COMPRESSAO } from "@/lib/videoLeve";
 import { playAudio } from "@/lib/audioContext";
-import { SENHA_DEV } from "@/lib/auth";
+import { validarSenhaDelete } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -182,10 +183,11 @@ function DisciplineMaterials() {
   const [titulo, setTitulo] = useState("");
   const [objetivo, setObjetivo] = useState<EtapaPublicacao>("Geral");
   const [descricao, setDescricao] = useState("");
-  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [arquivos, setArquivos] = useState<File[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [statusEnvio, setStatusEnvio] = useState("");
   const [otimSuportado, setOtimSuportado] = useState<boolean | null>(null);
+  const [versaoLeve, setVersaoLeve] = useState(true);
 
   useEffect(() => {
     suportaOtimizacao().then(setOtimSuportado).catch(() => setOtimSuportado(false));
@@ -318,22 +320,22 @@ function DisciplineMaterials() {
       return;
     }
 
-    // Senão, pede senha admin
-    const senha = prompt("Digite a senha de administrador para excluir:");
-    if (senha === SENHA_DEV) {
+    // Senão, pede a senha de exclusão (qualquer aluno pode limpar a turma)
+    const senha = prompt("Digite a senha para excluir este material:");
+    if (validarSenhaDelete(senha)) {
       const r = await excluirPublicacao(item.publicacao);
       if (!r.ok) {
         toast.error(r.error || "Não foi possível excluir.");
         return;
       }
-      toast.success("Material excluído (via admin).");
+      toast.success("Material excluído.");
       recarregar();
     } else if (senha !== null) {
       toast.error("Senha incorreta.");
     }
   };
 
-  // ---- Enviar ----
+  // ---- Enviar (um ou vários arquivos; comprime ANTES de checar o limite) ----
   const enviarArquivo = async () => {
     if (!identidade) {
       toast.error("Entre com nome e polo para publicar.");
@@ -343,42 +345,82 @@ function DisciplineMaterials() {
       toast.error("Dê um título ao material.");
       return;
     }
-    if (!arquivo) {
-      toast.error("Selecione o arquivo.");
-      return;
-    }
-    if (arquivo.size > LIMITE_ARQUIVO_MB * 1024 * 1024) {
-      toast.error(`Arquivo de ${(arquivo.size / 1048576).toFixed(0)}MB: o servidor aceita até ${LIMITE_ARQUIVO_MB}MB.`);
+    if (arquivos.length === 0) {
+      toast.error("Selecione ao menos um arquivo.");
       return;
     }
     setEnviando(true);
     try {
-      let final: File = arquivo;
-      const kind = kindDoArquivo(arquivo);
-      if (kind === "audio" && otimSuportado !== false && arquivo.size >= 3 * 1024 * 1024) {
-        setStatusEnvio("Deixando o áudio mais leve...");
-        const leve = await otimizarAudio(arquivo, (_f, pct) => setStatusEnvio(`Comprimindo... ${pct}%`));
-        if (leve) {
-          final = new File([leve.blob], leve.nome, { type: leve.mime });
-          setStatusEnvio(`Enviando versão leve (${leve.economiaPct}% menor)...`);
+      const total = arquivos.length;
+      let publicados = 0;
+      for (let i = 0; i < arquivos.length; i++) {
+        const original = arquivos[i]!;
+        const rotulo = total > 1 ? ` (${i + 1}/${total})` : "";
+        const tituloItem = (total > 1 ? `${titulo.trim()}${rotulo}` : titulo.trim()).slice(0, 120);
+        const kind = kindDoArquivo(original);
+
+        // 1. Comprime primeiro (áudio e vídeo grandes viram poucos MB)
+        let final: File = original;
+        const podeComprimir = versaoLeve;
+        if (kind === "audio" && podeComprimir && otimSuportado !== false && original.size >= 3 * 1024 * 1024) {
+          setStatusEnvio(`Arquivo${rotulo}: deixando o áudio mais leve...`);
+          const leve = await otimizarAudio(original, (_f, pct) =>
+            setStatusEnvio(`Arquivo${rotulo}: comprimindo áudio... ${pct}%`),
+          );
+          if (leve) {
+            final = new File([leve.blob], leve.nome, { type: leve.mime });
+            setStatusEnvio(`Arquivo${rotulo}: áudio ${leve.economiaPct}% menor, enviando...`);
+          }
+        } else if (
+          kind === "video" &&
+          podeComprimir &&
+          videoSuportado() &&
+          original.size >= LIMITE_VIDEO_COMPRESSAO
+        ) {
+          setStatusEnvio(`Arquivo${rotulo}: comprimindo vídeo (pode levar alguns minutos)...`);
+          const leve = await otimizarVideo(original, (_f, pct) =>
+            setStatusEnvio(`Arquivo${rotulo}: comprimindo vídeo... ${pct}%`),
+          );
+          if (leve) {
+            final = new File([leve.blob], leve.nome, { type: leve.mime });
+            setStatusEnvio(`Arquivo${rotulo}: vídeo ${leve.economiaPct}% menor, enviando...`);
+          }
         } else {
-          setStatusEnvio("Enviando...");
+          setStatusEnvio(`Arquivo${rotulo}: enviando...`);
         }
-      } else {
-        setStatusEnvio("Enviando...");
+
+        // 2. Só agora checa o teto (no arquivo final, já comprimido)
+        if (final.size > LIMITE_ARQUIVO_MB * 1024 * 1024) {
+          toast.error(
+            `${original.name.slice(0, 24)}: mesmo comprimido tem ${(final.size / 1048576).toFixed(0)}MB (limite ${LIMITE_ARQUIVO_MB}MB).`,
+          );
+          continue;
+        }
+
+        const r = await publicarArquivo(
+          {
+            disciplinaId: id,
+            titulo: tituloItem,
+            descricao: descricao.trim(),
+            ident: identidade,
+            etapa: objetivo,
+          },
+          final,
+        );
+        if (!r.ok) {
+          toast.error(`${original.name.slice(0, 24)}: ${r.error || "falha ao publicar."}`);
+          continue;
+        }
+        publicados++;
       }
-      const r = await publicarArquivo(
-        { disciplinaId: id, titulo: titulo.trim(), descricao: descricao.trim(), ident: identidade, etapa: objetivo },
-        final,
-      );
-      if (!r.ok) {
-        toast.error(r.error || "Falha ao publicar.");
-        return;
+      if (publicados === total) {
+        toast.success(total > 1 ? `${total} materiais publicados! ✅` : "Material publicado! ✅");
+      } else if (publicados > 0) {
+        toast.success(`${publicados} de ${total} publicados. ✅`);
       }
-      toast.success(r.kind === "audio" ? "Áudio publicado como episódio! 🎧" : "Material publicado! ✅");
       setTitulo("");
       setDescricao("");
-      setArquivo(null);
+      setArquivos([]);
       setObjetivo("Geral");
       setFormAberto(false);
       if (objetivo !== "Geral") setFiltroObjetivo(objetivo);
@@ -524,20 +566,50 @@ function DisciplineMaterials() {
               <label
                 className={cn(
                   "flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-black uppercase cursor-pointer transition-all",
-                  arquivo
+                  arquivos.length > 0
                     ? "bg-[#27AE60]/10 text-[#27AE60] border border-[#27AE60]/30"
                     : "bg-[#0A3D52] text-white",
                 )}
               >
                 <FileUp className="w-4 h-4" />
-                {arquivo ? `${arquivo.name.slice(0, 18)}${arquivo.name.length > 18 ? "…" : ""}` : "Escolher arquivo"}
-                <input type="file" className="hidden" disabled={enviando} onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
+                {arquivos.length > 0
+                  ? `${arquivos.length} arquivo${arquivos.length > 1 ? "s" : ""}`
+                  : "Escolher arquivos"}
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  disabled={enviando}
+                  onChange={(e) => setArquivos(Array.from(e.target.files ?? []))}
+                />
               </label>
             </div>
-            {arquivo && (
-              <p className="text-[10px] font-bold text-[#0A3D52]/50 uppercase">
-                {(arquivo.size / 1048576).toFixed(1)} MB · {ROTULO_KIND[kindDoArquivo(arquivo)]} · limite {LIMITE_ARQUIVO_MB}MB
-              </p>
+            {arquivos.length > 0 && (
+              <div className="space-y-1">
+                {arquivos.map((a, i) => (
+                  <p
+                    key={`${a.name}-${a.size}-${i}`}
+                    className="text-[10px] font-bold text-[#0A3D52]/50 uppercase"
+                  >
+                    {(a.size / 1048576).toFixed(1)} MB · {ROTULO_KIND[kindDoArquivo(a)]} ·{" "}
+                    {a.name.slice(0, 32)}
+                    {a.name.length > 32 ? "…" : ""}
+                  </p>
+                ))}
+                <p className="text-[10px] font-bold text-[#27AE60]/80 uppercase">
+                  Áudios e vídeos grandes são comprimidos automaticamente antes de subir
+                </p>
+                <label className="flex items-center gap-2 text-[11px] font-bold text-[#0A3D52]/70 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={versaoLeve}
+                    onChange={(e) => setVersaoLeve(e.target.checked)}
+                    disabled={enviando}
+                    className="w-4 h-4 accent-[#27AE60]"
+                  />
+                  Versão leve (recomendado: voz continua nítida, arquivo até 90% menor)
+                </label>
+              </div>
             )}
             <textarea
               value={descricao}

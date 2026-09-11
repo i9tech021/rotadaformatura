@@ -17,6 +17,17 @@ const CODIGOS_TURMA = [CODIGO_TURMA_PADRAO];
 // Senha da área do desenvolvedor (configurações, métricas, exclusões admin).
 export const SENHA_DEV = "rota123";
 
+// Senha para qualquer aluno excluir qualquer arquivo (materiais, podcasts).
+// Digita e apaga na hora (com realtime para a turma toda).
+export const SENHA_DELETE = "clear";
+
+/** Aceita a senha de exclusão (secreta do dono + senha da turma). */
+export function validarSenhaDelete(senha: string | null): boolean {
+  if (senha === null) return false;
+  const s = senha.trim();
+  return s === SENHA_DELETE || s === SENHA_DEV;
+}
+
 export function getCodigoTurmaValido(): string[] {
   return CODIGOS_TURMA;
 }
