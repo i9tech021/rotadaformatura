@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { disciplinas } from "@/data/disciplines";
 import {
   getRanking,
@@ -27,9 +27,7 @@ export const Route = createFileRoute("/ranking")({
   component: RankingPage,
   head: () => ({
     title: "Ranking | Rota da Formatura",
-    meta: [
-      { name: "description", content: "Ranking dos alunos da turma 2026-2." },
-    ],
+    meta: [{ name: "description", content: "Ranking dos alunos da turma 2026-2." }],
   }),
 });
 
@@ -39,6 +37,30 @@ function RankingPage() {
   const [filtroDisciplina, setFiltroDisciplina] = useState("global");
   const [filtroPolo, setFiltroPolo] = useState("todos");
   const [loading, setLoading] = useState(true);
+  const [aba, setAba] = useState<"alunos" | "polos">("alunos");
+
+  // Ranking entre polos
+  const rankingPolos = useMemo(() => {
+    const poloMap = new Map<string, { total: number; melhorNota: number; count: number }>();
+    ranking.forEach((r) => {
+      const polo = r.autor_polo || "Não informado";
+      const existing = poloMap.get(polo) || { total: 0, melhorNota: 0, count: 0 };
+      poloMap.set(polo, {
+        total: existing.total + r.total,
+        melhorNota: Math.max(existing.melhorNota, r.melhor_nota),
+        count: existing.count + 1,
+      });
+    });
+    return Array.from(poloMap.entries())
+      .map(([nome, dados]) => ({
+        nome,
+        totalAtividades: dados.total,
+        melhorNota: dados.melhorNota,
+        mediaNotas: dados.total > 0 ? dados.melhorNota / dados.count : 0,
+        alunosAtivos: dados.count,
+      }))
+      .sort((a, b) => b.totalAtividades - a.totalAtividades);
+  }, [ranking]);
 
   useEffect(() => {
     async function load() {
@@ -47,8 +69,8 @@ function RankingPage() {
         const p = await listarPolosRanking();
         setPolos(p);
         const filtros: Record<string, string> = {};
-        if (filtroDisciplina !== "global") filtros.disciplinaId = filtroDisciplina;
-        if (filtroPolo !== "todos") filtros.polo = filtroPolo;
+        if (filtroDisciplina !== "global") filtros["disciplinaId"] = filtroDisciplina;
+        if (filtroPolo !== "todos") filtros["polo"] = filtroPolo;
         const r = await getRanking(filtros);
         setRanking(r);
       } catch {
@@ -61,8 +83,8 @@ function RankingPage() {
     // Real-time: atualiza ranking quando qualquer aluno publica nota ou termina simulado
     const unsub = subscribeRanking(() => {
       const filtros: Record<string, string> = {};
-      if (filtroDisciplina !== "global") filtros.disciplinaId = filtroDisciplina;
-      if (filtroPolo !== "todos") filtros.polo = filtroPolo;
+      if (filtroDisciplina !== "global") filtros["disciplinaId"] = filtroDisciplina;
+      if (filtroPolo !== "todos") filtros["polo"] = filtroPolo;
       getRanking(filtros).then(setRanking);
     });
     return unsub;
@@ -123,6 +145,34 @@ function RankingPage() {
           </div>
         </div>
 
+        {/* Tabs Alunos / Polos */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setAba("alunos")}
+            className={cn(
+              "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-colors",
+              aba === "alunos"
+                ? "bg-[#0A3D52] text-white"
+                : "bg-white text-[#0A3D52] border border-[#0A3D52]/10",
+            )}
+          >
+            <Users className="w-4 h-4 inline mr-2" />
+            Alunos
+          </button>
+          <button
+            onClick={() => setAba("polos")}
+            className={cn(
+              "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-colors",
+              aba === "polos"
+                ? "bg-[#0A3D52] text-white"
+                : "bg-white text-[#0A3D52] border border-[#0A3D52]/10",
+            )}
+          >
+            <Trophy className="w-4 h-4 inline mr-2" />
+            Polos
+          </button>
+        </div>
+
         {/* Filtros */}
         <div className="bg-white p-4 rounded-2xl border border-[#0A3D52]/10 shadow-sm mb-6 flex flex-wrap gap-3 items-center">
           <Filter className="w-4 h-4 text-[#0A3D52]/40" />
@@ -153,88 +203,199 @@ function RankingPage() {
         </div>
 
         {/* Ranking List */}
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 animate-pulse">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#F5F7FA]" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-[#F5F7FA] rounded w-1/3" />
-                    <div className="h-3 bg-[#F5F7FA] rounded w-1/4" />
+        {aba === "alunos" ? (
+          loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 animate-pulse"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-[#F5F7FA]" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-[#F5F7FA] rounded w-1/3" />
+                      <div className="h-3 bg-[#F5F7FA] rounded w-1/4" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : ranking.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-[#0A3D52]/20">
-            <Trophy className="w-12 h-12 text-[#0A3D52]/10 mx-auto mb-4" />
-            <p className="font-bold text-[#0A3D52]/40 uppercase tracking-widest text-sm mb-2">
-              Nenhuma nota publicada ainda
-            </p>
-            <p className="text-[11px] text-[#0A3D52]/30 max-w-xs mx-auto">
-              Seja o primeiro a publicar suas notas no ranking! Va ate a calculadora de notas de uma disciplina e publique.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {ranking.map((entry, idx) => {
-              const medalha = idx < 3 ? medalhas[idx] : null;
-              const MedalIcon = medalha?.icon;
-              return (
-                <div
-                  key={entry.autor_local_id}
-                  className={cn(
-                    "bg-white rounded-2xl border p-5 flex items-center gap-4 transition-all",
-                    idx === 0
-                      ? "border-[#D4941E]/30 shadow-lg ring-1 ring-[#D4941E]/10"
-                      : "border-[#0A3D52]/10 shadow-sm",
-                  )}
-                >
-                  {/* Posição */}
+              ))}
+            </div>
+          ) : ranking.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-[#0A3D52]/20">
+              <Trophy className="w-12 h-12 text-[#0A3D52]/10 mx-auto mb-4" />
+              <p className="font-bold text-[#0A3D52]/40 uppercase tracking-widest text-sm mb-2">
+                Nenhuma nota publicada ainda
+              </p>
+              <p className="text-[11px] text-[#0A3D52]/30 max-w-xs mx-auto">
+                Seja o primeiro a publicar suas notas no ranking! Va ate a calculadora de notas de
+                uma disciplina e publique.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {ranking.map((entry, idx) => {
+                const medalha = idx < 3 ? medalhas[idx] : null;
+                const MedalIcon = medalha?.icon;
+                return (
                   <div
+                    key={entry.autor_local_id}
                     className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black text-sm",
+                      "bg-white rounded-2xl border p-5 flex items-center gap-4 transition-all",
                       idx === 0
-                        ? "bg-[#D4941E]/10 text-[#D4941E]"
-                        : idx === 1
-                          ? "bg-[#94A3B8]/10 text-[#94A3B8]"
-                          : idx === 2
-                            ? "bg-[#CD7F32]/10 text-[#CD7F32]"
-                            : "bg-[#F5F7FA] text-[#0A3D52]/40",
+                        ? "border-[#D4941E]/30 shadow-lg ring-1 ring-[#D4941E]/10"
+                        : "border-[#0A3D52]/10 shadow-sm",
                     )}
                   >
-                    {idx + 1}
-                  </div>
-
-                  {/* Medalha */}
-                  {MedalIcon && (
-                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", medalha.cls)}>
-                      <MedalIcon className="w-4 h-4" />
+                    {/* Posição */}
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black text-sm",
+                        idx === 0
+                          ? "bg-[#D4941E]/10 text-[#D4941E]"
+                          : idx === 1
+                            ? "bg-[#94A3B8]/10 text-[#94A3B8]"
+                            : idx === 2
+                              ? "bg-[#CD7F32]/10 text-[#CD7F32]"
+                              : "bg-[#F5F7FA] text-[#0A3D52]/40",
+                      )}
+                    >
+                      {idx + 1}
                     </div>
-                  )}
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm truncate">{entry.autor_nome}</p>
-                    <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
-                      {entry.autor_polo || "Polo não informado"} • {entry.total} nota{entry.total !== 1 ? "s" : ""}
-                    </p>
-                  </div>
+                    {/* Medalha */}
+                    {MedalIcon && (
+                      <div
+                        className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center",
+                          medalha.cls,
+                        )}
+                      >
+                        <MedalIcon className="w-4 h-4" />
+                      </div>
+                    )}
 
-                  {/* Nota */}
-                  <div className="text-right shrink-0">
-                    <p className="text-xl font-black text-[#D4941E]">
-                      {entry.melhor_nota.toFixed(1)}
-                    </p>
-                    <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
-                      melhor nota
-                    </p>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate">{entry.autor_nome}</p>
+                      <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
+                        {entry.autor_polo || "Polo não informado"} • {entry.total} nota
+                        {entry.total !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+
+                    {/* Nota */}
+                    <div className="text-right shrink-0">
+                      <p className="text-xl font-black text-[#D4941E]">
+                        {entry.melhor_nota.toFixed(1)}
+                      </p>
+                      <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
+                        melhor nota
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          )
+        ) : (
+          /* Ranking entre Polos */
+          <div className="space-y-3">
+            {rankingPolos.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-[#0A3D52]/20">
+                <Trophy className="w-12 h-12 text-[#0A3D52]/10 mx-auto mb-4" />
+                <p className="font-bold text-[#0A3D52]/40 uppercase tracking-widest text-sm mb-2">
+                  Nenhum dado de polo ainda
+                </p>
+                <p className="text-[11px] text-[#0A3D52]/30 max-w-xs mx-auto">
+                  Comece publicando suas notas para aparecer no ranking!
+                </p>
+              </div>
+            ) : (
+              rankingPolos.map((polo, idx) => {
+                const medalha = idx < 3 ? medalhas[idx] : null;
+                const MedalIcon = medalha?.icon;
+                const porcentagem = rankingPolos[0]?.totalAtividades
+                  ? (polo.totalAtividades / rankingPolos[0].totalAtividades) * 100
+                  : 0;
+                return (
+                  <div
+                    key={polo.nome}
+                    className={cn(
+                      "bg-white rounded-2xl border p-5 transition-all",
+                      idx === 0
+                        ? "border-[#D4941E]/30 shadow-lg ring-1 ring-[#D4941E]/10"
+                        : "border-[#0A3D52]/10 shadow-sm",
+                    )}
+                  >
+                    <div className="flex items-center gap-4 mb-3">
+                      {/* Posição */}
+                      <div
+                        className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black text-sm",
+                          idx === 0
+                            ? "bg-[#D4941E]/10 text-[#D4941E]"
+                            : idx === 1
+                              ? "bg-[#94A3B8]/10 text-[#94A3B8]"
+                              : idx === 2
+                                ? "bg-[#CD7F32]/10 text-[#CD7F32]"
+                                : "bg-[#F5F7FA] text-[#0A3D52]/40",
+                        )}
+                      >
+                        {idx + 1}
+                      </div>
+
+                      {/* Medalha */}
+                      {MedalIcon && (
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center",
+                            medalha.cls,
+                          )}
+                        >
+                          <MedalIcon className="w-4 h-4" />
+                        </div>
+                      )}
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm">{polo.nome}</p>
+                        <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
+                          {polo.alunosAtivos} aluno{polo.alunosAtivos !== 1 ? "s" : ""} ativo
+                          {polo.alunosAtivos !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="text-right shrink-0">
+                        <p className="text-xl font-black text-[#D4941E]">{polo.totalAtividades}</p>
+                        <p className="text-[9px] font-bold text-[#0A3D52]/40 uppercase">
+                          atividades
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Barra de progresso */}
+                    <div className="h-2 bg-[#F5F7FA] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${porcentagem}%`,
+                          backgroundColor:
+                            idx === 0
+                              ? "#D4941E"
+                              : idx === 1
+                                ? "#94A3B8"
+                                : idx === 2
+                                  ? "#CD7F32"
+                                  : "#0A3D52",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
 

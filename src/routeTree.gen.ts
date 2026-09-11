@@ -12,14 +12,21 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CalculadoraRouteImport } from './routes/calculadora'
 import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as CalendariocoletivoRouteImport } from './routes/calendariocoletivo'
+import { Route as DesafioRouteImport } from './routes/desafio'
 import { Route as DisciplinesRouteImport } from './routes/disciplines'
+import { Route as EstatisticasRouteImport } from './routes/estatisticas'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as FeedRouteImport } from './routes/feed'
 import { Route as LandingpageRouteImport } from './routes/landingpage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as MetricasRouteImport } from './routes/metricas'
 import { Route as PodcastsRouteImport } from './routes/podcasts'
+import { Route as ProvasRouteImport } from './routes/provas'
 import { Route as PublicacoesRouteImport } from './routes/publicacoes'
 import { Route as RankingRouteImport } from './routes/ranking'
+import { Route as ResumosRouteImport } from './routes/resumos'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SimuladosRouteImport } from './routes/simulados'
 import { Route as CommunityIndexRouteImport } from './routes/community/index'
@@ -45,9 +52,34 @@ const CalendarRoute = CalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalendariocoletivoRoute = CalendariocoletivoRouteImport.update({
+  id: '/calendariocoletivo',
+  path: '/calendariocoletivo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesafioRoute = DesafioRouteImport.update({
+  id: '/desafio',
+  path: '/desafio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DisciplinesRoute = DisciplinesRouteImport.update({
   id: '/disciplines',
   path: '/disciplines',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstatisticasRoute = EstatisticasRouteImport.update({
+  id: '/estatisticas',
+  path: '/estatisticas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedRoute = FeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LandingpageRoute = LandingpageRouteImport.update({
@@ -75,6 +107,11 @@ const PodcastsRoute = PodcastsRouteImport.update({
   path: '/podcasts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProvasRoute = ProvasRouteImport.update({
+  id: '/provas',
+  path: '/provas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PublicacoesRoute = PublicacoesRouteImport.update({
   id: '/publicacoes',
   path: '/publicacoes',
@@ -83,6 +120,11 @@ const PublicacoesRoute = PublicacoesRouteImport.update({
 const RankingRoute = RankingRouteImport.update({
   id: '/ranking',
   path: '/ranking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResumosRoute = ResumosRouteImport.update({
+  id: '/resumos',
+  path: '/resumos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -135,14 +177,21 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
+  '/calendariocoletivo': typeof CalendariocoletivoRoute
+  '/desafio': typeof DesafioRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
+  '/estatisticas': typeof EstatisticasRoute
+  '/faq': typeof FaqRoute
+  '/feed': typeof FeedRoute
   '/landingpage': typeof LandingpageRoute
   '/login': typeof LoginRoute
   '/materials': typeof MaterialsRouteWithChildren
   '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
+  '/provas': typeof ProvasRoute
   '/publicacoes': typeof PublicacoesRoute
   '/ranking': typeof RankingRoute
+  '/resumos': typeof ResumosRoute
   '/settings': typeof SettingsRoute
   '/simulados': typeof SimuladosRoute
   '/community/chat': typeof CommunityChatRoute
@@ -157,12 +206,19 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
+  '/calendariocoletivo': typeof CalendariocoletivoRoute
+  '/desafio': typeof DesafioRoute
+  '/estatisticas': typeof EstatisticasRoute
+  '/faq': typeof FaqRoute
+  '/feed': typeof FeedRoute
   '/landingpage': typeof LandingpageRoute
   '/login': typeof LoginRoute
   '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
+  '/provas': typeof ProvasRoute
   '/publicacoes': typeof PublicacoesRoute
   '/ranking': typeof RankingRoute
+  '/resumos': typeof ResumosRoute
   '/settings': typeof SettingsRoute
   '/simulados': typeof SimuladosRoute
   '/community/chat': typeof CommunityChatRoute
@@ -178,14 +234,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calculadora': typeof CalculadoraRoute
   '/calendar': typeof CalendarRoute
+  '/calendariocoletivo': typeof CalendariocoletivoRoute
+  '/desafio': typeof DesafioRoute
   '/disciplines': typeof DisciplinesRouteWithChildren
+  '/estatisticas': typeof EstatisticasRoute
+  '/faq': typeof FaqRoute
+  '/feed': typeof FeedRoute
   '/landingpage': typeof LandingpageRoute
   '/login': typeof LoginRoute
   '/materials': typeof MaterialsRouteWithChildren
   '/metricas': typeof MetricasRoute
   '/podcasts': typeof PodcastsRoute
+  '/provas': typeof ProvasRoute
   '/publicacoes': typeof PublicacoesRoute
   '/ranking': typeof RankingRoute
+  '/resumos': typeof ResumosRoute
   '/settings': typeof SettingsRoute
   '/simulados': typeof SimuladosRoute
   '/community/chat': typeof CommunityChatRoute
@@ -202,14 +265,21 @@ export interface FileRouteTypes {
     | '/'
     | '/calculadora'
     | '/calendar'
+    | '/calendariocoletivo'
+    | '/desafio'
     | '/disciplines'
+    | '/estatisticas'
+    | '/faq'
+    | '/feed'
     | '/landingpage'
     | '/login'
     | '/materials'
     | '/metricas'
     | '/podcasts'
+    | '/provas'
     | '/publicacoes'
     | '/ranking'
+    | '/resumos'
     | '/settings'
     | '/simulados'
     | '/community/chat'
@@ -224,12 +294,19 @@ export interface FileRouteTypes {
     | '/'
     | '/calculadora'
     | '/calendar'
+    | '/calendariocoletivo'
+    | '/desafio'
+    | '/estatisticas'
+    | '/faq'
+    | '/feed'
     | '/landingpage'
     | '/login'
     | '/metricas'
     | '/podcasts'
+    | '/provas'
     | '/publicacoes'
     | '/ranking'
+    | '/resumos'
     | '/settings'
     | '/simulados'
     | '/community/chat'
@@ -244,14 +321,21 @@ export interface FileRouteTypes {
     | '/'
     | '/calculadora'
     | '/calendar'
+    | '/calendariocoletivo'
+    | '/desafio'
     | '/disciplines'
+    | '/estatisticas'
+    | '/faq'
+    | '/feed'
     | '/landingpage'
     | '/login'
     | '/materials'
     | '/metricas'
     | '/podcasts'
+    | '/provas'
     | '/publicacoes'
     | '/ranking'
+    | '/resumos'
     | '/settings'
     | '/simulados'
     | '/community/chat'
@@ -267,14 +351,21 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculadoraRoute: typeof CalculadoraRoute
   CalendarRoute: typeof CalendarRoute
+  CalendariocoletivoRoute: typeof CalendariocoletivoRoute
+  DesafioRoute: typeof DesafioRoute
   DisciplinesRoute: typeof DisciplinesRouteWithChildren
+  EstatisticasRoute: typeof EstatisticasRoute
+  FaqRoute: typeof FaqRoute
+  FeedRoute: typeof FeedRoute
   LandingpageRoute: typeof LandingpageRoute
   LoginRoute: typeof LoginRoute
   MaterialsRoute: typeof MaterialsRouteWithChildren
   MetricasRoute: typeof MetricasRoute
   PodcastsRoute: typeof PodcastsRoute
+  ProvasRoute: typeof ProvasRoute
   PublicacoesRoute: typeof PublicacoesRoute
   RankingRoute: typeof RankingRoute
+  ResumosRoute: typeof ResumosRoute
   SettingsRoute: typeof SettingsRoute
   SimuladosRoute: typeof SimuladosRoute
   CommunityChatRoute: typeof CommunityChatRoute
@@ -304,11 +395,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calendariocoletivo': {
+      id: '/calendariocoletivo'
+      path: '/calendariocoletivo'
+      fullPath: '/calendariocoletivo'
+      preLoaderRoute: typeof CalendariocoletivoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desafio': {
+      id: '/desafio'
+      path: '/desafio'
+      fullPath: '/desafio'
+      preLoaderRoute: typeof DesafioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/disciplines': {
       id: '/disciplines'
       path: '/disciplines'
       fullPath: '/disciplines'
       preLoaderRoute: typeof DisciplinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estatisticas': {
+      id: '/estatisticas'
+      path: '/estatisticas'
+      fullPath: '/estatisticas'
+      preLoaderRoute: typeof EstatisticasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feed': {
+      id: '/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof FeedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/landingpage': {
@@ -346,6 +472,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PodcastsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/provas': {
+      id: '/provas'
+      path: '/provas'
+      fullPath: '/provas'
+      preLoaderRoute: typeof ProvasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/publicacoes': {
       id: '/publicacoes'
       path: '/publicacoes'
@@ -358,6 +491,13 @@ declare module '@tanstack/react-router' {
       path: '/ranking'
       fullPath: '/ranking'
       preLoaderRoute: typeof RankingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resumos': {
+      id: '/resumos'
+      path: '/resumos'
+      fullPath: '/resumos'
+      preLoaderRoute: typeof ResumosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -470,14 +610,21 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculadoraRoute: CalculadoraRoute,
   CalendarRoute: CalendarRoute,
+  CalendariocoletivoRoute: CalendariocoletivoRoute,
+  DesafioRoute: DesafioRoute,
   DisciplinesRoute: DisciplinesRouteWithChildren,
+  EstatisticasRoute: EstatisticasRoute,
+  FaqRoute: FaqRoute,
+  FeedRoute: FeedRoute,
   LandingpageRoute: LandingpageRoute,
   LoginRoute: LoginRoute,
   MaterialsRoute: MaterialsRouteWithChildren,
   MetricasRoute: MetricasRoute,
   PodcastsRoute: PodcastsRoute,
+  ProvasRoute: ProvasRoute,
   PublicacoesRoute: PublicacoesRoute,
   RankingRoute: RankingRoute,
+  ResumosRoute: ResumosRoute,
   SettingsRoute: SettingsRoute,
   SimuladosRoute: SimuladosRoute,
   CommunityChatRoute: CommunityChatRoute,

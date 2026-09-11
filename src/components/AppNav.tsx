@@ -3,17 +3,22 @@
 // Edite aqui para atualizar o menu do app inteiro.
 import { Link } from "@tanstack/react-router";
 import {
+  Activity,
+  BarChart3,
   BookOpen,
   Calculator,
   Calendar as CalendarIcon,
+  ClipboardList,
   FileText,
   GraduationCap,
   Headphones,
+  HelpCircle,
   LayoutDashboard,
   Settings,
   Sparkles,
   Trophy,
   Users,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,10 +35,22 @@ export const MENU_ITEMS: NavItem[] = [
   { to: "/disciplines", label: "Disciplinas", curto: "Disciplinas", icon: BookOpen },
   { to: "/simulados", label: "Simulados", curto: "Simulado", icon: Sparkles },
   { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
+  { to: "/estatisticas", label: "Estatísticas", curto: "Estatísticas", icon: BarChart3 },
+  { to: "/feed", label: "Feed", curto: "Feed", icon: Activity },
+  { to: "/faq", label: "FAQ", curto: "FAQ", icon: HelpCircle },
+  {
+    to: "/calendariocoletivo",
+    label: "Calendário Coletivo",
+    curto: "Calendário",
+    icon: CalendarIcon,
+  },
+  { to: "/desafio", label: "Desafio da Semana", curto: "Desafio", icon: Zap },
+  { to: "/resumos", label: "Resumos", curto: "Resumos", icon: ClipboardList },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
   { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
   { to: "/calculadora", label: "Calculadora", curto: "Calc", icon: Calculator },
   { to: "/calendar", label: "Calendario", curto: "Calendario", icon: CalendarIcon },
+  { to: "/provas", label: "Provas Anteriores", curto: "Provas", icon: FileText },
   { to: "/materials", label: "Materiais", curto: "Materiais", icon: FileText },
   { to: "/settings", label: "Configuracoes", curto: "Perfil", icon: Settings },
 ];
@@ -45,6 +62,10 @@ export const DESKTOP_ITEMS: NavItem[] = [
   { to: "/materials", label: "Materiais", curto: "Materiais", icon: FileText },
   { to: "/simulados", label: "Simulados", curto: "Simulados", icon: Sparkles },
   { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
+  { to: "/estatisticas", label: "Estatísticas", curto: "Estatísticas", icon: BarChart3 },
+  { to: "/desafio", label: "Desafio da Semana", curto: "Desafio", icon: Zap },
+  { to: "/resumos", label: "Resumos", curto: "Resumos", icon: ClipboardList },
+  { to: "/provas", label: "Provas Anteriores", curto: "Provas", icon: FileText },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
   { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
 ];

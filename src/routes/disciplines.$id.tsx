@@ -65,9 +65,6 @@ function DisciplinePage() {
   const location = useRouterState({ select: (s) => s.location });
   const isPodcastRoute = location.pathname.endsWith("/podcast");
 
-  if (isPodcastRoute) {
-    return <Outlet />;
-  }
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     // deep-link: /disciplines/$id?tab=materiais (usado pelo dashboard)
     if (typeof window === "undefined") return "cronograma";
@@ -155,6 +152,11 @@ function DisciplinePage() {
     // Se não conseguir extrair, retorna todas as aulas
     return discipline.aulas;
   }, [discipline, nextExam]);
+
+  // Early return DEPOIS de todos os hooks (ordem de hooks deve ser estável)
+  if (isPodcastRoute) {
+    return <Outlet />;
+  }
 
   const aulasAPFeitas = aulasAP.filter((a) => concluidas[a.id]).length;
   const progressoAP = aulasAP.length > 0 ? Math.round((aulasAPFeitas / aulasAP.length) * 100) : 0;

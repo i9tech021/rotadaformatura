@@ -118,21 +118,66 @@ export async function listarPolosRanking(): Promise<string[]> {
   return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
+export interface DisciplinaEstatistica {
+  disciplinaId: string;
+  media: number;
+  taxaAprovacao: number;
+  totalAlunos: number;
+  totalSimulados: number;
+  totalNotas: number;
+}
+
+/** Nota mínima considerada aprovação nas estatísticas da turma. */
+export const NOTA_APROVACAO = 6;
+
+/**
+ * Agregados reais por disciplina (média, % aprovação, alunos, simulados).
+ * Retorna null sem Supabase; [] quando o banco está vazio.
+ */
+export async function getEstatisticasTurma(): Promise<DisciplinaEstatistica[] | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+  const [sims, notas] = await Promise.all([fetchSimulados(), fetchNotasPublicas()]);
+  if (!sims.length && !notas.length) return [];
+  const porDisc = new Map<
+    string,
+    { notas: number[]; alunos: Set<string>; sims: number; notasPub: number }
+  >();
+  for (const e of [...sims, ...notas]) {
+    if (!e.disciplinaId) continue;
+    let d = porDisc.get(e.disciplinaId);
+    if (!d) {
+      d = { notas: [], alunos: new Set<string>(), sims: 0, notasPub: 0 };
+      porDisc.set(e.disciplinaId, d);
+    }
+    d.notas.push(e.nota);
+    if (e.autorLocalId) d.alunos.add(e.autorLocalId);
+    if (e.origem === "simulado") d.sims += 1;
+    else d.notasPub += 1;
+  }
+  return [...porDisc.entries()]
+    .map(([disciplinaId, d]) => ({
+      disciplinaId,
+      media: d.notas.reduce((a, b) => a + b, 0) / d.notas.length,
+      taxaAprovacao: Math.round(
+        (d.notas.filter((n) => n >= NOTA_APROVACAO).length / d.notas.length) * 100,
+      ),
+      totalAlunos: d.alunos.size,
+      totalSimulados: d.sims,
+      totalNotas: d.notasPub,
+    }))
+    .sort((a, b) => b.media - a.media);
+}
+
 /** Inscreve-se em mudanças real-time nas tabelas de ranking (notas + simulados). */
 export function subscribeRanking(onChange: () => void): () => void {
   const sb = getSupabase();
   if (!sb) return () => {};
   const channel = sb
     .channel("rdf-ranking-realtime")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "notas" },
-      () => onChange(),
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "simulados_realizados" },
-      () => onChange(),
+    .on("postgres_changes", { event: "*", schema: "public", table: "notas" }, () => onChange())
+    .on("postgres_changes", { event: "*", schema: "public", table: "simulados_realizados" }, () =>
+      onChange(),
     )
     .subscribe();
   return () => {

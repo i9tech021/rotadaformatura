@@ -61,7 +61,6 @@ function SettingsPage() {
   const [autorizado, setAutorizado] = useState(() => temAcessoDev());
   const [senha, setSenha] = useState("");
   const [senhaErro, setSenhaErro] = useState(false);
-  const { theme, toggleTheme, isDark } = useTheme();
 
   const tentarEntrar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,9 +120,7 @@ function SettingsPage() {
               placeholder="Senha"
               className="w-full bg-[#F5F7FA] border-none rounded-xl px-4 py-3 text-sm font-bold text-[#0A3D52] text-center focus:ring-2 focus:ring-[#D4941E] outline-none"
             />
-            {senhaErro && (
-              <p className="text-xs text-red-500 font-bold">Senha incorreta.</p>
-            )}
+            {senhaErro && <p className="text-xs text-red-500 font-bold">Senha incorreta.</p>}
             <button
               type="submit"
               className="w-full bg-[#0A3D52] text-white py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] cursor-pointer"
@@ -151,6 +148,7 @@ function SettingsPage() {
 }
 
 function SettingsContent() {
+  const { toggleTheme, isDark } = useTheme();
   const identidade = getIdentidade();
   const [profile, setProfile] = useLocalStorage("academic_profile", {
     name: identidade?.nome ?? "Estudante",
@@ -407,16 +405,20 @@ function SettingsContent() {
                   onClick={toggleTheme}
                   className={cn(
                     "w-12 h-6 rounded-full transition-colors relative",
-                    isDark ? "bg-[#D4941E]" : "bg-[#0A3D52]/20"
+                    isDark ? "bg-[#D4941E]" : "bg-[#0A3D52]/20",
                   )}
                 >
                   <span
                     className={cn(
                       "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 flex items-center justify-center",
-                      isDark ? "translate-x-6" : "translate-x-0.5"
+                      isDark ? "translate-x-6" : "translate-x-0.5",
                     )}
                   >
-                    {isDark ? <Moon className="w-3 h-3 text-[#D4941E]" /> : <Sun className="w-3 h-3 text-[#0A3D52]" />}
+                    {isDark ? (
+                      <Moon className="w-3 h-3 text-[#D4941E]" />
+                    ) : (
+                      <Sun className="w-3 h-3 text-[#0A3D52]" />
+                    )}
                   </span>
                 </button>
               </div>

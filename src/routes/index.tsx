@@ -35,7 +35,7 @@ import { StreakDisplay } from "@/components/StreakDisplay";
 
 // Lazy load heavy AI assistant component
 const StudyAssistant = lazy(() =>
-  import("@/components/StudyAssistant").then((m) => ({ default: m.StudyAssistant }))
+  import("@/components/StudyAssistant").then((m) => ({ default: m.StudyAssistant })),
 );
 
 export const Route = createFileRoute("/")({
@@ -85,6 +85,7 @@ import {
   formatarDataBrasil,
 } from "@/lib/timeline";
 import { parseDataLocal } from "@/lib/datas";
+import { getIdentidade } from "@/lib/auth";
 
 function useAgora(intervalMs = 30000) {
   const [agora, setAgora] = useState(() => new Date());
@@ -600,7 +601,12 @@ function AcademicDashboard() {
                           </span>
                         )}
                       </div>
-                      <p className={cn("font-bold text-sm truncate", isProxima ? "" : "text-[#0A3D52]/60")}>
+                      <p
+                        className={cn(
+                          "font-bold text-sm truncate",
+                          isProxima ? "" : "text-[#0A3D52]/60",
+                        )}
+                      >
                         {e.titulo}
                       </p>
                       <p className="text-[10px] font-bold text-[#0A3D52]/40 uppercase mt-0.5">
@@ -752,98 +758,95 @@ function AcademicDashboard() {
             {data.disciplines.map((item) => {
               const conteudo = conteudoMap[item.id] ?? { audio: 0, docs: 0 };
               return (
-              <div
-                key={item.id}
-                onClick={() => navigate({ to: "/disciplines/$id", params: { id: item.id } })}
-                className={cn(
-                  "bg-[#F5F7FA] rounded-xl border border-[#0A3D52]/10 p-5 hover:shadow-md hover:border-[#D4941E]/40 transition-all group flex flex-col justify-between cursor-pointer",
-                  item.status === "urgent" && "border-l-4 border-l-[#E74C3C]",
-                  item.status === "warning" && "border-l-4 border-l-[#D4941E]",
-                )}
-              >
-                <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-2xl">{item.icone}</span>
-                    <div className="flex items-center gap-1.5">
-                      {conteudo.audio > 0 && (
-                        <span className="text-[9px] font-black bg-[#7C3AED]/10 text-[#7C3AED] px-1.5 py-0.5 rounded-full">
-                          🎧 {conteudo.audio}
-                        </span>
-                      )}
-                      {conteudo.docs > 0 && (
-                        <span className="text-[9px] font-black bg-[#0A3D52]/10 text-[#0A3D52]/60 px-1.5 py-0.5 rounded-full">
-                          📄 {conteudo.docs}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-lg leading-tight mb-1 group-hover:text-[#D4941E] transition-colors">
-                    {item.nome}
-                  </h4>
-                  <p className="text-[11px] font-bold text-[#0A3D52]/50 uppercase tracking-wide mb-4">
-                    {item.ch} • {item.period}
-                  </p>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between text-[11px] font-black mb-1.5 uppercase">
-                      <span>Progresso</span>
-                      <span>{item.progresso}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-white rounded-full overflow-hidden border border-[#0A3D52]/5">
-                      <div
-                        className={cn(
-                          "h-full transition-all duration-700",
-                          getStatusColor(item.status),
-                        )}
-                        style={{ width: `${item.progresso}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-[#0A3D52]/5 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <CalendarIcon className="w-3 h-3 text-[#0A3D52]/40" />
-                    <span className="text-[10px] font-bold text-[#0A3D52]/60 uppercase tracking-tighter">
-                      {item.nextExam
-                        ? `Próxima: ${item.nextExam.type} ${item.nextExam.daysRemaining === 0 ? "hoje" : `em ${item.nextExam.daysRemaining} dias`}`
-                        : "Aguardando cronograma"}
-                    </span>
-                  </div>
-                  <div className="text-[#0A3D52] group-hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
-                    Entrar na Rota <ArrowRight className="w-3 h-3" />
-                  </div>
-                </div>
-
-                {/* Ações rápidas — vão direto ao conteúdo */}
                 <div
-                  className="grid grid-cols-3 gap-2 mt-3"
-                  onClick={(e) => e.stopPropagation()}
+                  key={item.id}
+                  onClick={() => navigate({ to: "/disciplines/$id", params: { id: item.id } })}
+                  className={cn(
+                    "bg-[#F5F7FA] rounded-xl border border-[#0A3D52]/10 p-5 hover:shadow-md hover:border-[#D4941E]/40 transition-all group flex flex-col justify-between cursor-pointer",
+                    item.status === "urgent" && "border-l-4 border-l-[#E74C3C]",
+                    item.status === "warning" && "border-l-4 border-l-[#D4941E]",
+                  )}
                 >
-                  <Link
-                    to="/disciplines/$id"
-                    params={{ id: item.id }}
-                    search={{ tab: "materiais" }}
-                    className="inline-flex items-center justify-center gap-1 bg-white border border-[#0A3D52]/10 rounded-xl py-2 text-[10px] font-black uppercase tracking-wider text-[#0A3D52] hover:border-[#D4941E] hover:text-[#D4941E] transition-colors"
-                  >
-                    <FileText className="w-3.5 h-3.5" /> Materiais
-                  </Link>
-                  <Link
-                    to="/disciplines/$id/podcast"
-                    params={{ id: item.id }}
-                    className="inline-flex items-center justify-center gap-1 bg-white border border-[#0A3D52]/10 rounded-xl py-2 text-[10px] font-black uppercase tracking-wider text-[#7C3AED] hover:border-[#7C3AED] transition-colors"
-                  >
-                    <Headphones className="w-3.5 h-3.5" /> Podcasts
-                  </Link>
-                  <Link
-                    to="/simulados"
-                    search={{ disciplina: item.id }}
-                    className="inline-flex items-center justify-center gap-1 bg-[#0A3D52] rounded-xl py-2 text-[10px] font-black uppercase tracking-wider text-white hover:bg-[#0A3D52]/90 transition-colors"
-                  >
-                    <Target className="w-3.5 h-3.5" /> Simular
-                  </Link>
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-2xl">{item.icone}</span>
+                      <div className="flex items-center gap-1.5">
+                        {conteudo.audio > 0 && (
+                          <span className="text-[9px] font-black bg-[#7C3AED]/10 text-[#7C3AED] px-1.5 py-0.5 rounded-full">
+                            🎧 {conteudo.audio}
+                          </span>
+                        )}
+                        {conteudo.docs > 0 && (
+                          <span className="text-[9px] font-black bg-[#0A3D52]/10 text-[#0A3D52]/60 px-1.5 py-0.5 rounded-full">
+                            📄 {conteudo.docs}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <h4 className="font-bold text-lg leading-tight mb-1 group-hover:text-[#D4941E] transition-colors">
+                      {item.nome}
+                    </h4>
+                    <p className="text-[11px] font-bold text-[#0A3D52]/50 uppercase tracking-wide mb-4">
+                      {item.ch} • {item.period}
+                    </p>
+
+                    <div className="mb-4">
+                      <div className="flex justify-between text-[11px] font-black mb-1.5 uppercase">
+                        <span>Progresso</span>
+                        <span>{item.progresso}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-white rounded-full overflow-hidden border border-[#0A3D52]/5">
+                        <div
+                          className={cn(
+                            "h-full transition-all duration-700",
+                            getStatusColor(item.status),
+                          )}
+                          style={{ width: `${item.progresso}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#0A3D52]/5 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CalendarIcon className="w-3 h-3 text-[#0A3D52]/40" />
+                      <span className="text-[10px] font-bold text-[#0A3D52]/60 uppercase tracking-tighter">
+                        {item.nextExam
+                          ? `Próxima: ${item.nextExam.type} ${item.nextExam.daysRemaining === 0 ? "hoje" : `em ${item.nextExam.daysRemaining} dias`}`
+                          : "Aguardando cronograma"}
+                      </span>
+                    </div>
+                    <div className="text-[#0A3D52] group-hover:text-[#D4941E] transition-colors flex items-center gap-1 text-[10px] font-black uppercase">
+                      Entrar na Rota <ArrowRight className="w-3 h-3" />
+                    </div>
+                  </div>
+
+                  {/* Ações rápidas — vão direto ao conteúdo */}
+                  <div className="grid grid-cols-3 gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                    <Link
+                      to="/disciplines/$id"
+                      params={{ id: item.id }}
+                      search={{ tab: "materiais" }}
+                      className="inline-flex items-center justify-center gap-1 bg-white border border-[#0A3D52]/10 rounded-xl py-2 text-[10px] font-black uppercase tracking-wider text-[#0A3D52] hover:border-[#D4941E] hover:text-[#D4941E] transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> Materiais
+                    </Link>
+                    <Link
+                      to="/disciplines/$id/podcast"
+                      params={{ id: item.id }}
+                      className="inline-flex items-center justify-center gap-1 bg-white border border-[#0A3D52]/10 rounded-xl py-2 text-[10px] font-black uppercase tracking-wider text-[#7C3AED] hover:border-[#7C3AED] transition-colors"
+                    >
+                      <Headphones className="w-3.5 h-3.5" /> Podcasts
+                    </Link>
+                    <Link
+                      to="/simulados"
+                      search={{ disciplina: item.id }}
+                      className="inline-flex items-center justify-center gap-1 bg-[#0A3D52] rounded-xl py-2 text-[10px] font-black uppercase tracking-wider text-white hover:bg-[#0A3D52]/90 transition-colors"
+                    >
+                      <Target className="w-3.5 h-3.5" /> Simular
+                    </Link>
+                  </div>
                 </div>
-              </div>
               );
             })}
           </div>

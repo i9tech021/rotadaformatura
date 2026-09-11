@@ -12,6 +12,12 @@ export type EventoMetrica =
   | "nota_publicada"
   | "publicacao_criada"
   | "prova_enviada"
+  | "banco_prova_enviada"
+  | "faq_pergunta_enviada"
+  | "faq_resposta_enviada"
+  | "resumo_enviado"
+  | "desafio_concluido"
+  | "evento_coletivo_sugerido"
   | "checkpoint_concluido"
   | "audio_tocado"
   | "podcast_publicado";
