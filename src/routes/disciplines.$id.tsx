@@ -599,9 +599,12 @@ function DisciplinePage() {
                                 </p>
                               </div>
                             </div>
-                            <button className="text-[#D4941E] hover:underline text-[10px] font-black uppercase tracking-widest">
-                              Baixar PDF
-                            </button>
+                            <Link
+                              to="/provas"
+                              className="text-[#D4941E] hover:underline text-[10px] font-black uppercase tracking-widest"
+                            >
+                              Ver provas
+                            </Link>
                           </div>
                         ))
                     ) : (
@@ -749,7 +752,8 @@ function DisciplinePage() {
                   <span className="text-xs font-bold">Iniciar Simulado</span>
                 </Link>
                 <Link
-                  to="/materials"
+                  to="/materials/$id"
+                  params={{ id: discipline.id }}
                   className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
                 >
                   <FileText className="w-4 h-4 text-[#D4941E]" />

@@ -68,10 +68,13 @@ interface ItemMaterial {
   conteudo?: string;
   etapa?: string;
   autor?: string;
+  criadoEm?: string;
   podcast?: Podcast;
   publicacao?: Publicacao;
   curado?: Material;
 }
+
+type Ordenacao = "tipo" | "recentes" | "az";
 
 // ============================================================
 // Helpers
@@ -174,6 +177,7 @@ function DisciplineMaterials() {
   const [carregando, setCarregando] = useState(true);
   const [filtroObjetivo, setFiltroObjetivo] = useState<FiltroObjetivo>("todas");
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
+  const [ordenacao, setOrdenacao] = useState<Ordenacao>("tipo");
   const [busca, setBusca] = useState("");
   const [estudados, setEstudados] = useState<Record<string, boolean>>({});
   const identidade = useMemo(() => getIdentidade(), []);
@@ -216,10 +220,48 @@ function DisciplineMaterials() {
   }, [recarregar]);
 
   // ---- Agregar todos os materiais ----
+  // Ordem: uploads da turma SEMPRE antes dos links externos/curados.
   const todosItens = useMemo<ItemMaterial[]>(() => {
     const itens: ItemMaterial[] = [];
 
-    // 1. Oficiais curados
+    // 1. Publicações da turma (mais recentes primeiro)
+    const pubsOrdenadas = [...publicacoes].sort((a, b) =>
+      (b.criado_em || "").localeCompare(a.criado_em || ""),
+    );
+    for (const p of pubsOrdenadas) {
+      const kind = kindDaPublicacao(p);
+      itens.push({
+        id: p.id,
+        titulo: p.titulo || p.descricao || "Sem título",
+        tipo: "publicacao",
+        kind,
+        ...(p.url ? { url: p.url } : {}),
+        ...(p.conteudo ? { conteudo: p.conteudo } : {}),
+        etapa: p.etapa,
+        autor: `${p.autor_nome}${p.autor_polo ? ` · ${p.autor_polo}` : ""}`,
+        criadoEm: p.criado_em,
+        publicacao: p,
+      });
+    }
+
+    // 2. Episódios de podcast (sincronizados da página de podcasts)
+    const epsOrdenados = [...episodios].sort((a, b) =>
+      (b.criado_em || "").localeCompare(a.criado_em || ""),
+    );
+    for (const ep of epsOrdenados) {
+      itens.push({
+        id: `pod:${ep.id}`,
+        titulo: ep.titulo,
+        tipo: "podcast",
+        kind: "audio",
+        url: ep.url,
+        etapa: objetivoDoEpisodio(ep.objetivo),
+        criadoEm: ep.criado_em,
+        podcast: ep,
+      });
+    }
+
+    // 3. Oficiais curados / links externos (por último)
     for (const m of MATERIALS.filter((m) => m.disciplineId === id)) {
       const kind: ItemMaterial["kind"] =
         m.type === "pdf" ? "pdf" :
@@ -237,53 +279,35 @@ function DisciplineMaterials() {
       });
     }
 
-    // 2. Episódios de podcast
-    for (const ep of episodios) {
-      itens.push({
-        id: `pod:${ep.id}`,
-        titulo: ep.titulo,
-        tipo: "podcast",
-        kind: "audio",
-        url: ep.url,
-        etapa: objetivoDoEpisodio(ep.objetivo),
-        podcast: ep,
-      });
-    }
-
-    // 3. Publicações da turma
-    for (const p of publicacoes) {
-      const kind = kindDaPublicacao(p);
-      itens.push({
-        id: p.id,
-        titulo: p.titulo || p.descricao || "Sem título",
-        tipo: "publicacao",
-        kind,
-        ...(p.url ? { url: p.url } : {}),
-        ...(p.conteudo ? { conteudo: p.conteudo } : {}),
-        etapa: p.etapa,
-        autor: `${p.autor_nome}${p.autor_polo ? ` · ${p.autor_polo}` : ""}`,
-        publicacao: p,
-      });
-    }
-
     return itens;
   }, [id, publicacoes, episodios]);
 
-  // ---- Filtros ----
+  // ---- Filtros + ordenação ----
   const itensFiltrados = useMemo(() => {
-    return todosItens
-      .filter((item) => {
-        if (filtroObjetivo !== "todas" && item.etapa !== filtroObjetivo) return false;
-        if (filtroTipo === "oficiais" && item.tipo !== "curado") return false;
-        if (filtroTipo !== "todos" && filtroTipo !== "oficiais" && item.kind !== filtroTipo) return false;
-        if (busca) {
-          const s = busca.toLowerCase();
-          if (!item.titulo.toLowerCase().includes(s) && !(item.autor || "").toLowerCase().includes(s)) return false;
-        }
-        return true;
-      })
-      .sort((a, b) => prioridade(a.kind) - prioridade(b.kind));
-  }, [todosItens, filtroObjetivo, filtroTipo, busca]);
+    const lista = todosItens.filter((item) => {
+      if (filtroObjetivo !== "todas" && item.etapa !== filtroObjetivo) return false;
+      if (filtroTipo === "oficiais" && item.tipo !== "curado") return false;
+      if (filtroTipo !== "todos" && filtroTipo !== "oficiais" && item.kind !== filtroTipo) return false;
+      if (busca) {
+        const s = busca.toLowerCase();
+        if (!item.titulo.toLowerCase().includes(s) && !(item.autor || "").toLowerCase().includes(s)) return false;
+      }
+      return true;
+    });
+    if (ordenacao === "az") {
+      lista.sort((a, b) => a.titulo.localeCompare(b.titulo, "pt-BR"));
+    } else if (ordenacao === "recentes") {
+      lista.sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+    } else {
+      // Por tipo (áudio/vídeo primeiro), desempatando por mais recente
+      lista.sort(
+        (a, b) =>
+          prioridade(a.kind) - prioridade(b.kind) ||
+          (b.criadoEm || "").localeCompare(a.criadoEm || ""),
+      );
+    }
+    return lista;
+  }, [todosItens, filtroObjetivo, filtroTipo, busca, ordenacao]);
 
   // ---- Estudados ----
   const alternarEstudado = useCallback(
@@ -670,7 +694,7 @@ function DisciplineMaterials() {
         </div>
 
         {/* Filtros por tipo */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-2">
           {([
             { v: "todos", l: "Todos" },
             { v: "oficiais", l: "📚 Oficiais" },
@@ -689,6 +713,34 @@ function DisciplineMaterials() {
                   ? "bg-[#0A3D52] text-white border-[#0A3D52]"
                   : "bg-white text-[#0A3D52]/50 border-[#0A3D52]/10",
               )}
+            >
+              {t.l}
+            </button>
+          ))}
+        </div>
+
+        {/* Ordenação */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-[9px] font-black uppercase tracking-widest text-[#0A3D52]/40">
+            Ordenar:
+          </span>
+          {(
+            [
+              { v: "tipo", l: "Por tipo" },
+              { v: "recentes", l: "Recentes" },
+              { v: "az", l: "A–Z" },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.v}
+              onClick={() => setOrdenacao(t.v)}
+              className={cn(
+                "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border cursor-pointer",
+                ordenacao === t.v
+                  ? "text-white border-transparent"
+                  : "bg-white text-[#0A3D52]/50 border-[#0A3D52]/10",
+              )}
+              style={ordenacao === t.v ? { background: disciplina.cor } : {}}
             >
               {t.l}
             </button>
@@ -848,25 +900,55 @@ function CardMaterial({
       {isAudio && item.url && (
         <div className="mt-1">
           <AudioPlayer url={item.url} cor="#7C3AED" />
-          <button
-            onClick={() => playAudio(item.url!, { titulo: item.titulo })}
-            className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#7C3AED] cursor-pointer"
-          >
-            <Play className="w-3 h-3" /> Ouvir no player global
-          </button>
+          <div className="mt-1.5 flex items-center gap-3">
+            <button
+              onClick={() => playAudio(item.url!, { titulo: item.titulo })}
+              className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#7C3AED] cursor-pointer"
+            >
+              <Play className="w-3 h-3" /> Ouvir no player global
+            </button>
+            <a
+              href={item.url}
+              download
+              className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50 hover:text-[#0A3D52] cursor-pointer"
+            >
+              <Download className="w-3 h-3" /> Baixar
+            </a>
+          </div>
         </div>
       )}
 
       {/* Vídeo */}
       {isVideo && item.url && (
-        <video src={item.url} controls playsInline preload="metadata" className="w-full rounded-xl bg-black aspect-video mt-1" />
+        <div className="mt-1">
+          <video src={item.url} controls playsInline preload="metadata" className="w-full rounded-xl bg-black aspect-video" />
+          <div className="flex gap-2 mt-2">
+            <a href={item.url} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#0A3D52] text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest">
+              <ExternalLink className="w-3.5 h-3.5" /> Abrir
+            </a>
+            <a href={item.url} download className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#F5F7FA] text-[#0A3D52] py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border border-[#0A3D52]/10">
+              <Download className="w-3.5 h-3.5" /> Baixar
+            </a>
+          </div>
+        </div>
       )}
 
       {/* Imagem */}
       {isImagem && item.url && (
-        <a href={item.url} target="_blank" rel="noopener noreferrer" className="block mt-1">
-          <img src={item.url} alt={item.titulo} loading="lazy" className="w-full rounded-xl max-h-64 object-cover bg-[#F5F7FA]" />
-        </a>
+        <div className="mt-1">
+          <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
+            <img src={item.url} alt={item.titulo} loading="lazy" className="w-full rounded-xl max-h-64 object-cover bg-[#F5F7FA]" />
+          </a>
+          {item.tipo !== "curado" && (
+            <a
+              href={item.url}
+              download
+              className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50 hover:text-[#0A3D52] cursor-pointer"
+            >
+              <Download className="w-3 h-3" /> Baixar
+            </a>
+          )}
+        </div>
       )}
 
       {/* PDF/Arquivo */}
@@ -886,9 +968,18 @@ function CardMaterial({
         <p className="text-xs text-[#0A3D52]/60 font-medium mt-1 whitespace-pre-wrap line-clamp-4">{item.conteudo}</p>
       )}
       {item.kind === "nota" && !item.conteudo && item.url && (
-        <a href={item.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#D4941E] mt-1">
-          <ExternalLink className="w-3 h-3" /> Abrir anexo
-        </a>
+        <div className="flex items-center gap-3 mt-1">
+          <a href={item.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#D4941E]">
+            <ExternalLink className="w-3 h-3" /> Abrir anexo
+          </a>
+          <a
+            href={item.url}
+            download
+            className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#0A3D52]/50 hover:text-[#0A3D52] cursor-pointer"
+          >
+            <Download className="w-3 h-3" /> Baixar
+          </a>
+        </div>
       )}
     </div>
   );

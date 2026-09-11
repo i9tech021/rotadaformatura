@@ -22,6 +22,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppBottomNav, AppDesktopNav, AppMobileMenu, HubTabs } from "@/components/AppNav";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { eventos as CALENDAR_EVENTS } from "@/data/events";
+import { getEventosAcao, subscribeEventos } from "@/lib/eventsService";
 import { disciplinas } from "@/data/disciplines";
 import { generateCalendarLink } from "@/lib/academic.functions";
 import { getLembretes, toggleLembrete, verificarLembretes } from "@/lib/lembretes";
@@ -51,6 +52,14 @@ export const Route = createFileRoute("/calendar")({
 
 function AcademicCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date()); // Sincronizado com tempo real
+  // Eventos em tempo real (Supabase) com fallback estático
+  const [eventos, setEventos] = useState(CALENDAR_EVENTS);
+  useEffect(() => {
+    getEventosAcao().then(setEventos);
+    return subscribeEventos(() => {
+      getEventosAcao().then(setEventos);
+    });
+  }, []);
   const [lembretes, setLembretes] = useState<Record<string, boolean>>(() => getLembretes());
 
   // Dispara notificações dos lembretes ativos dentro da janela de alerta (1x/dia)
@@ -148,7 +157,7 @@ function AcademicCalendarPage() {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   const getEventsForDay = (day: Date) => {
-    return CALENDAR_EVENTS.filter((event) => isSameDay(parseISO(event.dataInicio), day));
+    return eventos.filter((event) => isSameDay(parseISO(event.dataInicio), day));
   };
 
   return (
@@ -299,7 +308,8 @@ function AcademicCalendarPage() {
                 Próximos Eventos
               </h3>
               <div className="space-y-6">
-                {CALENDAR_EVENTS.filter((e) => parseISO(e.dataInicio) >= new Date())
+                {eventos
+                  .filter((e) => parseISO(e.dataInicio) >= new Date())
                   .slice(0, 5)
                   .map((event: any) => {
                     const disc = DISCIPLINES.find((d) => d.id === event.disciplinaId);
