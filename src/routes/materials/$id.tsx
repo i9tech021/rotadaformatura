@@ -1108,6 +1108,15 @@ function CardMaterial({
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           )}
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(`📄 ${item.titulo} — Materiais da turma no Rota da Formatura. Vem ver: ${typeof window !== "undefined" ? window.location.href : ""}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Compartilhar no WhatsApp"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-[#0A3D52]/20 hover:text-[#25D366] hover:bg-[#25D366]/10 transition-all cursor-pointer"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+          </a>
         </div>
       </div>
 

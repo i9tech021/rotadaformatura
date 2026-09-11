@@ -7,13 +7,16 @@ import {
   Calendar as CalendarIcon,
   ChevronRight,
   ClipboardCheck,
+  Copy,
   FileText,
   GraduationCap,
   LayoutDashboard,
   Loader2,
   Menu,
+  MessageCircle,
   RefreshCcw,
   Settings,
+  Share2,
   Sparkles,
   Target,
   Trophy,
@@ -55,6 +58,7 @@ import {
   type ResultadoCorrigido,
 } from "@/components/SimuladoPlayer";
 import { cn } from "@/lib/utils";
+import { registrarAtividade } from "@/lib/feedService";
 
 export const Route = createFileRoute("/simulados")({
   component: SimuladosPage,
@@ -216,6 +220,11 @@ function SimuladosPage() {
     setRevisao(r);
     toast.success(`Corrigido: nota ${r.nota.toFixed(1)} (${r.percentual}%)`);
     window.scrollTo({ top: 0, behavior: "smooth" });
+    void registrarAtividade({
+      acao: `fez simulado de ${disciplina?.nome ?? disciplinaId} (${etapa}): ${r.acertos}/${r.total}`,
+      disciplinaId,
+      tipo: "simulado",
+    });
     recarregar();
   };
 
@@ -338,12 +347,12 @@ function SimuladosPage() {
           )}
         </div>
 
-        {/* Revisão */}
+        {/* Resultado */}
         {revisao && !sessaoAtiva && (
           <section className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-black text-[#0A3D52]/40 uppercase tracking-[0.2em] flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-[#D4941E]" /> Revisão do Simulado
+                <Trophy className="w-4 h-4 text-[#D4941E]" /> Resultado do Simulado
               </h3>
               <button
                 onClick={() => setRevisao(null)}
@@ -352,14 +361,16 @@ function SimuladosPage() {
                 Fechar
               </button>
             </div>
-            <div className="bg-white rounded-2xl border border-[#0A3D52]/10 p-5 shadow-sm mb-4 text-center">
-              <p className="text-3xl font-black font-mono text-[#D4941E]">
-                {revisao.nota.toFixed(1)}
-              </p>
-              <p className="text-xs font-bold text-[#0A3D52]/50 uppercase mt-1">
-                {revisao.percentual}% de acerto
-              </p>
-            </div>
+            <ResultadoCard
+              acertos={revisao.acertos}
+              total={revisao.total}
+              nota={revisao.nota}
+              percentual={revisao.percentual}
+              disciplinaNome={disciplina?.nome ?? disciplinaId}
+              disciplinaCodigo={disciplina?.codigo ?? ""}
+              etapa={etapa}
+              disciplinaId={disciplinaId}
+            />
             <RevisePorQuestao resultado={revisao} />
           </section>
         )}
@@ -607,6 +618,131 @@ function SimuladosPage() {
 
       {/* Bottom Mobile Nav (global) */}
       <AppBottomNav />
+    </div>
+  );
+}
+
+// ============================================================
+// Card de resultado compartilhável (WhatsApp, link, nativo)
+// ============================================================
+function ResultadoCard({
+  acertos,
+  total,
+  nota,
+  percentual,
+  disciplinaNome,
+  disciplinaCodigo,
+  etapa,
+  disciplinaId,
+}: {
+  acertos: number;
+  total: number;
+  nota: number;
+  percentual: number;
+  disciplinaNome: string;
+  disciplinaCodigo: string;
+  etapa: string;
+  disciplinaId: string;
+}) {
+  const nivel =
+    nota >= 8 ? (
+      { emoji: "🏆", titulo: "Excelente!", cor: "from-[#27AE60] to-[#27AE60]/80", texto: "Nível AP garantido. Mantém o ritmo!" }
+    ) : nota >= 6 ? (
+      { emoji: "👍", titulo: "Aprovado!", cor: "from-[#D4941E] to-[#D4941E]/80", texto: "Passou! Revisa os erros abaixo pra garantir na prova." }
+    ) : (
+      { emoji: "📚", titulo: "Continua!", cor: "from-[#2563EB] to-[#2563EB]/80", texto: "Cada simulado conta. Revê as questões e tenta de novo." }
+    );
+  const url =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/simulados?disciplina=${disciplinaId}`
+      : `https://rotadaformatura.vercel.app/simulados?disciplina=${disciplinaId}`;
+  const texto = `Acabei de fazer um simulado de ${disciplinaNome} (${etapa}) no Rota da Formatura e tirei ${acertos}/${total}! 🚀 Tenta você também: ${url}`;
+
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(texto);
+      toast.success("Resultado copiado! Cola no grupo.");
+      return;
+    } catch {
+      // fallback
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = texto;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+      toast.success("Resultado copiado! Cola no grupo.");
+    } catch {
+      toast.error("Não foi possível copiar.");
+    }
+  };
+
+  return (
+    <div className={`bg-gradient-to-br ${nivel.cor} rounded-3xl p-6 mb-4 text-white relative overflow-hidden`}>
+      <div className="absolute -top-8 -right-8 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+      <div className="relative z-10">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-2xl">{nivel.emoji}</span>
+          <div>
+            <h4 className="font-black text-xl leading-tight">{nivel.titulo}</h4>
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">
+              {disciplinaNome} {disciplinaCodigo ? `(${disciplinaCodigo})` : ""} · {etapa}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-end gap-6 my-4">
+          <div>
+            <p className="text-5xl font-black font-mono leading-none">{nota.toFixed(1)}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mt-1">nota</p>
+          </div>
+          <div className="pb-1">
+            <p className="text-2xl font-black font-mono leading-none">
+              {acertos}<span className="opacity-60 text-lg">/{total}</span>
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mt-1">
+              {percentual}% de acerto
+            </p>
+          </div>
+        </div>
+
+        <p className="text-xs font-medium opacity-80 mb-4">{nivel.texto}</p>
+
+        <div className="flex flex-col gap-2">
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(texto)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#25D366] text-white font-black text-xs uppercase tracking-[0.2em]"
+          >
+            <MessageCircle className="w-4 h-4" /> Compartilhar no WhatsApp
+          </a>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: "Meu simulado", text: texto, url }).catch(() => {});
+                } else {
+                  copiar();
+                }
+              }}
+              className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-white/20 text-white font-black text-[10px] uppercase tracking-widest"
+            >
+              <Share2 className="w-3.5 h-3.5" /> App
+            </button>
+            <button
+              onClick={copiar}
+              className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-white/20 text-white font-black text-[10px] uppercase tracking-widest"
+            >
+              <Copy className="w-3.5 h-3.5" /> Copiar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
