@@ -7,6 +7,8 @@ export interface Identidade {
   polo: string;
   turma: string;
   autorLocalId: string;
+  cursoId: string;
+  minhasDisciplinas: string[];
 }
 
 const STORAGE_KEY = "rdf:identidade";
@@ -42,7 +44,12 @@ export function getIdentidade(): Identidade | null {
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (data?.nome && data?.polo && data?.turma && data?.autorLocalId) {
-      return data as Identidade;
+      // Backward compat: campos novos têm defaults
+      return {
+        ...data,
+        cursoId: data.cursoId ?? "administracao",
+        minhasDisciplinas: data.minhasDisciplinas ?? [],
+      } as Identidade;
     }
     return null;
   } catch {
@@ -50,16 +57,31 @@ export function getIdentidade(): Identidade | null {
   }
 }
 
-export function salvarIdentidade(nome: string, polo: string, turma: string): Identidade {
+export function salvarIdentidade(
+  nome: string,
+  polo: string,
+  turma: string,
+  cursoId = "administracao",
+  minhasDisciplinas: string[] = [],
+): Identidade {
   const existing = getIdentidade();
   const ident: Identidade = {
     nome: nome.trim(),
     polo: polo.trim(),
     turma: turma.trim().toLowerCase(),
     autorLocalId: existing?.autorLocalId ?? crypto.randomUUID(),
+    cursoId,
+    minhasDisciplinas,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(ident));
   return ident;
+}
+
+export function atualizarMinhasDisciplinas(disciplinas: string[]): void {
+  const ident = getIdentidade();
+  if (!ident) return;
+  ident.minhasDisciplinas = disciplinas;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(ident));
 }
 
 export function limparIdentidade(): void {

@@ -144,14 +144,21 @@ function AcademicDashboard() {
     return unsubEv;
   }, []);
 
-  const [disciplinas, setDisciplinas] = useState(DISCIPLINAS_STATICAS);
+  // Filtra disciplinas pelas que o aluno selecionou no onboarding
+  const identidade = getIdentidade();
+  const minhasDisciplinas = identidade?.minhasDisciplinas ?? [];
+  const [todasDisciplinas, setTodasDisciplinas] = useState(DISCIPLINAS_STATICAS);
   useEffect(() => {
-    getDisciplinas().then(setDisciplinas);
+    getDisciplinas().then(setTodasDisciplinas);
     const unsubDisc = subscribeDisciplinas(() => {
-      getDisciplinas().then(setDisciplinas);
+      getDisciplinas().then(setTodasDisciplinas);
     });
     return unsubDisc;
   }, []);
+  const disciplinas = useMemo(() => {
+    if (minhasDisciplinas.length === 0) return todasDisciplinas;
+    return todasDisciplinas.filter((d) => minhasDisciplinas.includes(d.id));
+  }, [todasDisciplinas, minhasDisciplinas]);
 
   // Progresso REAL por disciplina = aulas concluídas / total (não hardcoded).
   // Recalcula ao vivo quando qualquer checkpoint muda (realtime).
@@ -240,7 +247,6 @@ function AcademicDashboard() {
     return { hojeUrgente, proximo, depois };
   }, [eventosAcao]);
 
-  const identidade = getIdentidade();
   const profile = {
     name: identidade?.nome ?? "Estudante CEDERJ",
     course: "Administração",
