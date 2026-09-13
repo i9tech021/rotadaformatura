@@ -6,6 +6,7 @@ import {
   BookOpen,
   Calculator,
   Calendar as CalendarIcon,
+  CheckCircle,
   ClipboardList,
   FileText,
   GraduationCap,
@@ -37,6 +38,7 @@ export const MENU_ITEMS: NavItem[] = [
   { to: "/calculadora", label: "Calculadora", curto: "Calc", icon: Calculator },
   { to: "/calendar", label: "Calendario", curto: "Calendario", icon: CalendarIcon },
   { to: "/provas", label: "Provas Anteriores", curto: "Provas", icon: FileText },
+  { to: "/gabarito", label: "Gabarito", curto: "Gabarito", icon: CheckCircle },
   { to: "/materials", label: "Materiais", curto: "Materiais", icon: FileText },
   { to: "/settings", label: "Configuracoes", curto: "Perfil", icon: Settings },
 ];
@@ -50,6 +52,7 @@ export const DESKTOP_ITEMS: NavItem[] = [
   { to: "/ranking", label: "Ranking", curto: "Ranking", icon: Trophy },
   { to: "/resumos", label: "Resumos", curto: "Resumos", icon: ClipboardList },
   { to: "/provas", label: "Provas Anteriores", curto: "Provas", icon: FileText },
+  { to: "/gabarito", label: "Gabarito", curto: "Gabarito", icon: CheckCircle },
   { to: "/podcasts", label: "Podcasts", curto: "Podcasts", icon: Headphones },
   { to: "/publicacoes", label: "Comunidade", curto: "Comunidade", icon: Users },
 ];
