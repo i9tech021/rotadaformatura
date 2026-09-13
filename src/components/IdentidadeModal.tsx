@@ -23,7 +23,7 @@ export function IdentidadeModal({ aberto, aoSalvar, aoFechar }: Props) {
     e.preventDefault();
     if (!podeSalvar) return;
     // Salva no novo sistema de auth
-    salvarIdentidade(nome, polo, existente?.turma ?? CODIGO_TURMA_PADRAO);
+    salvarIdentidade(nome, polo, existente?.turma ?? CODIGO_TURMA_PADRAO, existente?.cursoId, existente?.minhasDisciplinas);
     aoSalvar(nome, polo);
   };
 

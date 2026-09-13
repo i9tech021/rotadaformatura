@@ -115,7 +115,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "twitter:image",
         content: "https://rotadaformatura.vercel.app/og-cover.png",
       },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {

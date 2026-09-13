@@ -107,7 +107,8 @@ function PublicacoesPage() {
   };
 
   const salvarIdentidadeSubmit = (nome: string, polo: string) => {
-    const ident = salvarIdentidade(nome, polo, CODIGO_TURMA_PADRAO);
+    const existente = getIdentidade();
+    const ident = salvarIdentidade(nome, polo, CODIGO_TURMA_PADRAO, existente?.cursoId, existente?.minhasDisciplinas);
     setIdentidade(ident);
     setModalAberto(false);
     setFormAberto(true);

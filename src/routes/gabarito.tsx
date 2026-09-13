@@ -559,7 +559,8 @@ function VerGabaritoView({
   const questoesVisiveis = podeVerTudo ? respostas : respostas.slice(0, 2);
 
   const handleCompartilhar = () => {
-    const texto = `📋 Gabarito ${gabarito.titulo}\n\n${gabarito.total_questoes} questões corrigidas\n\nConfira no Rota da Formatura:\nhttps://rotadaformatura.vercel.app/gabarito`;
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://rotadaformatura.vercel.app";
+    const texto = `📋 Gabarito ${gabarito.titulo}\n\n${gabarito.total_questoes} questões corrigidas\n\nConfira no Rota da Formatura:\n${baseUrl}/gabarito`;
     if (navigator.share) {
       navigator.share({ title: gabarito.titulo, text: texto });
     } else {
@@ -902,7 +903,8 @@ function ResultadoView({
   const handleCompartilhar = () => {
     if (!resultado) return;
     const notaFormatada = resultado.nota.toFixed(1).replace(".", ",");
-    const texto = `📊 Gabarito ${gabarito.titulo}\n\n✅ ${resultado.acertos}/${resultado.total} acertos\n📝 Nota: ${notaFormatada}/10\n\n${resultado.nota >= 6 ? "🎉 Aprovado!" : "📚 Preciso melhorar..."}\n\nTeste você também no Rota da Formatura:\nhttps://rotadaformatura.vercel.app/gabarito`;
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://rotadaformatura.vercel.app";
+    const texto = `📊 Gabarito ${gabarito.titulo}\n\n✅ ${resultado.acertos}/${resultado.total} acertos\n📝 Nota: ${notaFormatada}/10\n\n${resultado.nota >= 6 ? "🎉 Aprovado!" : "📚 Preciso melhorar..."}\n\nTeste você também no Rota da Formatura:\n${baseUrl}/gabarito`;
     if (navigator.share) {
       navigator.share({ title: `Nota: ${notaFormatada}`, text: texto });
     } else {

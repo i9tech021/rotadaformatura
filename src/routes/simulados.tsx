@@ -50,7 +50,7 @@ import {
   getIdentidade,
   salvarIdentidade,
   type Identidade,
-} from "@/lib/publicacoesService";
+} from "@/lib/auth";
 import { IdentidadeModal } from "@/components/IdentidadeModal";
 import {
   RevisePorQuestao,
@@ -123,7 +123,8 @@ function SimuladosPage() {
   }, [recarregar, disciplinaId, etapa]);
 
   const salvarIdent = (nome: string, polo: string) => {
-    const ident = salvarIdentidade(nome, polo, CODIGO_TURMA_PADRAO);
+    const existente = getIdentidade();
+    const ident = salvarIdentidade(nome, polo, CODIGO_TURMA_PADRAO, existente?.cursoId, existente?.minhasDisciplinas);
     setIdentidade(ident);
     setModalAberto(false);
     toast.success("Identificação salva!");
