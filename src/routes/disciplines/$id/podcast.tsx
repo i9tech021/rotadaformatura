@@ -17,10 +17,11 @@ import {
   Loader2,
   Copy,
   Check,
+  Menu,
   Music,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AppMobileMenu } from "@/components/AppNav";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { disciplinas } from "@/data/disciplines";
 import {
@@ -336,6 +337,32 @@ function DisciplinePodcastPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] text-[#0A3D52] pb-28">
+      {/* Nav bar */}
+      <nav className="bg-[#0A3D52] text-white px-4 py-3 shadow-md sticky top-0 z-40">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="p-2 hover:bg-white/10 rounded-xl transition-colors md:hidden cursor-pointer">
+                  <Menu className="w-6 h-6 text-[#D4941E]" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
+                <AppMobileMenu />
+              </SheetContent>
+            </Sheet>
+            <Link
+              to="/disciplines/$id"
+              params={{ id }}
+              className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.2em]"
+            >
+              <ArrowLeft className="w-4 h-4" /> Voltar
+            </Link>
+          </div>
+          <AppDesktopNav />
+        </div>
+      </nav>
+
       {/* Header com cor da disciplina */}
       <header
         className="text-white pt-6 pb-8 px-4 relative overflow-hidden"
@@ -662,6 +689,7 @@ function DisciplinePodcastPage() {
           </div>
         )}
       </main>
+      <AppBottomNav />
     </div>
   );
 }

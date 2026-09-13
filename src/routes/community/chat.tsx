@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AppBottomNav, AppMobileMenu } from "@/components/AppNav";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getChatRooms, loadMessages, sendMessage, subscribeMessages } from "@/lib/chatService";
 import type { ChatMessage } from "@/data/chat";
@@ -173,6 +173,7 @@ function CommunityChat() {
               {isSupabaseConfigured ? "Realtime" : "Local"}
             </span>
           </div>
+          <AppDesktopNav />
         </div>
       </nav>
 

@@ -2,18 +2,20 @@
 // Calculadora dedicada de AP/AD — média CEDERJ + calculadora reversa.
 // Link próprio: /calculadora (compartilhável, sem login).
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AppBottomNav, AppDesktopNav } from "@/components/AppNav";
+import { AppBottomNav, AppDesktopNav, AppMobileMenu } from "@/components/AppNav";
 import {
   ArrowLeft,
   Calculator,
   GraduationCap,
   LayoutDashboard,
   ListChecks,
+  Menu,
   Plus,
   RefreshCcw,
   Target,
   TrendingUp,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useMemo, useState } from "react";
 import { disciplinas } from "@/data/disciplines";
 import { calcularMedia, type Nota } from "@/lib/gradesService";
@@ -108,6 +110,16 @@ function CalculadoraPage() {
       {/* Header */}
       <nav className="sticky top-0 z-40 w-full bg-[#0A3D52] text-white px-4 py-3 shadow-md flex items-center justify-between">
         <div className="flex items-center gap-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="p-2 hover:bg-white/10 rounded-xl transition-colors md:hidden cursor-pointer">
+                <Menu className="w-6 h-6 text-[#D4941E]" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-[#0A3D52] text-white border-[#D4941E]/20 p-0">
+              <AppMobileMenu />
+            </SheetContent>
+          </Sheet>
           <Link
             to="/"
             className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-[10px] font-black uppercase underline"
