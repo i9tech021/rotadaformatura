@@ -333,11 +333,14 @@ export async function publicarNota(
   return { ok: true, publicacao: pub };
 }
 
-/** Exclui apenas se for do próprio autor (autor_local_id bate). */
-export async function excluirPublicacao(pub: Publicacao): Promise<{ ok: boolean; error?: string }> {
+/** Exclui se for do próprio autor OU se a senha de exclusão for fornecida. */
+export async function excluirPublicacao(pub: Publicacao, senha?: string): Promise<{ ok: boolean; error?: string }> {
   const ident = getIdentidade();
-  if (!ident || pub.autor_local_id !== ident.autorLocalId) {
-    return { ok: false, error: "Só o autor pode excluir esta publicação." };
+  const isAutor = ident && pub.autor_local_id === ident.autorLocalId;
+  const isSenhaValida = senha && validarSenhaDelete(senha);
+
+  if (!isAutor && !isSenhaValida) {
+    return { ok: false, error: "Só o autor pode excluir esta publicação (ou use a senha)." };
   }
 
   const sb = getSupabase();

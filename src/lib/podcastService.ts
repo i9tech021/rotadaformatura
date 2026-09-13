@@ -3,6 +3,7 @@
 // Mesmo padrão dos services existentes (checkpoints, eventsService).
 
 import { getSupabase, isSupabaseConfigured } from "./supabase";
+import { getIdentidade, validarSenhaDelete } from "./auth";
 
 /** Teto real do servidor por arquivo (~50MB). Acima disso, só com Versão leve. */
 export const LIMITE_UPLOAD_MB = 50;
@@ -141,8 +142,16 @@ export async function uploadPodcast(
   return { ok: true, podcast };
 }
 
-/** Remove podcast (banco + storage se Supabase; senão local). */
-export async function deletePodcast(podcast: Podcast): Promise<{ ok: boolean; error?: string }> {
+/** Remove podcast (banco + storage se Supabase; senão local). Autor ou senha. */
+export async function deletePodcast(podcast: Podcast, senha?: string): Promise<{ ok: boolean; error?: string }> {
+  const ident = getIdentidade();
+  const isAutor = ident && podcast.autor_local_id === ident.autorLocalId;
+  const isSenhaValida = senha && validarSenhaDelete(senha);
+
+  if (!isAutor && !isSenhaValida) {
+    return { ok: false, error: "Só o autor pode excluir (ou use a senha)." };
+  }
+
   const sb = getSupabase();
   if (sb) {
     // tenta remover arquivo do storage (caminho após /podcasts/)

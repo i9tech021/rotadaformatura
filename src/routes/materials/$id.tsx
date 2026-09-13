@@ -375,34 +375,16 @@ function DisciplineMaterials() {
   }, [todosItens, estudados]);
 
   // ---- Excluir ----
-  const handleExcluir = async (item: ItemMaterial) => {
+  const handleExcluir = async (item: ItemMaterial, senha?: string) => {
     if (!item.publicacao) return;
 
-    // Se é o autor, exclui direto
-    if (identidade && item.publicacao.autor_local_id === identidade.autorLocalId) {
-      const r = await excluirPublicacao(item.publicacao);
-      if (!r.ok) {
-        toast.error(r.error || "Não foi possível excluir.");
-        return;
-      }
-      toast.success("Material excluído.");
-      recarregar();
+    const r = await excluirPublicacao(item.publicacao, senha);
+    if (!r.ok) {
+      toast.error(r.error || "Não foi possível excluir.");
       return;
     }
-
-    // Senão, pede a senha de exclusão (qualquer aluno pode limpar a turma)
-    const senha = prompt("Digite a senha para excluir este material:");
-    if (validarSenhaDelete(senha)) {
-      const r = await excluirPublicacao(item.publicacao);
-      if (!r.ok) {
-        toast.error(r.error || "Não foi possível excluir.");
-        return;
-      }
-      toast.success("Material excluído.");
-      recarregar();
-    } else if (senha !== null) {
-      toast.error("Senha incorreta.");
-    }
+    toast.success("Material excluído.");
+    recarregar();
   };
 
   // ---- Enviar (um ou vários arquivos; comprime ANTES de checar o limite) ----
@@ -1005,7 +987,7 @@ function CardMaterial({
   cor: string;
   estudados: Record<string, boolean>;
   alternarEstudado: (id: string) => void;
-  onExcluir: (item: ItemMaterial) => void;
+  onExcluir: (item: ItemMaterial, senha?: string) => void;
   identidade: { autorLocalId: string } | null;
 }) {
   const isLink = item.kind === "link";
@@ -1100,7 +1082,15 @@ function CardMaterial({
           {podeExcluir && (
             <button
               onClick={() => {
-                if (window.confirm(`Excluir "${item.titulo}"?`)) onExcluir(item);
+                if (window.confirm(`Excluir "${item.titulo}"?`)) {
+                  const isAutor = identidade && item.autor_local_id === identidade.autorLocalId;
+                  if (isAutor) {
+                    onExcluir(item);
+                  } else {
+                    const senha = prompt("Digite a senha para excluir:");
+                    if (senha !== null) onExcluir(item, senha);
+                  }
+                }
               }}
               title="Excluir este material"
               className="w-7 h-7 rounded-full flex items-center justify-center text-[#0A3D52]/20 hover:text-[#E74C3C] hover:bg-[#E74C3C]/10 transition-all cursor-pointer"

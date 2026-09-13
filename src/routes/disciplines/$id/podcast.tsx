@@ -271,11 +271,6 @@ function DisciplinePodcastPage() {
 
   const handleDelete = async (podcast: Podcast) => {
     if (!confirm("Tem certeza que deseja excluir este podcast?")) return;
-    const senha = prompt("Digite a senha para excluir:");
-    if (!validarSenhaDelete(senha)) {
-      if (senha !== null) toast.error("Senha incorreta.");
-      return;
-    }
     const r = await deletePodcast(podcast);
     if (r.ok) {
       toast.success("Podcast excluido.");

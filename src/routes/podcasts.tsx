@@ -296,7 +296,16 @@ function PodcastsPage() {
   const handleRemover = async (podcast: Podcast) => {
     const r = await deletePodcast(podcast);
     if (!r.ok) {
-      toast.error(r.error || "Erro ao remover.");
+      // Se não é autor, pede senha
+      const senha = prompt("Você não é o autor. Digite a senha para excluir:");
+      if (senha === null) return;
+      const r2 = await deletePodcast(podcast, senha);
+      if (!r2.ok) {
+        toast.error(r2.error || "Erro ao remover.");
+        return;
+      }
+      toast.success("Podcast removido.");
+      recarregar();
       return;
     }
     toast.success("Podcast removido.");
